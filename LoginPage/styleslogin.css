@@ -1,0 +1,65 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.login-form {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 400px;
+}
+.login-form h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.login-form label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+.login-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.login-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.login-form button:hover {
+    background-color: #4cae4c;
+}
+.login-form .error-message {
+    color: red;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.login-form .links {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+}
+.login-form .links a {
+    color: #007bff;
+    text-decoration: none;
+}
+.login-form .links a:hover {
+    text-decoration: underline;
+}
