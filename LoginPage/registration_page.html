@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реєстрація</title>
+    <link rel="stylesheet" href="stylesregister.css">
+</head>
+<body>
+    <form id="registration-form" class="registration-form">
+        <h2>Реєстрація</h2>
+
+        <div class="form-group">
+            <label for="lastname">Прізвище</label>
+            <input type="text" id="lastname" name="lastname" placeholder="Введіть ваше прізвище" required>
+        </div>
+
+        <div class="form-group">
+            <label for="firstname">Ім’я</label>
+            <input type="text" id="firstname" name="firstname" placeholder="Введіть ваше ім’я" required>
+        </div>
+
+        <div class="form-group">
+            <label for="username">Логін</label>
+            <input type="text" id="username" name="username" placeholder="Введіть ваш логін" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Введіть ваш email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Пароль</label>
+            <input type="password" id="password" name="password" placeholder="Введіть ваш пароль" required>
+        </div>
+
+        <div class="form-group">
+            <label for="repeat-password">Повторіть пароль</label>
+            <input type="password" id="repeat-password" name="repeat-password" placeholder="Повторіть ваш пароль" required>
+        </div>
+
+        <div class="form-group-full checkbox-group">
+            <input type="checkbox" id="agree-terms" name="agree-terms" required>
+            <label for="agree-terms">Я згоден(-на) з <a href="/terms" target="_blank">умовами використання</a> і <a href="/privacy" target="_blank">політикою конфіденційності</a>.</label>
+        </div>
+
+        <div class="form-group-full checkbox-group">
+            <input type="checkbox" id="agree-data" name="agree-data" required>
+            <label for="agree-data">Я надаю право на обробку моїх персональних даних.</label>
+        </div>
+
+        <p class="error-message" id="error-message"></p>
+
+        <button type="submit">Зареєструватися</button>
+        <p id="response-message" style="color: green; text-align: center;"></p>
+    </form>
+
+    <script src="registerscript.js"></script>
+</body>
+</html>
