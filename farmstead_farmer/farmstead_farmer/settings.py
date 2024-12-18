@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'api',
     'feedback',
     'corsheaders',
+    'animals',
 ]
 
 LOGGING = {
@@ -142,10 +143,15 @@ WSGI_APPLICATION = 'farmstead_farmer.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'animals_db',
+        'USER': 'root',
+        'PASSWORD': 'yourpass_13',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    },
 }
+
 
 
 # Password validation
