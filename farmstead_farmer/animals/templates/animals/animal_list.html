@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Список тварин</title>
+</head>
+<body>
+    <h1>Список тварин</h1>
+    <ul>
+        {% for animal in animals %}
+            <li><a href="{{ animal.id }}/">{{ animal.common_name|default:"Невідома тварина" }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

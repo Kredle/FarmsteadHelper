@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ animal.common_name|default:"Назва тварини" }}</title>
+</head>
+<body>
+    <h1>{{ animal.common_name|default:"Назва тварини" }}</h1>
+    <p>{{ animal.description|default:"Опис відсутній" }}</p>
+    <dl>
+        <dt>Наукова назва:</dt>
+        <dd>{{ animal.scientific_name }}</dd>
+
+        <dt>Клас:</dt>
+        <dd>{{ animal.class_field|default:"-" }}</dd>
+
+        <dt>Рід:</dt>
+        <dd>{{ animal.genus|default:"-" }}</dd>
+
+        <dt>Родина:</dt>
+        <dd>{{ animal.family|default:"-" }}</dd>
+
+        <dt>Розміри:</dt>
+        <dd>{{ animal.size|default:"-" }}</dd>
+
+        <dt>Вага:</dt>
+        <dd>{{ animal.weight|default:"-" }}</dd>
+
+        <dt>Тривалість життя:</dt>
+        <dd>{{ animal.lifespan|default:"-" }}</dd>
+
+        <dt>Ареал:</dt>
+        <dd>{{ animal.habitat|default:"-" }}</dd>
+
+        <dt>Тип харчування:</dt>
+        <dd>{{ animal.diet|default:"-" }}</dd>
+
+        <dt>Особливості:</dt>
+        <dd>{{ animal.features|default:"-" }}</dd>
+
+        <dt>Умови утримання:</dt>
+        <dd>{{ animal.care_conditions|default:"-" }}</dd>
+
+        <dt>Розмноження:</dt>
+        <dd>{{ animal.reproduction|default:"-" }}</dd>
+
+        <dt>Застосування:</dt>
+        <dd>{{ animal.usage|default:"-" }}</dd>
+    </dl>
+</body>
+</html>
