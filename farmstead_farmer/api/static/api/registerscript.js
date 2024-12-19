@@ -62,7 +62,7 @@ document.getElementById('registration-form').addEventListener('submit', async (e
             }, 3000);
             document.getElementById('registration-form').reset(); // Очистити форму після успішної реєстрації
         } else {
-            errorMessage.textContent = result.error || 'Сталася помилка.';
+            errorMessage.textContent = result.error || 'Цей логін або email вже використовується';
         }
     } catch (err) {
         errorMessage.textContent = 'Помилка зв’язку з сервером.';
