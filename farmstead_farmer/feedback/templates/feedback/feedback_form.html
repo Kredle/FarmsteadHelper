@@ -51,11 +51,12 @@
             display: block;
         }
         input, textarea, button {
-            width: 100%;
+            width: calc(100% - 20px);
             margin-top: 5px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box;
         }
         textarea {
             resize: none;
@@ -69,6 +70,20 @@
         }
         button:hover {
             background-color: #45a049;
+        }
+        #loading-spinner {
+            display: none;  /* Спочатку прихована */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);  /* Центруємо спінер */
+            background-color: rgba(0, 0, 0, 0.5); /* Прозорий фон */
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000; /* Перекриває інші елементи */
+        }
+        #loading-spinner img {
+            max-width: 100px;  /* Задайте потрібний розмір спінера */
         }
     </style>
 </head>
@@ -92,6 +107,11 @@
 
             <button type="submit">Надіслати</button>
         </form>
+
+        <!-- Спінер -->
+        <div id="loading-spinner">
+            <img src="https://i.gifer.com/ZZ5H.gif" alt="loading">
+        </div>
     </main>
     <footer>&copy; 2024 FarmStead Helper. Усі права захищені.</footer>
 
@@ -99,7 +119,14 @@
         document.getElementById("feedback-form").addEventListener("submit", function(event) {
             event.preventDefault(); 
 
+            // Показуємо анімацію завантаження
+            document.getElementById("loading-spinner").style.display = "block";
+            
             const formData = new FormData(this);
+
+            // Деактивуємо кнопку для запобігання повторних натискань
+            const submitButton = document.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
 
             fetch("{% url 'feedback' %}", {
                 method: "POST",
@@ -110,11 +137,28 @@
             })
             .then(response => response.json())
             .then(data => {
+                // Приховуємо анімацію після отримання відповіді
+                document.getElementById("loading-spinner").style.display = "none";
+
+                // Очищаємо форму
+                document.getElementById("feedback-form").reset(); 
+
+                // Логуємо дані, щоб побачити результат
+                console.log(data); 
+
+                // Показуємо повідомлення користувачу
                 alert(data.message); 
             })
             .catch(error => {
+                // Приховуємо анімацію при помилці
+                document.getElementById("loading-spinner").style.display = "none";
+                
                 console.error("Error:", error);
                 alert("Щось пішло не так!");
+            })
+            .finally(() => {
+                // Відновлюємо кнопку після завершення процесу
+                submitButton.disabled = false;
             });
         });
     </script>
