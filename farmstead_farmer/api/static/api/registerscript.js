@@ -5,67 +5,66 @@ document.getElementById('registration-form').addEventListener('submit', async (e
     const repeatPassword = document.getElementById('repeat_password').value;
     const agreeTerms = document.getElementById('agree-terms').checked;
     const agreeData = document.getElementById('agree-data').checked;
+    const email = document.getElementById('email').value;
 
     const errorMessage = document.getElementById('error-message');
-    const responseMessage = document.getElementById('response-message');
 
-    // Перевірка довжини пароля
+    // Перевірка пароля
     if (password.length < 8) {
         errorMessage.textContent = 'Пароль має містити не менше 8 символів.';
         return;
     }
 
-    // Перевірка на співпадіння паролів
     if (password !== repeatPassword) {
         errorMessage.textContent = 'Паролі не співпадають. Будь ласка, перевірте.';
         return;
     }
 
-    // Перевірка згод
     if (!agreeTerms || !agreeData) {
         errorMessage.textContent = 'Ви повинні погодитися з умовами використання та обробкою персональних даних.';
         return;
     }
 
-    // Очищення повідомлення про помилку
     errorMessage.textContent = '';
 
-    // Збір даних з форми
-    const formData = new FormData(document.getElementById('registration-form'));
-    const data = {};
-
-    formData.forEach((value, key) => {
-        data[key] = value;
-    });
-
-    // Конвертуємо об'єкт у JSON з подвійними лапками для ключів
-    const jsonData = JSON.stringify(data);
-
-    // Перевірка даних перед відправкою
-    console.log(jsonData);
-
-    // Надсилання даних на сервер
     try {
-        const response = await fetch('/api/register/', {
+        // Перевірка наявності email у базі
+        const checkResponse = await fetch('/api/check-user/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: jsonData,
+            body: JSON.stringify({ email }),
         });
 
-        const result = await response.json();
-        if (response.ok) {
-            responseMessage.textContent = '';
-            setTimeout(() => {
-                window.location.href = '/login/'; 
-            }, 3000);
-            document.getElementById('registration-form').reset(); // Очистити форму після успішної реєстрації
-        } else {
-            errorMessage.textContent = result.error || 'Цей логін або email вже використовується';
+        const checkResult = await checkResponse.json();
+
+        if (!checkResponse.ok) {
+            errorMessage.textContent = checkResult.error || 'Цей логін або email вже використовується.';
+            return; // Зупиняємо виконання, якщо email вже зайнятий
         }
+
+        // Якщо email доступний, надсилаємо OTP
+        const otpResponse = await fetch('/api/send-otp/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+        });
+
+        const otpResult = await otpResponse.json();
+
+        if (!otpResponse.ok) {
+            throw new Error(otpResult.error || `HTTP Error: ${otpResponse.status}`);
+        }
+
+        alert(otpResult.message || 'OTP успішно надіслано!');
+
+        // Оновлений редірект на /confirm-register без префікса 'register/api/'
+        window.location.href = '/confirm-register/';  // Перехід на правильний шлях
     } catch (err) {
-        errorMessage.textContent = 'Помилка зв’язку з сервером.';
-        console.error(err);
+        console.error('Помилка:', err);
+        errorMessage.textContent = 'Не вдалося завершити реєстрацію. Спробуйте знову.';
     }
 });

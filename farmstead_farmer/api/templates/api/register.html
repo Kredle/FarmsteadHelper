@@ -58,5 +58,71 @@
     </form>
 
     <script src="{% static 'api/registerscript.js' %}"></script>
+    <script>
+        document.getElementById('registration-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const lastname = document.getElementById('lastname').value;
+        const firstname = document.getElementById('firstname').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const repeatPassword = document.getElementById('repeat_password').value;
+        const errorMessage = document.getElementById('error-message');
+
+        if (password !== repeatPassword) {
+            errorMessage.textContent = 'Паролі не співпадають.';
+            return;
+        }
+
+        // Зберігаємо всі дані в localStorage, включаючи repeat_password
+        localStorage.setItem('email', email);
+        localStorage.setItem('lastname', lastname);
+        localStorage.setItem('firstname', firstname);
+        localStorage.setItem('username', username);
+        localStorage.setItem('password', password);
+        localStorage.setItem('repeat_password', repeatPassword);  // Додаємо repeat_password
+
+        // Надсилаємо запит для перевірки доступності email
+        try {
+            const checkResponse = await fetch('/api/check-user/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const checkResult = await checkResponse.json();
+
+            if (!checkResponse.ok) {
+                errorMessage.textContent = checkResult.error || 'Цей email або логін вже використовується.';
+                return;
+            }
+
+            // Надсилаємо OTP
+            const otpResponse = await fetch('/api/send-otp/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const otpResult = await otpResponse.json();
+            if (!otpResponse.ok) {
+                throw new Error(otpResult.error || 'Помилка при відправці OTP.');
+            }
+
+            alert(otpResult.message || 'OTP успішно надіслано!');
+
+            // Перехід на сторінку підтвердження OTP
+            window.location.href = '/confirm-register/';
+        } catch (err) {
+            console.error('Помилка:', err);
+            errorMessage.textContent = 'Не вдалося завершити реєстрацію. Спробуйте знову.';
+        }
+    });
+    </script>            
 </body>
 </html>
