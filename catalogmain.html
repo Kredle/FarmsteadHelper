@@ -15,11 +15,6 @@
         }
 
         /* Основні стилі для хедера */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-
         header {
             position: fixed;
             top: 0;
@@ -106,6 +101,54 @@
 
         .auth:hover .auth-menu {
             display: block;
+        }
+
+        .category-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px auto;
+            margin-top: 7%;
+            flex-wrap: wrap;
+        }
+
+        .category-button {
+            position: relative;
+            width: 300px;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .category-button img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .category-button:hover img {
+            transform: scale(1.1);
+        }
+
+        .category-button .category-title {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .category-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .container {
@@ -235,6 +278,26 @@
         </div>    
     </header>
 
+    <!-- Кнопки категорій -->
+    <div class="category-buttons">
+        <a href="/catalog/trees" class="category-button">
+            <img src="tree.png" alt="Дерева">
+            <div class="category-title">Дерева</div>
+        </a>
+        <a href="/catalog/flowers" class="category-button">
+            <img src="flowers.jpg" alt="Квіти">
+            <div class="category-title">Квіти</div>
+        </a>
+        <a href="/catalog/animals" class="category-button">
+            <img src="animals.jpg" alt="Тварини">
+            <div class="category-title">Тварини</div>
+        </a>
+        <a href="/catalog/vegetables" class="category-button">
+            <img src="vegetables.png" alt="Овочі">
+            <div class="category-title">Овочі</div>
+        </a>
+    </div>
+
     <div class="container">
         <!-- Фільтри -->
         <div class="filter">
@@ -270,29 +333,29 @@
                 flex-direction: column;
                 align-items: center;
             }
-    
+
             .legal-links {
                 display: flex;
                 justify-content: center;
                 gap: 10px;
                 margin-bottom: 10px;
             }
-    
+
             .legal-links a {
                 color: #fff;
                 text-decoration: none;
                 font-size: 14px;
             }
-    
+
             .legal-links a:hover {
                 text-decoration: underline;
             }
-    
+
             .legal-links span {
                 color: #fff;
                 font-size: 14px;
             }
-    
+
             .copyright {
                 font-size: 14px;
                 color: #ccc;
