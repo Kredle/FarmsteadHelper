@@ -54,6 +54,13 @@ EMAIL_HOST_PASSWORD = 'pxez grlq jfnk yuaw'
 DEFAULT_FROM_EMAIL = 'algowizzards.feedback@gmail.com'
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -72,6 +79,7 @@ INSTALLED_APPS = [
     'feedback',
     'corsheaders',
     'animals',
+    'trees',
 ]
 
 LOGGING = {
@@ -194,3 +202,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+APP_DIRS=True
