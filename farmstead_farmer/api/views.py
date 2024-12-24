@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 import random
+import logging
 from .models import OTP
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
@@ -147,3 +148,137 @@ class LoginView(APIView):
 
 def confirm_register_view(request):
     return render(request, 'api/confirm-register.html')
+
+# Скидання пароля: форма для запиту на скидання
+def reset_password_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = get_user_model().objects.get(email=email)
+            reset_token = get_random_string(length=32)
+
+            # Зберігаємо токен у профілі або окремій моделі
+            user.profile.reset_token = reset_token  # Приклад
+            user.profile.save()
+
+            reset_link = f"{request.scheme}://{request.get_host()}/reset-password-confirm/{reset_token}/"
+            send_mail(
+                'Відновлення пароля',
+                f'Для відновлення пароля натисніть: {reset_link}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email]
+            )
+            return render(request, 'api/reset_password.html', {'message': 'Інструкція з відновлення пароля відправлена на вашу пошту.'})
+
+        except get_user_model().DoesNotExist:
+            return render(request, 'api/reset_password.html', {'error': 'Користувача з такою електронною поштою не знайдено.'})
+
+    return render(request, 'api/reset_password.html')
+
+# Налаштування логування
+logger = logging.getLogger(__name__)
+
+def generate_token(length=32):
+    """
+    Генерація випадкового токена.
+    """
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+class ResetPasswordView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_user_model().objects.filter(email=email).first()
+        if not user:
+            return Response({'error': 'No user found with this email'}, status=status.HTTP_404_NOT_FOUND)
+
+        reset_token = generate_token(32)
+        cache_key = f"reset_token_{user.id}"
+        cache.set(cache_key, reset_token, timeout=3600)
+
+        reset_link = f"{request.scheme}://{request.get_host()}/reset-password/{reset_token}/"
+        try:
+            send_mail(
+                'Password Reset Request',
+                f'Your reset link: {reset_link}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+            )
+            return Response({'message': 'Password reset email sent successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# Підтвердження скидання пароля
+class ResetPasswordConfirmView(APIView):
+    def post(self, request, token):
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not new_password or not confirm_password:
+            return Response({'error': 'Обидва поля пароля обов’язкові.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({'error': 'Паролі не співпадають.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_id = cache.get(f'reset_token_{token}')
+        if not user_id:
+            return Response({'error': 'Токен недійсний або прострочений.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_user_model().objects.filter(id=user_id).first()
+        if not user:
+            return Response({'error': 'Користувача не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user.password = make_password(new_password)
+        user.save()
+        cache.delete(f'reset_token_{token}')
+
+        return Response({'message': 'Пароль успішно змінено.'}, status=status.HTTP_200_OK)
+
+def new_password_view(request, token):
+    if request.method == 'GET':
+        # Рендеримо форму введення нового пароля
+        return render(request, 'api/new_password.html', {'token': token})
+
+    elif request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not new_password or not confirm_password:
+            return render(request, 'api/new_password.html', {
+                'error': 'Всі поля є обов’язковими.',
+                'token': token
+            })
+
+        if new_password != confirm_password:
+            return render(request, 'api/new_password.html', {
+                'error': 'Паролі не співпадають.',
+                'token': token
+            })
+
+        # Перевірка токена
+        user_id = cache.get(f'reset_token_{token}')
+        if not user_id:
+            return render(request, 'api/new_password.html', {
+                'error': 'Токен недійсний або прострочений.',
+                'token': token
+            })
+
+        # Змінюємо пароль користувача
+        User = get_user_model()
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return render(request, 'api/new_password.html', {
+                'error': 'Користувача не знайдено.',
+                'token': token
+            })
+
+        user.password = make_password(new_password)
+        user.save()
+        cache.delete(f'reset_token_{token}')
+
+        return render(request, 'api/new_password.html', {
+            'success': 'Пароль успішно змінено. Тепер ви можете увійти.',
+        })

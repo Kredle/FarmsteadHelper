@@ -4,7 +4,7 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список тварин</title>
+    <title>Список сортів</title>
     <style>
         /* Загальний стиль для тіла */
         body {
@@ -109,11 +109,11 @@
             display: block;
         }
 
-
         h1 {
             text-align: center;
             margin: 20px 0;
         }
+        
         .card-container {
             padding: 50px 20px;
             text-align: center;
@@ -181,89 +181,52 @@
     </style>
 </head>
 <body>
-        <!-- Хедер -->
-        <header>
-            <div class="logo">
-                <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-                <span>FarmsteadHelper</span>
+    <!-- Хедер -->
+    <header>
+        <div class="logo">
+            <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+            <span>FarmsteadHelper</span>
+        </div>
+        <nav>
+            <a href="/">Головна</a>
+            <a href="/catalog">Каталог</a>
+            <a href="/forum">Форум</a>
+            <a href="/map">Інтерактивна мапа</a>
+            <a href="/calendar">Календар</a>
+        </nav>
+        <div class="auth">
+            <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+            <div class="auth-menu">
+                <a href="/login/">Вхід</a>
+                <a href="/regiser/">Реєстрація</a>
             </div>
-            <nav>
-                <a href="/">Головна</a>
-                <a href="/catalog">Каталог</a>
-                <a href="/forum">Форум</a>
-                <a href="/map">Інтерактивна мапа</a>
-                <a href="/calendar">Календар</a>
-            </nav>
-            <div class="auth">
-                <!-- Зображення авторизації -->
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login/">Вхід</a>
-                    <a href="/regiser/">Реєстрація</a>
-                </div>
-            </div>    
-        </header>
+        </div>    
+    </header>
+
     <div class="card-container">
         <div class="items">
-            {% for animal in animals %}
+            {% for sort in sorts %}
                 <div class="card">
-                    <img src="{{ animal.image|default:'default-animal.jpg' }}" alt="{{ animal.common_name|default:'Невідома тварина' }}">
-                    <div class="card-title">{{ animal.common_name|default:"Невідома тварина" }}</div>
-                    <a class="card-button" href="{{ animal.id }}/">Інформація</a>
+                    <img src="{{ sort.image_fruit|default:'default.jpg' }}" alt="{{ sort.sort|default:'Невідомий сорт' }}">
+                    <div class="card-title">{{ sort.sort|default:"Невідомий сорт" }}</div>
+                    <a class="card-button" href="{{ sort.idSort }}/">Інформація</a>
                 </div>
             {% endfor %}
         </div>
     </div>
-        <!-- Футер -->
-        <footer>
-            <style>
-                footer {
-                    background-color: #333;
-                    color: #fff;
-                    padding: 20px 10px;
-                    text-align: center;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-        
-                .legal-links {
-                    display: flex;
-                    justify-content: center;
-                    gap: 10px;
-                    margin-bottom: 10px;
-                }
-        
-                .legal-links a {
-                    color: #fff;
-                    text-decoration: none;
-                    font-size: 14px;
-                }
-        
-                .legal-links a:hover {
-                    text-decoration: underline;
-                }
-        
-                .legal-links span {
-                    color: #fff;
-                    font-size: 14px;
-                }
-        
-                .copyright {
-                    font-size: 14px;
-                    color: #ccc;
-                }
-            </style>
-            <div class="legal-links">
-                <a href="https://drive.google.com/file/d/1kYJ7ulJFNFk_dDLPced_ToOEeX4Ocf4y/view?usp=sharing">Умови використання</a>
-                <span>|</span>
-                <a href="https://drive.google.com/file/d/1B56gHpLaAyReM2HP_MCrBmQKi1tTMROP/view?usp=sharing">Політика конфіденційності</a>
-                <span>|</span>
-                <a href="/feedback/">Форма зворотного зв’язку</a>
-            </div>
-            <div class="copyright">
-                &copy; 2024 FarmsteadHelper. Усі права захищено.
-            </div>
-        </footer>
+
+    <!-- Футер -->
+    <footer>
+        <div class="legal-links">
+            <a href="https://drive.google.com/file/d/1kYJ7ulJFNFk_dDLPced_ToOEeX4Ocf4y/view?usp=sharing">Умови використання</a>
+            <span>|</span>
+            <a href="https://drive.google.com/file/d/1B56gHpLaAyReM2HP_MCrBmQKi1tTMROP/view?usp=sharing">Політика конфіденційності</a>
+            <span>|</span>
+            <a href="/feedback/">Форма зворотного зв’язку</a>
+        </div>
+        <div class="copyright">
+            &copy; 2024 FarmsteadHelper. Усі права захищено.
+        </div>
+    </footer>
 </body>
 </html>

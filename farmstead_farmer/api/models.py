@@ -5,6 +5,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     firstname = models.CharField(max_length=100, blank=False)
     lastname = models.CharField(max_length=100, blank=False)
+    reset_token = models.CharField(max_length=32, null=True, blank=True)
 
     def __str__(self):
         return self.username
