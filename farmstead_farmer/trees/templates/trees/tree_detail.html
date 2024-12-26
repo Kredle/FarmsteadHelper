@@ -4,7 +4,8 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Інформація про дерево</title>
+    <title>{{ sort.sort|default:"Назва сорту" }}</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <style>
         header {
             position: fixed;
@@ -308,7 +309,7 @@
                 {% for planting in plantings %}
                     <div class="card">
                         <h3>Час посадки</h3>
-                        <p>{{ planting.planting_time }}</p>
+                        <p>{{ planting.plant_time }}</p>
                         <h3>Опис посадки</h3>
                         <p>{{ planting.planting_discription }}</p>
                     </div>

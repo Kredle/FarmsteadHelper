@@ -4,7 +4,8 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Інформація про дерево</title>
+    <title>{{ sort.Name|default:"Назва сорту" }}</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <style>
         header {
             position: fixed;

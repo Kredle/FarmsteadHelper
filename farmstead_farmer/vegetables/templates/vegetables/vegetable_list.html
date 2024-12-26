@@ -4,7 +4,8 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список сортів</title>
+    <title>Список сортів овочів</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <style>
         /* Загальний стиль для тіла */
         body {
@@ -217,6 +218,44 @@
 
     <!-- Футер -->
     <footer>
+        <style>
+            footer {
+                background-color: #333;
+                color: #fff;
+                padding: 20px 10px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+    
+            .legal-links {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+    
+            .legal-links a {
+                color: #fff;
+                text-decoration: none;
+                font-size: 14px;
+            }
+    
+            .legal-links a:hover {
+                text-decoration: underline;
+            }
+    
+            .legal-links span {
+                color: #fff;
+                font-size: 14px;
+            }
+    
+            .copyright {
+                font-size: 14px;
+                color: #ccc;
+            }
+        </style>
         <div class="legal-links">
             <a href="https://drive.google.com/file/d/1kYJ7ulJFNFk_dDLPced_ToOEeX4Ocf4y/view?usp=sharing">Умови використання</a>
             <span>|</span>

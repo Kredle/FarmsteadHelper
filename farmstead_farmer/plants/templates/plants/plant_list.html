@@ -4,7 +4,7 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список сортів дерев</title>
+    <title>Список сортів квітів</title>
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <style>
         /* Загальний стиль для тіла */
@@ -206,11 +206,11 @@
 
     <div class="card-container">
         <div class="items">
-            {% for sort in sorts %}
+            {% for plant in plants %}
                 <div class="card">
-                    <img src="{{ sort.image_fruit|default:'default.jpg' }}" alt="{{ sort.sort|default:'Невідомий сорт' }}">
-                    <div class="card-title">{{ sort.sort|default:"Невідомий сорт" }}</div>
-                    <a class="card-button" href="{{ sort.idSort }}/">Інформація</a>
+                    <img src="{{ plant.image|default:'default.jpg' }}" alt="{{ plant.name|default:'Невідома рослина' }}">
+                    <div class="card-title">{{ plant.name|default:"Невідома рослина" }}</div>
+                    <a class="card-button" href="{{ plant.id }}/">Інформація</a>
                 </div>
             {% endfor %}
         </div>

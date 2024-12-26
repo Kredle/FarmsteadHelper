@@ -81,6 +81,8 @@ INSTALLED_APPS = [
     'animals',
     'trees',
     'vegetables',
+    'plants',
+    'catalog',
 ]
 
 LOGGING = {
