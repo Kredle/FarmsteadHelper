@@ -376,10 +376,10 @@
                 <div class="card" data-category="{{ item.category }}">
                     <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:"Невідомий обʼєкт" }}">
                     <div class="card-title">{{ item.common_name|default:"Невідомий обʼєкт" }}</div>
-                    <a class="card-button" href="/catalog/{{ item.category }}/{{ item.id }}">Інформація</a>
+                    <a class="card-button" href="{{ item.url }}">Інформація</a>
                 </div>
             {% endfor %}
-        </div>
+        </div>        
         <button id="load-more">Далі</button>
     </div> 
     <!-- Футер -->

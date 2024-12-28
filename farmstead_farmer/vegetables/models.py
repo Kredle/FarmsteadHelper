@@ -11,6 +11,8 @@ class Vegetables(models.Model):
     Minerals = models.TextField(null=True, blank=True)
     Plant_time = models.CharField(max_length=45, null=True, blank=True)
     Compatibility = models.TextField(null=True, blank=True)
+    Incompatibility = models.TextField(null=True, blank=True)
+    Image = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False

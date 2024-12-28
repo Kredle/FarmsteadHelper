@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Sort, Tree, Cutting, Fertilizer, Disease, Planting
 
-def sort_detail(request, id):
-    sort = Sort.objects.get(idSort=id) 
-    tree = sort.tree  
+def sort_detail(request, tree_id, sort_id):
+    tree = get_object_or_404(Tree, idTree=tree_id)
+    sort = get_object_or_404(Sort, idSort=sort_id, tree=tree)
     cuttings = Cutting.objects.all()
     fertilizers = Fertilizer.objects.all()
     diseases = Disease.objects.all()
@@ -18,10 +18,15 @@ def sort_detail(request, id):
         'plantings': plantings,
     }
 
-    return render(request, 'trees/tree_detail.html', context)
+    return render(request, 'trees/sort_detail.html', context)
 
 
+
+def tree_sorts(request, tree_id):
+    tree = get_object_or_404(Tree, idTree=tree_id)
+    sorts = tree.sorts.all()
+    return render(request, 'trees/sorts_list.html', {'tree': tree, 'sorts': sorts})
 
 def tree_list(request):
-    sorts = Sort.objects.all() 
-    return render(request, 'trees/trees_list.html', {'sorts': sorts})
+    trees = Tree.objects.all() 
+    return render(request, 'trees/trees_main_list.html', {'trees': trees})

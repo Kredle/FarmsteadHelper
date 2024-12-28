@@ -205,13 +205,16 @@
     </header>
 
     <div class="card-container">
+        <h1>Сорти овоча "{{ veg.Name }}"</h1> 
         <div class="items">
-            {% for veg in vegs %}
+            {% for sort in sorts %}
                 <div class="card">
-                    <img src="{{ veg.Image|default:'default.jpg' }}" alt="{{ veg.Name|default:'Невідомий овоч' }}">
-                    <div class="card-title">{{ veg.Name|default:"Невідомий овоч" }}</div>
-                    <a class="card-button" href="{{ veg.idVeg }}/">Інформація</a>
+                    <img src="{{ sort.Image|default:'default.jpg' }}" alt="{{ sort.Name|default:'Невідомий сорт' }}">
+                    <div class="card-title">{{ sort.Name|default:"Невідомий сорт" }}</div>
+                    <a class="card-button" href="{{ sort.idSort }}">Інформація</a>  
                 </div>
+            {% empty %}
+                <p>Немає сортів для цього овоча.</p>
             {% endfor %}
         </div>
     </div>
