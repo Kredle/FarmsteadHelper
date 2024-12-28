@@ -230,7 +230,9 @@
     });
 
     function checkMenuVisibility() {
-        if (window.innerWidth < 900) {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
             hamburger.style.display = 'flex';
