@@ -4,6 +4,8 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from .serializers import RegisterSerializer, LoginSerializer
 from django.shortcuts import render
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -12,6 +14,7 @@ import logging
 from .models import OTP
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
+
 
 def generate_otp(length=6):
     """Генерує одноразовий пароль (OTP) заданої довжини."""
@@ -31,17 +34,101 @@ class SendOTPView(APIView):
         cache.set(f"otp_{email}", otp, timeout=600)
         
         try:
-            send_mail(
-                'Ваш OTP код',
-                f'Ваш OTP код: {otp}',
-                'from@example.com',
-                [email],
-                fail_silently=False,
-            )
+            # Підготовка листа
+            subject = 'Підтвердження реєстрації FarmsteadHelper'
+            from_email = 'from@example.com'
+            to_email = [email]
+            html_content = f""" 
+            <!DOCTYPE html>
+            <html lang="uk">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Підтвердження реєстрації FarmsteadHelper</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f6f5cb;
+                        margin: 0;
+                        padding: 0;
+                        color: #333;
+                    }}
+                    .email-container {{
+                        max-width: 600px;
+                        margin: 30px auto;
+                        padding: 20px;
+                        background-color: #f6f5cb;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    }}
+                    .email-container h2 {{
+                        font-size: 24px; 
+                        color: #28a745; 
+                        text-align: center; 
+                        margin-top: 20px; 
+                        font-weight: bold;
+                    }}
+                    .email-body {{
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }}
+                    .email-body p {{
+                        margin-bottom: 15px;
+                    }}
+                    .email-footer {{
+                        text-align: center;
+                        font-size: 14px;
+                        color: #777;
+                        margin-top: 30px;
+                    }}
+                    .otp-code {{
+                        text-align: center;
+                        font-weight: bold;
+                        color: #28a745;
+                        font-size: 20px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                        <div class="email-body">
+                            <h2>Вітаємо!</h2>
+                            <p>Дякуємо, що обрали платформу <strong>FarmsteadHelper</strong> для ваших потреб! Ми раді вітати вас серед наших користувачів.</p>
+                            <p>
+                                Ви надіслали запит на реєстрацію, і для підтвердження вашої електронної адреси необхідно ввести OTP код. Це допоможе нам переконатися, що доступ до вашого облікового запису буде безпечним і надійним.
+                            </p>
+                            <p>
+                                Ваш OTP код (дійсний протягом 10 хвилин): 
+                                <br><h3 class="otp-code" style="text-align: center;">{otp}</h3>
+                            </p>
+                            <p>
+                                Будь ласка, введіть цей код у відповідне поле на сторінці підтвердження реєстрації. Якщо ви не завершуєте реєстрацію протягом 10 хвилин, код стане недійсним, і вам потрібно буде повторити запит.
+                            </p>
+                            <p>
+                                Якщо ви не ініціювали цей запит, не хвилюйтеся — ваш обліковий запис залишається у безпеці. Просто проігноруйте цей лист, і ніяких подальших дій не потрібно.
+                                Ми завжди готові допомогти! Якщо у вас виникли будь-які питання чи труднощі з процесом реєстрації, будь ласка, зв’яжіться з нашою командою через форму зворотного зв’язку. 
+                            </p>
+                            <p>Будь ласка, не відповідайте на даний лист повідомленням, надсилання коду проводиться автоматично.</p>
+                            <p>З найкращими побажаннями,<br>Команда <strong>FarmsteadHelper</strong></p>
+                        </div>
+                    <div class="email-footer">
+                        <p>&copy; 2024 FarmsteadHelper. Усі права захищено.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+
+            # Створення HTML-листа
+            msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=to_email)
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        
         except Exception as e:
             return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+
 
 
 User = get_user_model()
