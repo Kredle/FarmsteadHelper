@@ -57,73 +57,88 @@
         <button type="submit">Зареєструватися</button>
         <p id="response-message" style="color: green; text-align: center;"></p>
     </form>
-
-    <script src="{% static 'api/registerscript.js' %}"></script>
     <script>
         document.getElementById('registration-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const email = document.getElementById('email').value;
-        const lastname = document.getElementById('lastname').value;
-        const firstname = document.getElementById('firstname').value;
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const repeatPassword = document.getElementById('repeat_password').value;
-        const errorMessage = document.getElementById('error-message');
-
-        if (password !== repeatPassword) {
-            errorMessage.textContent = 'Паролі не співпадають.';
-            return;
-        }
-
-        // Зберігаємо всі дані в localStorage, включаючи repeat_password
-        localStorage.setItem('email', email);
-        localStorage.setItem('lastname', lastname);
-        localStorage.setItem('firstname', firstname);
-        localStorage.setItem('username', username);
-        localStorage.setItem('password', password);
-        localStorage.setItem('repeat_password', repeatPassword);  // Додаємо repeat_password
-
-        // Надсилаємо запит для перевірки доступності email
-        try {
-            const checkResponse = await fetch('/api/check-user/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email })
-            });
-
-            const checkResult = await checkResponse.json();
-
-            if (!checkResponse.ok) {
-                errorMessage.textContent = checkResult.error || 'Цей email або логін вже використовується.';
+            e.preventDefault();
+    
+            const email = document.getElementById('email').value;
+            const lastname = document.getElementById('lastname').value;
+            const firstname = document.getElementById('firstname').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const repeatPassword = document.getElementById('repeat_password').value;
+            const agreeTerms = document.getElementById('agree-terms').checked;
+            const agreeData = document.getElementById('agree-data').checked;
+            const errorMessage = document.getElementById('error-message');
+    
+            // Validate password and agreement checkboxes
+            if (password.length < 8) {
+                errorMessage.textContent = 'Пароль має містити не менше 8 символів.';
                 return;
             }
-
-            // Надсилаємо OTP
-            const otpResponse = await fetch('/api/send-otp/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email })
-            });
-
-            const otpResult = await otpResponse.json();
-            if (!otpResponse.ok) {
-                throw new Error(otpResult.error || 'Помилка при відправці OTP.');
+    
+            if (password !== repeatPassword) {
+                errorMessage.textContent = 'Паролі не співпадають. Будь ласка, перевірте.';
+                return;
             }
-
-            alert(otpResult.message || 'OTP успішно надіслано!');
-
-            // Перехід на сторінку підтвердження OTP
-            window.location.href = '/confirm-register/';
-        } catch (err) {
-            console.error('Помилка:', err);
-            errorMessage.textContent = 'Не вдалося завершити реєстрацію. Спробуйте знову.';
-        }
-    });
-    </script>            
+    
+            if (!agreeTerms || !agreeData) {
+                errorMessage.textContent = 'Ви повинні погодитися з умовами використання та обробкою персональних даних.';
+                return;
+            }
+    
+            errorMessage.textContent = ''; // Clear error message
+    
+            try {
+                // Check if email is available
+                const checkResponse = await fetch('/api/check-user/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+    
+                const checkResult = await checkResponse.json();
+    
+                if (!checkResponse.ok) {
+                    errorMessage.textContent = checkResult.error || 'Цей логін або email вже використовується.';
+                    return; // Stop if email is already taken
+                }
+    
+                // If email is available, send OTP
+                const otpResponse = await fetch('/api/send-otp/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+    
+                const otpResult = await otpResponse.json();
+    
+                if (!otpResponse.ok) {
+                    throw new Error(otpResult.error || 'Помилка при відправці OTP.');
+                }
+    
+                alert(otpResult.message || 'OTP успішно надіслано!');
+    
+                // Save data in localStorage
+                localStorage.setItem('email', email);
+                localStorage.setItem('lastname', lastname);
+                localStorage.setItem('firstname', firstname);
+                localStorage.setItem('username', username);
+                localStorage.setItem('password', password);
+                localStorage.setItem('repeat_password', repeatPassword);
+    
+                // Redirect to the OTP confirmation page
+                window.location.href = '/confirm-register/';
+    
+            } catch (err) {
+                console.error('Помилка:', err);
+                errorMessage.textContent = 'Не вдалося завершити реєстрацію. Спробуйте знову.';
+            }
+        });
+    </script>               
 </body>
 </html>
