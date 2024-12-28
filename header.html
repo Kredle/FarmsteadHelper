@@ -1,6 +1,5 @@
 <header>
     <style>
-        /* Основні стилі для хедера */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -13,6 +12,7 @@
             padding: 10px 20px;
             background-color: #333;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
         .logo {
@@ -28,7 +28,7 @@
         .logo span {
             font-size: 20px;
             font-weight: bold;
-            color: #fff; /* Білий текст */
+            color: #fff;
         }
 
         nav {
@@ -38,7 +38,7 @@
 
         nav a {
             text-decoration: none;
-            color: #fff; /* Білий текст */
+            color: #fff;
             font-size: 16px;
             padding: 5px 10px;
             transition: background-color 0.3s, color 0.3s;
@@ -58,7 +58,7 @@
             height: 70px;
             border-radius: 50%;
             cursor: pointer;
-            filter: invert(1); /* Інверсія кольорів іконки входу */
+            filter: invert(1);
         }
 
         .auth-menu {
@@ -88,11 +88,115 @@
         .auth:hover .auth-menu {
             display: block;
         }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .hamburger div {
+            width: 25px;
+            height: 3px;
+            background-color: #fff;
+            margin: 4px 0;
+        }
+
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: #333;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            padding-top: 20px;
+            z-index: 1000;
+        }
+
+        .side-menu a {
+            text-decoration: none;
+            color: #fff;
+            font-size: 18px;
+            padding: 15px 20px;
+            transition: background-color 0.3s;
+        }
+
+        .side-menu a:hover {
+            background-color: #444;
+        }
+
+        .side-menu-close {
+            text-align: right;
+            padding: 10px;
+        }
+
+        .side-menu-close button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .side-menu .auth-buttons {
+            margin-top: auto;
+            padding: 20px;
+        }
+
+        .side-menu .auth-buttons a {
+            display: block;
+            text-align: center;
+            padding: 10px;
+            background-color: #444;
+            color: #fff;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-decoration: none;
+        }
+
+        .side-menu .auth-buttons a:hover {
+            background-color: #555;
+        }
+
+        @media (max-width: 768px) {
+            nav,
+            .auth {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+                margin-left: auto;
+            }
+        }
     </style>
 
     <div class="logo">
         <img src="logo.png" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-close">
+            <button id="close-menu">&times;</button>
+        </div>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+        <div class="auth-buttons">
+            <a href="login_page.html">Вхід</a>
+            <a href="registration_form.html">Реєстрація</a>
+        </div>
     </div>
     <nav>
         <a href="/">Головна</a>
@@ -102,7 +206,6 @@
         <a href="/calendar">Календар</a>
     </nav>
     <div class="auth">
-        <!-- Зображення авторизації -->
         <img src="loginlogo.png" alt="Auth Icon" id="auth-icon">
         <div class="auth-menu">
             <a href="login_page.html">Вхід</a>
@@ -110,3 +213,37 @@
         </div>
     </div>
 </header>
+
+<script>
+    const hamburger = document.getElementById('hamburger');
+    const sideMenu = document.getElementById('side-menu');
+    const closeMenu = document.getElementById('close-menu');
+    const nav = document.querySelector('nav');
+    const auth = document.querySelector('.auth');
+
+    hamburger.addEventListener('click', () => {
+        sideMenu.style.right = '0';
+    });
+
+    closeMenu.addEventListener('click', () => {
+        sideMenu.style.right = '-250px';
+    });
+
+    function checkMenuVisibility() {
+        if (window.innerWidth < 900) {
+            nav.style.display = 'none';
+            auth.style.display = 'none';
+            hamburger.style.display = 'flex';
+        } else {
+            nav.style.display = 'flex';
+            auth.style.display = 'block';
+            hamburger.style.display = 'none';
+        }
+    }
+
+    // Перевірка під час завантаження сторінки
+    checkMenuVisibility();
+
+    // Перевірка під час зміни розміру вікна
+    window.addEventListener('resize', checkMenuVisibility);
+</script>
