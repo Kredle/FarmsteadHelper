@@ -154,15 +154,13 @@ class VerifyOTPView(APIView):
             return Response({'error': 'OTP і email обов’язкові.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Перевірка OTP в кеші
             cached_otp = cache.get(f"otp_{email}")
             if not cached_otp:
                 return Response({'error': 'Код OTP не знайдений або термін дії минув.'}, status=status.HTTP_400_BAD_REQUEST)
 
             if cached_otp == otp_code:
                 cache.delete(f"otp_{email}")
-                # Інші операції, наприклад, реєстрація користувача
-                return Response({'message': 'OTP вірний, користувача зареєстровано.'}, status=status.HTTP_200_OK)
+                return Response({'message': 'OTP вірний.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Невірний код OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -236,136 +234,120 @@ class LoginView(APIView):
 def confirm_register_view(request):
     return render(request, 'api/confirm-register.html')
 
-# Скидання пароля: форма для запиту на скидання
-def reset_password_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        try:
-            user = get_user_model().objects.get(email=email)
-            reset_token = get_random_string(length=32)
-
-            # Зберігаємо токен у профілі або окремій моделі
-            user.profile.reset_token = reset_token  # Приклад
-            user.profile.save()
-
-            reset_link = f"{request.scheme}://{request.get_host()}/reset-password-confirm/{reset_token}/"
-            send_mail(
-                'Відновлення пароля',
-                f'Для відновлення пароля натисніть: {reset_link}',
-                settings.DEFAULT_FROM_EMAIL,
-                [email]
-            )
-            return render(request, 'api/reset_password.html', {'message': 'Інструкція з відновлення пароля відправлена на вашу пошту.'})
-
-        except get_user_model().DoesNotExist:
-            return render(request, 'api/reset_password.html', {'error': 'Користувача з такою електронною поштою не знайдено.'})
-
-    return render(request, 'api/reset_password.html')
-
-# Налаштування логування
-logger = logging.getLogger(__name__)
-
-def generate_token(length=32):
-    """
-    Генерація випадкового токена.
-    """
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
-class ResetPasswordView(APIView):
+class CheckUserPassApi(APIView):
     def post(self, request):
         email = request.data.get('email')
         if not email:
-            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Email обов’язковий.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = get_user_model().objects.filter(email=email).first()
-        if not user:
-            return Response({'error': 'No user found with this email'}, status=status.HTTP_404_NOT_FOUND)
+        if User.objects.filter(email=email).exists():
+            return Response({'message': 'Користувача знайдено.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Користувача з таким email не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
 
-        reset_token = generate_token(32)
-        cache_key = f"reset_token_{user.id}"
-        cache.set(cache_key, reset_token, timeout=3600)
 
-        reset_link = f"{request.scheme}://{request.get_host()}/reset-password/{reset_token}/"
+from django.contrib.auth.hashers import make_password
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.exceptions import ObjectDoesNotExist
+
+class ResetPasswordApi(APIView):
+    def post(self, request):
         try:
-            send_mail(
-                'Password Reset Request',
-                f'Your reset link: {reset_link}',
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-            )
-            return Response({'message': 'Password reset email sent successfully'}, status=status.HTTP_200_OK)
+            # Отримуємо параметри з запиту
+            email = request.data.get('email')
+            new_password = request.data.get('new_password')
+            confirm_password = request.data.get('confirm_password')
+
+            if not email or not new_password or not confirm_password:
+                return Response({'error': 'Усі поля є обов’язковими.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if len(new_password) < 8:
+                return Response({'error': 'Пароль має бути не менше 8 символів .'}, status=status.HTTP_400_BAD_REQUEST)
+            if new_password != confirm_password:
+                return Response({'error': 'Паролі не співпадають.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user = User.objects.filter(email=email).first()
+
+            if not user:
+                return Response({'error': 'Користувача з таким email не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Update password
+            user.password = make_password(new_password)
+            user.save()
+
+            return Response({'message': 'Пароль успішно змінено.'}, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist as e:
+            # This will catch the specific exception if the user is not found
+            return Response({'error': 'Користувача з таким email не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # General error handling
+            print(f"An error occurred: {e}")
+            return Response({'error': 'Сталася помилка. Спробуйте пізніше.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# Підтвердження скидання пароля
-class ResetPasswordConfirmView(APIView):
-    def post(self, request, token):
-        new_password = request.data.get('new_password')
-        confirm_password = request.data.get('confirm_password')
+def reset_password_view(request):
+    email = request.GET.get('email')
 
-        if not new_password or not confirm_password:
-            return Response({'error': 'Обидва поля пароля обов’язкові.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if new_password != confirm_password:
-            return Response({'error': 'Паролі не співпадають.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user_id = cache.get(f'reset_token_{token}')
-        if not user_id:
-            return Response({'error': 'Токен недійсний або прострочений.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = get_user_model().objects.filter(id=user_id).first()
-        if not user:
-            return Response({'error': 'Користувача не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user.password = make_password(new_password)
-        user.save()
-        cache.delete(f'reset_token_{token}')
-
-        return Response({'message': 'Пароль успішно змінено.'}, status=status.HTTP_200_OK)
-
-def new_password_view(request, token):
     if request.method == 'GET':
-        # Рендеримо форму введення нового пароля
-        return render(request, 'api/new_password.html', {'token': token})
+        if email:  
+            return render(request, 'api/new_password.html', {'email': email})
+        else:  
+            return render(request, 'api/reset_password.html')
 
     elif request.method == 'POST':
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
+        if email: 
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
 
-        if not new_password or not confirm_password:
+            if not new_password or not confirm_password:
+                return render(request, 'api/new_password.html', {
+                    'error': 'Всі поля є обов’язковими.',
+                    'email': email
+                })
+
+            if new_password != confirm_password:
+                return render(request, 'api/new_password.html', {
+                    'error': 'Паролі не співпадають.',
+                    'email': email
+                })
+
+            user = User.objects.filter(email=email).first()
+            if not user:
+                return render(request, 'api/new_password.html', {
+                    'error': 'Користувача з таким email не знайдено.',
+                    'email': email
+                })
+
+            user.password = make_password(new_password)
+            user.save()
+
             return render(request, 'api/new_password.html', {
-                'error': 'Всі поля є обов’язковими.',
-                'token': token
+                'success': 'Пароль успішно змінено.',
+            })
+        else:  # Обробка введення email
+            email = request.POST.get('email')
+            if not email:
+                return render(request, 'api/reset_password.html', {
+                    'error': 'Введіть email для відновлення пароля.'
+                })
+
+            user = User.objects.filter(email=email).first()
+            if not user:
+                return render(request, 'api/reset_password.html', {
+                    'error': 'Користувача з таким email не знайдено.'
+                })
+
+            return render(request, 'api/reset_password.html', {
+                'success': 'Інструкції для відновлення пароля надіслані на вашу електронну пошту.'
             })
 
-        if new_password != confirm_password:
-            return render(request, 'api/new_password.html', {
-                'error': 'Паролі не співпадають.',
-                'token': token
-            })
 
-        # Перевірка токена
-        user_id = cache.get(f'reset_token_{token}')
-        if not user_id:
-            return render(request, 'api/new_password.html', {
-                'error': 'Токен недійсний або прострочений.',
-                'token': token
-            })
+def new_password_view(request):
+    email = request.GET.get('email') 
+    return render(request, 'api/new_password.html', {'email': email})
 
-        # Змінюємо пароль користувача
-        User = get_user_model()
-        user = User.objects.filter(id=user_id).first()
-        if not user:
-            return render(request, 'api/new_password.html', {
-                'error': 'Користувача не знайдено.',
-                'token': token
-            })
 
-        user.password = make_password(new_password)
-        user.save()
-        cache.delete(f'reset_token_{token}')
 
-        return render(request, 'api/new_password.html', {
-            'success': 'Пароль успішно змінено. Тепер ви можете увійти.',
-        })
