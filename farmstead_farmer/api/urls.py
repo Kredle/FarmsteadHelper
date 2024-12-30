@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view
+from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, SendResetOTPView
 
 urlpatterns = [
     path('register/', register_view, name='register'),  # HTML форма для реєстрації
@@ -13,5 +13,6 @@ urlpatterns = [
     path('api/check-user-pass/', CheckUserPassApi.as_view(), name='check_user_pass'),
     path('api/reset-password/', ResetPasswordApi.as_view(), name='reset_password'),
     path('reset-password/', reset_password_view, name='reset_password_view'),
-     path('new-password/', new_password_view, name='new_password'),
+    path('api/send-reset-otp/', SendResetOTPView.as_view(), name='send_reset_otp'),
+    path('new-password/', new_password_view, name='new_password'),
 ]
