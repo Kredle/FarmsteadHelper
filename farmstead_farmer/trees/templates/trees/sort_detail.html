@@ -188,6 +188,8 @@
         <div class="abouttree">
             <h2>{{ sort.sort }}</h2>
             <img id="sort-image" src="{{ sort.image_fruit }}" alt="Зображення плоду">
+            <p id="sort-description">{{ sort.discription|default:"Опис відсутній" }}</p>
+            
         </div>
 
         <!-- Загальна інформація -->
@@ -244,10 +246,6 @@
                 <div class="card">
                     <h3>Використання</h3>
                     <p id="tree-usage">{{ sort.usage }}</p>
-                </div>
-                <div class="card">
-                    <h3>Опис сорту</h3>
-                    <p id="tree-usage">{{ sort.discription }}</p>
                 </div>
             </div>
         </div>
