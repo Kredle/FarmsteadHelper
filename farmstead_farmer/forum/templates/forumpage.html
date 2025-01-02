@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форум</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Форум</h1>
+        <div class="search-panel">
+            <input type="text" id="search" placeholder="Пошук за ключовими словами...">
+            <div class="filter-dropdown">
+                <button id="filter-toggle-btn">Фільтри</button>
+                <div id="filter-options" class="filter-options hidden">
+                    <label>
+                        <input type="checkbox" value="Дерева"> Дерева
+                    </label>
+                    <label>
+                        <input type="checkbox" value="Овочі"> Овочі
+                    </label>
+                    <label>
+                        <input type="checkbox" value="Квіти"> Квіти
+                    </label>
+                    <label>
+                        <input type="checkbox" value="Тварини"> Тварини
+                    </label>
+                </div>
+            </div>                      
+            <button id="search-btn">Шукати</button>
+        </div>
+        <button id="create-topic-btn">+ Створити тему</button>
+    </header>
+
+    <main>
+        <section class="popular-topics">
+            <h2>Популярні теми</h2>
+            <ul id="popular-topics-list">
+                <!-- Динамічне завантаження популярних тем -->
+            </ul>
+        </section>
+
+        <section class="discussions">
+            <h2>Обговорення</h2>
+            <div id="discussion-list">
+                <!-- Обговорення будуть завантажуватися динамічно -->
+            </div>
+            <button id="load-more-btn" class="hidden">Завантажити ще</button>
+        </section>        
+    </main>
+
+    <script>
+     document.addEventListener('DOMContentLoaded', () => {
+    const categories = {
+        "Дерева": "/static/images/tree.jpg",
+        "Овочі": "/static/images/vegetables.png",
+        "Квіти": "/static/images/flowers.jpg",
+        "Тварини": "/static/images/animals.jpg"
+    };
+
+    const discussions = [
+        { title: 'Як доглядати за дубом?', author: 'Іван', date: '2024-12-30', content: 'Дуб - одне з найміцніших дерев, але потребує правильного догляду...', likes: 15, comments: 5, category: 'Дерева' },
+        { title: 'Секрети вирощування помідорів', author: 'Марія', date: '2024-12-29', content: 'Хочу поділитися досвідом вирощування помідорів без хімії...', likes: 20, comments: 8, category: 'Овочі' },
+        { title: 'Кращі способи прикрасити сад квітами', author: 'Олена', date: '2024-12-28', content: 'Чи знаєте ви, що троянди чудово поєднуються з лавандою?', likes: 12, comments: 3, category: 'Квіти' },
+        { title: 'Як доглядати за собаками?', author: 'Андрій', date: '2024-12-27', content: 'Собаки потребують регулярного вигулу та збалансованого харчування...', likes: 10, comments: 4, category: 'Тварини' },
+        { title: 'Чи варто вирощувати картоплю?', author: 'Оксана', date: '2024-12-26', content: 'Картопля - це один з основних продуктів, але догляд за нею може бути складним...', likes: 8, comments: 2, category: 'Овочі' },
+        { title: 'Які дерева краще садити в місті?', author: 'Петро', date: '2024-12-25', content: 'У місті важливо садити дерева, які очищають повітря...', likes: 13, comments: 5, category: 'Дерева' },
+        { title: 'Секрети вирощування троянд', author: 'Анна', date: '2024-12-24', content: 'Троянди потребують постійного догляду та підживлення...', likes: 15, comments: 6, category: 'Квіти' },
+        { title: 'Кращі породи котів для будинку', author: 'Олег', date: '2024-12-23', content: 'Коти - чудові домашні улюбленці, але варто вибирати породи відповідно до умов проживання...', likes: 10, comments: 3, category: 'Тварини' },
+        { title: 'Як вирощувати огірки на балконі?', author: 'Лариса', date: '2024-12-22', content: 'Огірки можна вирощувати навіть на балконі за допомогою спеціальних контейнерів...', likes: 18, comments: 7, category: 'Овочі' },
+        { title: 'Чи можна садити ялинки вдома?', author: 'Сергій', date: '2024-12-21', content: 'Ялинки - символ свята, але їхнє вирощування вимагає терпіння...', likes: 9, comments: 2, category: 'Дерева' }
+    ];
+
+    const discussionList = document.getElementById('discussion-list');
+    const filterToggleBtn = document.getElementById('filter-toggle-btn');
+    const filterOptions = document.getElementById('filter-options');
+    const searchBtn = document.getElementById('search-btn');
+    const searchInput = document.getElementById('search');
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const discussionsPerLoad = 3;
+    let currentIndex = 0;
+    let filteredDiscussions = discussions; // Створюємо змінну для відфільтрованих обговорень
+
+    // Показати/сховати випадаючий список із фільтрами
+    filterToggleBtn.addEventListener('click', () => {
+        filterOptions.classList.toggle('visible');
+    });
+
+    // Закрити випадаючий список при натисканні поза ним
+    document.addEventListener('click', (event) => {
+        if (!filterToggleBtn.contains(event.target) && !filterOptions.contains(event.target)) {
+            filterOptions.classList.remove('visible');
+        }
+    });
+
+    // Функція для отримання вибраних категорій
+    function getSelectedCategories() {
+        const checkboxes = filterOptions.querySelectorAll('input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.value);
+    }
+
+    // Функція для обрізки тексту до певної кількості слів
+    function truncateText(text, wordLimit) {
+        const words = text.split(' ');
+        if (words.length <= wordLimit) {
+            return text;
+        }
+        return words.slice(0, wordLimit).join(' ') + '...';
+    }
+
+    // Функція для завантаження обговорень
+    function loadDiscussions(discussionsToLoad) {
+        const fragment = document.createDocumentFragment();
+        discussionsToLoad.forEach(disc => {
+            const truncatedContent = truncateText(disc.content, 30);
+            const discussionDiv = document.createElement('div');
+            discussionDiv.classList.add('discussion');
+            discussionDiv.innerHTML = `
+                <div class="discussion-header">
+                    <img src="${categories[disc.category]}" alt="${disc.category}" class="category-img">
+                    <div>
+                        <h3>${disc.title}</h3>
+                        <p>Категорія: ${disc.category}</p>
+                        <p>Автор: ${disc.author} | Дата: ${disc.date}</p>
+                    </div>
+                </div>
+                <p>${truncatedContent}</p>
+                <p>Лайки: ${disc.likes} | Коментарі: ${disc.comments}</p>
+            `;
+            fragment.appendChild(discussionDiv);
+        });
+        discussionList.appendChild(fragment);
+    }
+
+    // Завантаження обговорень з кнопкою "Завантажити ще"
+    function loadMoreDiscussions() {
+        const discussionsToLoad = filteredDiscussions.slice(currentIndex, currentIndex + discussionsPerLoad);
+        loadDiscussions(discussionsToLoad);
+        currentIndex += discussionsPerLoad;
+
+        if (currentIndex >= filteredDiscussions.length) {
+            loadMoreBtn.classList.add('hidden'); // Ховати кнопку, якщо всі обговорення завантажені
+        }
+    }
+
+    // Функція для об'єднаної фільтрації
+    function filterDiscussions() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategories = getSelectedCategories();
+
+        filteredDiscussions = discussions.filter(disc => {
+            const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(disc.category);
+            const matchesSearch = disc.title.toLowerCase().includes(searchTerm) || disc.content.toLowerCase().includes(searchTerm);
+            return matchesCategory && matchesSearch;
+        });
+
+        discussionList.innerHTML = '';
+        currentIndex = 0; // Скидаємо індекс для завантаження
+        loadDiscussions(filteredDiscussions.slice(0, discussionsPerLoad));
+        currentIndex = discussionsPerLoad;
+
+        if (filteredDiscussions.length > discussionsPerLoad) {
+            loadMoreBtn.classList.remove('hidden');
+        } else {
+            loadMoreBtn.classList.add('hidden');
+        }
+    }
+
+    // Обробники для фільтрації та кнопки "Завантажити ще"
+    filterOptions.addEventListener('change', filterDiscussions);
+    searchBtn.addEventListener('click', filterDiscussions);
+    loadMoreBtn.addEventListener('click', loadMoreDiscussions);
+
+    // Початкове завантаження перших трьох обговорень
+    loadMoreDiscussions();
+});
+document.getElementById('create-topic-btn').addEventListener('click', () => {
+            window.location.href = 'create-discussion';
+        });
+
+        </script>        
+</body>
+</html>

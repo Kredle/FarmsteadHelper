@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма створення обговорення</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .form-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            height: 100px;
+            resize: none;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .submit-btn:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Створення обговорення</h2>
+        <form id="discussion-form">
+            <div class="form-group">
+                <label for="category">Категорія:</label>
+                <select id="category" required>
+                    <option value="">Оберіть категорію</option>
+                    <option value="trees">Дерева</option>
+                    <option value="vegetables">Овочі</option>
+                    <option value="flowers">Квітки</option>
+                    <option value="animals">Тварини</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="title">Заголовок:</label>
+                <input type="text" id="title" placeholder="Введіть заголовок" required>
+                <p id="title-error" class="error-message" style="display: none;">Заголовок не повинен містити посилань.</p>
+            </div>
+            <div class="form-group">
+                <label for="description">Опис:</label>
+                <textarea id="description" placeholder="Введіть опис" required></textarea>
+                <p id="description-error" class="error-message" style="display: none;">Опис не повинен містити посилань.</p>
+            </div>
+            <a id="submit-link" href="" class="submit-btn" style="text-align: center; display: none;">Створити обговорення</a>
+            <button type="button" id="submit-btn" class="submit-btn">Створити обговорення</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('discussion-form');
+        const titleInput = document.getElementById('title');
+        const descriptionInput = document.getElementById('description');
+        const titleError = document.getElementById('title-error');
+        const descriptionError = document.getElementById('description-error');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitLink = document.getElementById('submit-link');
+
+        function containsLink(text) {
+            const linkRegex = /(https?:\/\/[^\s]+)/g;
+            return linkRegex.test(text);
+        }
+
+        submitBtn.addEventListener('click', () => {
+            let hasError = false;
+
+            if (containsLink(titleInput.value)) {
+                titleError.style.display = 'block';
+                hasError = true;
+            } else {
+                titleError.style.display = 'none';
+            }
+
+            if (containsLink(descriptionInput.value)) {
+                descriptionError.style.display = 'block';
+                hasError = true;
+            } else {
+                descriptionError.style.display = 'none';
+            }
+
+            if (!hasError) {
+                submitLink.style.display = 'block';
+                submitLink.click();
+            }
+        });
+    </script>
+</body>
+</html>

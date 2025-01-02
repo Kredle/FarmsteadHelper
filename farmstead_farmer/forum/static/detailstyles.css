@@ -1,0 +1,153 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.discussion-container {
+    width: 70%;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.discussion-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.category-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.discussion-title {
+    margin: 0;
+    font-size: 24px;
+}
+
+.author-info {
+    color: #888;
+    font-size: 14px;
+}
+
+.discussion-content {
+    margin-bottom: 20px;
+}
+
+.content-text {
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.discussion-buttons {
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 16px;
+    margin-right: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.like-btn, .dislike-btn {
+    background-color: #ddd;
+}
+
+.like-btn.active {
+    background-color: #f44336;
+    color: white;
+}
+
+.dislike-btn.active {
+    background-color: #000;
+    color: white;
+}
+
+.report-btn {
+    background-color: #ff9800;
+}
+
+.comments-section {
+    margin-top: 30px;
+}
+
+#comments-list {
+    margin-bottom: 15px;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#add-comment-btn {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+/* Стилі для коментарів */
+.comment {
+    background-color: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.comment-header {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.comment-author-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.comment-author {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.comment-date {
+    font-size: 14px;
+    color: #888;
+}
+
+.comment-text {
+    font-size: 16px;
+}
+
+.comment-buttons {
+    margin-top: 10px;
+}
+
+.comment-buttons button {
+    font-size: 14px;
+}
+
+.reply-section {
+    margin-top: 15px;
+}
+
+.replies-list {
+    margin-top: 15px;
+}
