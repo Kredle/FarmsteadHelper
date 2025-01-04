@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профіль користувача</title>
+    <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
+</head>
+<body>
+    <div class="profile-container">
+        <h2>Профіль користувача {{ user.username }}</h2>
+        <div class="profile-info">
+            <p><strong>Ім'я:</strong> {{ user.firstname }} {{ user.lastname }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Біо:</strong> {{ user.bio }}</p>
+            <p><strong>Дата реєстрації:</strong> {{ user.date_joined }}</p>
+            <div class="profile-avatar">
+                {% if user.get_avatar_url %}
+                    <script>
+                        // Розшифровуємо URL за допомогою decodeURIComponent
+                        var avatarUrl = decodeURIComponent("{{ user.get_avatar_url }}");
+                        document.write('<img src="' + avatarUrl + '" alt="Аватар" class="avatar-img">');
+                    </script>
+                {% else %}
+                    <img src="{% static 'default-avatar.png' %}" alt="Аватар" class="avatar-img">
+                {% endif %}
+            </div>
+            
+        </div>
+
+        {% if request.user.is_authenticated and request.user == user %}
+            <div class="edit-profile-button">
+                <a href="/profile/edit/" class="button">Редагувати профіль</a>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

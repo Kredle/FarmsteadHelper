@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view
+from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, edit_profile, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView
+from django.conf.urls.static import static
+from django.conf import settings
 
 urlpatterns = [
     path('register/', register_view, name='register'),
@@ -14,4 +16,12 @@ urlpatterns = [
     path('api/reset-password/', ResetPasswordApi.as_view(), name='reset_password'),
     path('reset-password/', reset_password_view, name='reset_password_view'),
     path('new-password/', new_password_view, name='new_password'),
-]
+    path('profile/<str:username>/', profile_view, name='profile_view'),
+    path('api/profile/', UserProfileView.as_view(), name='user_profile'),
+    path('api/profile/update/', UpdateProfileView.as_view(), name='update_profile'),
+    path('profile/edit/', edit_profile, name='edit_profile'),
+    path('api/check-auth/', CheckAuthView.as_view(), name='CheckAuthView'),
+    path('api/user-data/', UserProfileView.as_view(), name='UserProfileView'),
+    path('api/logout/', LogoutView.as_view(), name='LogoutView'),
+    path('api/send-otp-reset/', SendResetOTPView.as_view(), name ='send_otp_reset')
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

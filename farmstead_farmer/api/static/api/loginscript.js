@@ -40,7 +40,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             // Якщо все добре, зберігаємо токен в localStorage
             localStorage.setItem('authToken', result.token);
             // Перенаправлення на панель керування після успішного входу !!! тут поміняти на наступне
-            window.location.href = '/dashboard';  
+            window.location.href = '/';  
         } else {
             // Якщо сервер повертає помилку, показуємо її
             errorMessage.textContent = result.detail || 'Невірний логін або пароль.';

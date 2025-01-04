@@ -35,3 +35,17 @@ class LoginSerializer(serializers.Serializer):
         if not user:
             raise serializers.ValidationError({"detail": "Неправильний пароль або логін."})
         return user
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'firstname', 'lastname', 'avatar', 'bio', 'favorites', 'last_activity']
+
+    def update(self, instance, validated_data):
+        # Якщо є нове фото профілю, збережемо його
+        avatar = validated_data.get('avatar', None)
+        if avatar:
+            instance.avatar = avatar
+        instance.bio = validated_data.get('bio', instance.bio)
+        instance.save()
+        return instance

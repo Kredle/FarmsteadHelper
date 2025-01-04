@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редагування профілю</title>
+    <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
+</head>
+<body>
+    <div class="edit-profile-container">
+        <h2>Редагувати профіль</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            {% if user.avatar %}
+                <div class="form-group">
+                    <p>Поточне фото:</p>
+                    <img src="{{ user.avatar.url }}" alt="Аватар" class="avatar-img">
+                </div>
+            {% endif %}
+            <button type="submit">Зберегти зміни</button>
+        </form>
+    </div>
+</body>
+</html>

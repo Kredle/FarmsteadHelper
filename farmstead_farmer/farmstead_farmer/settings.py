@@ -107,10 +107,17 @@ LOGGING = {
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+       # 'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        #'rest_framework.permissions.IsAuthenticated',
+    ],
+    
 }
+
+
+
 
 AUTH_USER_MODEL = 'api.CustomUser'
 
@@ -125,6 +132,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8000",  # Додайте потрібні домени
+    "http://localhost:8000",
+]
 
 ROOT_URLCONF = 'farmstead_farmer.urls'
 
@@ -208,3 +219,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 APP_DIRS=True
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend', 
+]
+
+LOGIN_URL = '/login/' 
+LOGIN_REDIRECT_URL = '/' 

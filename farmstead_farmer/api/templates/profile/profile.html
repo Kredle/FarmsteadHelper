@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ваш профіль</title>
+    <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
+</head>
+<body>
+    <div class="profile-container">
+        <h2>Ваш профіль</h2>
+        <div class="profile-info">
+            <p><strong>Ім'я:</strong> {{ user.firstname }} {{ user.lastname }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Біо:</strong> {{ user.bio }}</p>
+            <p><strong>Дата реєстрації:</strong> {{ user.date_joined }}</p>
+            {% if user.avatar %}
+                <p><img src="{{ user.avatar.url }}" alt="Аватар" class="avatar-img"></p>
+            {% else %}
+                <p><img src="default-avatar.png" alt="Аватар" class="avatar-img"></p>
+            {% endif %}
+        </div>
+        <a href="{% url 'edit_profile' %}" class="btn">Редагувати профіль</a>
+    </div>
+</body>
+</html>

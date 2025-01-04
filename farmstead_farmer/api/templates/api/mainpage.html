@@ -79,7 +79,6 @@
             height: 70px;
             border-radius: 50%;
             cursor: pointer;
-            filter: invert(1); /* Інверсія кольорів іконки входу */
         }
 
         .auth-menu {
@@ -354,9 +353,32 @@
             padding: 20px 10px;
             text-align: center;
         }
+        .user-avatar {
+            width: 40px; /* Можна змінити розмір */
+            height: 40px;
+            border-radius: 50%; /* Кругла форма */
+        }
     </style>
+    <script>
+        // Передача інформації про авторизацію в JavaScript
+        var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
+    </script>
 </head>
 <body>
+    <div id="auth-status"></div>
+
+    <script>
+        // Перевірка на аутентифікацію користувача
+        if (isAuthenticated === 'true') {
+            document.getElementById('auth-status').innerHTML = "<p>Вітаємо, ви увійшли!</p>";
+            // Можна також додати дії для залогіненого користувача, наприклад:
+            // document.getElementById('auth-status').innerHTML += "<a href='/logout'>Вихід</a>";
+        } else {
+            document.getElementById('auth-status').innerHTML = "<p>Будь ласка, увійдіть у систему.</p>";
+            // Інші дії для неавторизованого користувача
+        }
+    </script>
+    
     <!-- Хедер -->
     <header>
         <div class="logo">
@@ -377,8 +399,9 @@
                 <a href="/login/">Вхід</a>
                 <a href="/register/">Реєстрація</a>
             </div>
-        </div>    
+        </div>
     </header>
+    
 
     <!-- Секція "Про проект" -->
     <div class="about-project">
@@ -531,18 +554,118 @@
 
 <script>
     document.querySelectorAll('.faq-question').forEach(button => {
-        button.addEventListener('click', () => {
-            const faqItem = button.parentElement;
+    button.addEventListener('click', () => {
+        const faqItem = button.parentElement;
 
-            // Закриває інші відкриті елементи
-            document.querySelectorAll('.faq-item').forEach(item => {
-                if (item !== faqItem) item.classList.remove('open');
-            });
-
-            // Відкриває/закриває поточний
-            faqItem.classList.toggle('open');
+        // Закриває інші відкриті елементи
+        document.querySelectorAll('.faq-item').forEach(item => {
+            if (item !== faqItem) item.classList.remove('open');
         });
+
+        // Відкриває/закриває поточний
+        faqItem.classList.toggle('open');
     });
+});
+
+window.onload = function () {
+    const token = localStorage.getItem('authToken');
+    const authContainer = document.querySelector('.auth');
+
+    if (token) {
+        console.log('Завантаження даних користувача...');
+
+        fetch('/api/user-data/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("User data:", data);
+
+                const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                console.log("U:", avatarUrl);
+
+                authContainer.innerHTML = `
+                    <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
+                    <div class="auth-menu">
+                        <span>${data.username}</span>
+                        <a href="/profile/${data.username}">Профіль</a>
+                        <a href="#" id="logout-btn">Вихід</a>
+                    </div>
+                `;
+
+                document.getElementById('logout-btn').addEventListener('click', () => {
+                    console.log('Logging out...');
+                    fetch('/api/logout/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ token: token }), 
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log('Logged out successfully');
+                            localStorage.removeItem('authToken');
+                            authContainer.innerHTML = `
+                                <img src="{% static 'main_page/loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                                <div class="auth-menu">
+                                    <a href="/login">Вхід</a>
+                                    <a href="/register">Реєстрація</a>
+                                </div>
+                            `;
+                            window.location.href = '/';
+                        } else {
+                            return response.json().then(err => {
+                                throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка при виході:', error);
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Помилка при отриманні даних користувача:', error);
+                authContainer.innerHTML = `
+                    <img src="{% static 'main_page/loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                    <div class="auth-menu">
+                        <a href="/login">Вхід</a>
+                        <a href="/register">Реєстрація</a>
+                    </div>
+                `;
+            });
+    } else {
+        console.log('Користувач не залогінений.');
+        authContainer.innerHTML = `
+            <img src="{% static 'main_page/loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+            <div class="auth-menu">
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            </div>
+        `;
+    }
+};
+
+
+
+
+
+
+
+
+
 </script>
 
 </html>
