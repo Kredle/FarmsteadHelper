@@ -21,18 +21,16 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import AnonymousUser
 from .models import CustomUser
 from rest_framework.authtoken.models import Token
+from django.views.decorators.csrf import csrf_protect
+from .forms import ProfileUpdateForm
+import json
+from django.http import JsonResponse
+from datetime import timedelta
+from django.utils import timezone
+from rest_framework.decorators import api_view
 
-@login_required
-def edit_profile(request):
-    if request.method == 'POST':
-        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()
-            return redirect('profile_view', username=request.user.username)
-    else:
-        form = ProfileUpdateForm(instance=request.user)
-
-    return render(request, 'profile/edit_profile.html', {'form': form})
+def edit_profile_view(request):
+    return render(request, 'profile/edit_profile.html')
     
 # Головна сторінка та профіль користувача
 def profile_view(request, username):
@@ -577,3 +575,78 @@ class SendResetOTPView(APIView):
             return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def change_username(request):
+    token = request.data.get('token')
+    new_username = request.data.get('username')
+
+    if not token or not new_username:
+        return Response({'error': 'Token and new username are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate token and get the user
+    user = User.objects.filter(auth_token=token).first()
+    if not user:
+        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if 7 days have passed since the last username change
+    if user.last_username_update and timezone.now() - user.last_username_update < timedelta(days=7):
+        return Response({'error': 'You can only change your username once every 7 days'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Change the username
+    user.username = new_username
+    user.last_username_update = timezone.now()
+    user.save()
+
+    return Response({'message': 'Username updated successfully'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def change_bio(request):
+    token = request.data.get('token')
+    new_bio = request.data.get('bio')
+
+    if not token or not new_bio:
+        return Response({'error': 'Token and bio are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate token and get the user
+    user = User.objects.filter(auth_token=token).first()
+    if not user:
+        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update bio
+    user.bio = new_bio
+    user.save()
+
+    return Response({'message': 'Bio updated successfully'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def change_password(request):
+    token = request.data.get('token')
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    confirm_password = request.data.get('confirm_password')
+
+    if not token or not current_password or not new_password or not confirm_password:
+        return Response({'error': 'All fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if new_password != confirm_password:
+        return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate token and get the user
+    user = User.objects.filter(auth_token=token).first()
+    if not user:
+        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if the current password is correct
+    if not user.check_password(current_password):
+        return Response({'error': 'Current password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update password
+    user.password = make_password(new_password)
+    user.save()
+
+    return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
+
+
+
+

@@ -6,20 +6,220 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Редагування профілю</title>
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
+    <script>
+        window.onload = function () {
+            const token = localStorage.getItem('authToken');
+            const bioForm = document.getElementById('change-bio-form');
+            const usernameForm = document.getElementById('change-username-form');
+            const passwordForm = document.getElementById('change-password-form');  // Password change form
+            const avatarImg = document.getElementById('avatar-img');
+            const bioField = document.getElementById('bio');
+            const usernameField = document.getElementById('new-username');  // For username input
+    
+            if (token) {
+                console.log('Завантаження даних користувача...');
+    
+                fetch('/api/user-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: token }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("User data:", data);
+    
+                    // Set the user profile data
+                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                    avatarImg.src = avatarUrl; // Set avatar image source
+                    usernameField.value = data.username; // Set username in the HTML
+    
+                    // Populate the biography field (textarea)
+                    bioField.value = data.bio || ""; // If there's no bio, it will be empty
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при отриманні даних користувача');
+                });
+    
+                // Handle username change
+                usernameForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const newUsername = usernameField.value;
+    
+                    if (!newUsername) {
+                        alert("Будь ласка, введіть нове ім'я користувача.");
+                        return;
+                    }
+    
+                    fetch('/api/change-username/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            token: token,
+                            username: newUsername
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            alert(data.message);
+                        } else {
+                            alert('Помилка: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Сталася помилка при оновленні імені користувача');
+                    });
+                });
+    
+                // Handle bio change
+                bioForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const newBio = bioField.value;
+    
+                    if (!newBio) {
+                        alert("Будь ласка, введіть нову біографію.");
+                        return;
+                    }
+    
+                    fetch('/api/change-bio/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            token: token,
+                            bio: newBio
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            alert(data.message);
+                        } else {
+                            alert('Помилка: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Сталася помилка при оновленні біографії');
+                    });
+                });
+    
+                // Handle password change
+                passwordForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const currentPassword = document.getElementById('current-password').value;
+                    const newPassword = document.getElementById('new-password').value;
+                    const confirmPassword = document.getElementById('confirm-password').value;
+    
+                    // Validate the password fields
+                    if (!currentPassword || !newPassword || !confirmPassword) {
+                        alert("Будь ласка, заповніть всі поля для зміни пароля.");
+                        return;
+                    }
+    
+                    if (newPassword !== confirmPassword) {
+                        alert("Паролі не збігаються!");
+                        return;
+                    }
+    
+                    // Check if the new password meets the minimum length requirement
+                    if (newPassword.length < 8) {
+                        alert("Новий пароль повинен містити хоча б 8 символів.");
+                        return;
+                    }
+    
+                    fetch('/api/change-password/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            token: token,
+                            current_password: currentPassword,
+                            new_password: newPassword,
+                            confirm_password: confirmPassword
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            alert(data.message);
+                        } else {
+                            alert('Помилка: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Сталася помилка при зміні пароля');
+                    });
+                });
+    
+            } else {
+                console.log('Користувач не залогінений або не має токену');
+                // Redirect to login page
+                window.location.href = '/login/';
+            }
+        };
+    </script>          
 </head>
 <body>
     <div class="edit-profile-container">
         <h2>Редагувати профіль</h2>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            {{ form.as_p }}
-            {% if user.avatar %}
-                <div class="form-group">
-                    <p>Поточне фото:</p>
-                    <img src="{{ user.avatar.url }}" alt="Аватар" class="avatar-img">
-                </div>
-            {% endif %}
+        <p id="status-message"></p>
+
+        <!-- User Profile Display -->
+        <div class="profile-display">
+            <h3>Ім'я користувача: <span id="username-display"></span></h3>
+            <div class="avatar-container">
+                <img id="avatar-img" src="" alt="Аватар" class="avatar-img">
+            </div>
+            <p id="bio-display"></p> <!-- Bio will be displayed here -->
+        </div>
+
+       <!-- Form to edit user profile -->
+        <form id="change-username-form" enctype="application/json">
+            <div class="form-group">
+                <label for="new-username">Ім'я користувача</label>
+                <input type="text" id="new-username" name="username" required>
+            </div>
             <button type="submit">Зберегти зміни</button>
+        </form>
+
+        <!-- Form to edit biography -->
+        <form id="change-bio-form" enctype="application/json">
+            <div class="form-group">
+                <label for="bio">Біографія</label>
+                <textarea id="bio" name="bio"></textarea>
+            </div>
+            <button type="submit">Зберегти біографію</button>
+        </form>
+
+
+        <hr>
+
+        <!-- Form to change password -->
+        <h3>Змінити пароль</h3>
+        <form id="change-password-form">
+            <div class="form-group">
+                <label for="current-password">Теперішній пароль</label>
+                <input type="password" id="current-password" name="current_password" required>
+            </div>
+            <div class="form-group">
+                <label for="new-password">Новий пароль</label>
+                <input type="password" id="new-password" name="new_password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm-password">Підтвердження нового пароля</label>
+                <input type="password" id="confirm-password" name="confirm_password" required>
+            </div>
+            <button type="submit">Змінити пароль</button>
         </form>
     </div>
 </body>
