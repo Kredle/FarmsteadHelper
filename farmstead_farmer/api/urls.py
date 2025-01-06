@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view
+from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -26,5 +26,6 @@ urlpatterns = [
     path('api/change-username/', change_username, name='change_username'),
     path('api/change-bio/', change_bio, name='change_bio'),
     path('api/change-password/', change_password, name='change_password'),
-    path('edit-profile/', edit_profile_view, name ='edit_profile_view')
+    path('edit-profile/', edit_profile_view, name ='edit_profile_view'),
+    path('api/upload-avatar/', upload_avatar, name='upload-avatar')
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

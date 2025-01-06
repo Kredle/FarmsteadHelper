@@ -28,6 +28,9 @@ from django.http import JsonResponse
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework.decorators import api_view
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.conf import settings
 
 def edit_profile_view(request):
     return render(request, 'profile/edit_profile.html')
@@ -648,5 +651,27 @@ def change_password(request):
     return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+def upload_avatar(request):
+    token = request.data.get('token')
+    avatar = request.FILES.get('avatar')
 
+    if not token or not avatar:
+        return Response({'error': 'Token and avatar file are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.filter(auth_token=token).first()
+    if not user:
+        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+    avatar_path = f"avatars/{user.id}/{avatar.name}"
+    try:
+        saved_path = default_storage.save(avatar_path, ContentFile(avatar.read()))
+        avatar_url = f"{settings.MEDIA_URL}{saved_path}" 
+    except Exception as e:
+        return Response({'error': f"Failed to save avatar: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    user.avatar = avatar_url
+    user.save()
+
+    return Response({'message': 'Avatar uploaded successfully', 'avatar_url': avatar_url}, status=status.HTTP_200_OK)
 
