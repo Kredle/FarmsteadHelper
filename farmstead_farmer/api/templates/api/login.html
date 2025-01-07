@@ -9,6 +9,362 @@
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
 </head>
 <body>
+    
+
+    
+    <!-- Хедер -->
+    <header>
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+            }
+    
+            header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px 20px;
+                background-color: #333;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                position: relative;
+            }
+    
+            .logo {
+                display: flex;
+                align-items: center;
+            }
+    
+            .logo img {
+                height: 60px;
+                margin-right: 10px;
+            }
+    
+            .logo span {
+                font-size: 20px;
+                font-weight: bold;
+                color: #fff;
+            }
+    
+            nav {
+                display: flex;
+                gap: 20px;
+            }
+    
+            nav a {
+                text-decoration: none;
+                color: #fff;
+                font-size: 16px;
+                padding: 5px 10px;
+                transition: background-color 0.3s, color 0.3s;
+            }
+    
+            nav a:hover {
+                background-color: #444;
+                border-radius: 5px;
+            }
+    
+            .auth {
+                position: relative;
+            }
+    
+            .auth img {
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                cursor: pointer;
+                filter: invert(1);
+            }
+    
+            .user-avatar img {
+                width: 50px !important;
+                height: 50px !important;
+                border-radius: 50% !important;
+                cursor: pointer;
+                filter: invert(1);
+            }
+    
+            .auth-menu {
+                display: none;
+                position: absolute;
+                top: 50px;
+                right: 0;
+                background-color: #fff;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+            }
+    
+            .auth-menu a {
+                display: block;
+                padding: 10px;
+                text-decoration: none;
+                color: #333;
+                font-size: 14px;
+            }
+    
+            .auth-menu a:hover {
+                background-color: #f4f4f4;
+            }
+    
+            .auth:hover .auth-menu {
+                display: block;
+            }
+    
+            .hamburger {
+                display: none;
+                flex-direction: column;
+                cursor: pointer;
+            }
+    
+            .hamburger div {
+                width: 25px;
+                height: 3px;
+                background-color: #fff;
+                margin: 4px 0;
+            }
+    
+            .side-menu {
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100%;
+                background-color: #333;
+                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+                transition: right 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                padding-top: 20px;
+                z-index: 1000;
+            }
+    
+            .side-menu a {
+                text-decoration: none;
+                color: #fff;
+                font-size: 18px;
+                padding: 15px 20px;
+                transition: background-color 0.3s;
+            }
+    
+            .side-menu a:hover {
+                background-color: #444;
+            }
+    
+            .side-menu-close {
+                text-align: right;
+                padding: 10px;
+            }
+    
+            .side-menu-close button {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 20px;
+                cursor: pointer;
+            }
+    
+            .side-menu .auth-buttons {
+                margin-top: auto;
+                padding: 20px;
+            }
+    
+            .side-menu .auth-buttons a {
+                display: block;
+                text-align: center;
+                padding: 10px;
+                background-color: #444;
+                color: #fff;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                text-decoration: none;
+            }
+    
+            .side-menu .auth-buttons a:hover {
+                background-color: #555;
+            }
+    
+            @media (max-width: 768px) {
+                nav,
+                .auth {
+                    display: none;
+                }
+    
+                .hamburger {
+                    display: flex;
+                    margin-left: auto;
+                }
+            }
+        </style>
+    
+    <div class="logo">
+        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+        <span>FarmsteadHelper</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-close">
+            <button id="close-menu">&times;</button>
+        </div>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+        <div class="auth-buttons" id="side-menu-auth">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+    </nav>
+    <div class="auth">
+        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+        <div class="auth-menu">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    
+    
+    <script>
+
+    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('authToken');
+        const authContainer = document.querySelector('.auth');
+        const sideMenuAuth = document.getElementById('side-menu-auth');
+    
+        if (token) {
+            fetch('/api/user-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                    authContainer.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
+                        <div class="auth-menu">
+                            <span>${data.username}</span>
+                            <a href="/profile/${data.username}">Профіль</a>
+                            <a href="/edit-profile/">Налаштування профілю</a>
+                            <a href="#" id="logout-btn">Вихід</a>
+                        </div>
+                    `;
+    
+                    sideMenuAuth.innerHTML = `
+                        <a href="/profile/${data.username}">Профіль</a>
+                        <a href="/edit-profile">Налаштування профілю</a>
+                        <a href="#" id="side-menu-logout">Вихід</a>
+                    `;
+    
+                    document.getElementById('logout-btn').addEventListener('click', () => {
+                        handleLogout();
+                    });
+    
+                    document.getElementById('side-menu-logout').addEventListener('click', () => {
+                        handleLogout();
+                    });
+                })
+                .catch(error => {
+                    console.error('Помилка при отриманні даних користувача:', error);
+                    resetAuthState();
+                });
+        } else {
+            resetAuthState();
+        }
+    
+        function handleLogout() {
+            fetch('/api/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/';
+                    } else {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                })
+                .catch(error => console.error('Помилка при виході:', error));
+        }
+    
+        function resetAuthState() {
+            authContainer.innerHTML = `
+                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                <div class="auth-menu">
+                    <a href="/login">Вхід</a>
+                    <a href="/register">Реєстрація</a>
+                </div>
+            `;
+    
+            sideMenuAuth.innerHTML = `
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            `;
+        }
+    });
+    
+    const hamburger = document.getElementById('hamburger');
+    const sideMenu = document.getElementById('side-menu');
+    const closeMenu = document.getElementById('close-menu');
+    const nav = document.querySelector('nav');
+    const auth = document.querySelector('.auth');
+    
+    hamburger.addEventListener('click', () => {
+        sideMenu.style.right = '0';
+    });
+    
+    closeMenu.addEventListener('click', () => {
+        sideMenu.style.right = '-250px';
+    });
+    
+    function checkMenuVisibility() {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+        if (window.innerWidth < 900 || isMobileDevice) {
+            nav.style.display = 'none';
+            auth.style.display = 'none';
+            hamburger.style.display = 'flex';
+        } else {
+            nav.style.display = 'flex';
+            auth.style.display = 'block';
+            hamburger.style.display = 'none';
+        }
+    }
+    
+    checkMenuVisibility();
+    window.addEventListener('resize', checkMenuVisibility);
+    </script>
+    </header>
     <form id="login-form" class="login-form">
         <h2>Вхід</h2>
 
