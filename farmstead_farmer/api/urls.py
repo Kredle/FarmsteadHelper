@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar
+from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar, UpdateNameView, DeleteAccountView, SendOTPEmailView, ChangeEmailView, SendOTPDeleteView
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -27,5 +27,10 @@ urlpatterns = [
     path('api/change-bio/', change_bio, name='change_bio'),
     path('api/change-password/', change_password, name='change_password'),
     path('edit-profile/', edit_profile_view, name ='edit_profile_view'),
-    path('api/upload-avatar/', upload_avatar, name='upload-avatar')
+    path('api/upload-avatar/', upload_avatar, name='upload-avatar'),
+    path('api/update-name/', UpdateNameView.as_view(), name='update-name&surname'),
+    path('api/delete-account/', DeleteAccountView.as_view(), name='delete-account'),
+    path('api/send-otp-email/', SendOTPEmailView.as_view(), name='send_otp_email'),
+    path('api/change-email/', ChangeEmailView.as_view(), name='change_email'),
+    path('api/send-otp-delete/', SendOTPDeleteView.as_view(), name='send_otp_delete'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -31,6 +31,9 @@ from rest_framework.decorators import api_view
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+from rest_framework.exceptions import ValidationError, NotFound
+import requests
+from django.core.mail import EmailMultiAlternatives
 
 def edit_profile_view(request):
     return render(request, 'profile/edit_profile.html')
@@ -418,6 +421,12 @@ class CheckAuthView(APIView):
         # Тут можна повернути додаткові дані користувача, якщо потрібно
         return Response({"message": "You are authenticated", "username": user.username}, status=status.HTTP_200_OK)
 
+from django.utils.timezone import now
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.authtoken.models import Token
+
 class UserProfileView(APIView):
     def post(self, request):
         """
@@ -433,7 +442,9 @@ class UserProfileView(APIView):
         except Token.DoesNotExist:
             raise NotFound("Користувача з таким токеном не знайдено.")
 
-        # Use the model method to get the avatar URL without the '/media/' part
+        user.last_activity = timezone.now()
+        user.save(update_fields=['last_activity'])
+
         avatar_url = user.get_avatar_url()
 
         data = {
@@ -675,3 +686,328 @@ def upload_avatar(request):
 
     return Response({'message': 'Avatar uploaded successfully', 'avatar_url': avatar_url}, status=status.HTTP_200_OK)
 
+class UpdateNameView(APIView):
+    def post(self, request):
+        """
+        Оновлення імені та прізвища користувача через токен.
+        """
+        token_key = request.data.get('token')
+        new_firstname = request.data.get('firstname')
+        new_lastname = request.data.get('lastname')
+
+        if not token_key:
+            raise ValidationError("Токен є обов'язковим.")
+        if not new_firstname or not new_lastname:
+            raise ValidationError("Ім'я та прізвище обов'язкові для заповнення.")
+
+        try:
+            token = Token.objects.get(key=token_key)
+            user = token.user
+        except Token.DoesNotExist:
+            raise NotFound("Користувача з таким токеном не знайдено.")
+
+        user.firstname = new_firstname
+        user.lastname = new_lastname
+        user.save(update_fields=['firstname', 'lastname'])
+
+        return Response({
+            "message": "Ім'я та прізвище успішно оновлені.",
+            "firstname": user.firstname,
+            "lastname": user.lastname,
+        }, status=200)
+
+class DeleteAccountView(APIView):
+    def post(self, request):
+        data = request.data
+
+        email = data.get('email')
+        otp = data.get('otp')
+        password = data.get('password')
+        captcha_token = data.get('captcha_token')
+
+        if not email or not otp or not password or not captcha_token:
+            return Response({'error': 'Всі поля є обов’язковими: email, OTP, пароль, і токен капчі'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Перевірка reCAPTCHA
+        captcha_secret = "6Lct-rEqAAAAAIzeO0FW9UMFwbuveyCzBgavSTwj"
+        captcha_url = "https://www.google.com/recaptcha/api/siteverify"
+        captcha_response = requests.post(captcha_url, data={'secret': captcha_secret, 'response': captcha_token})
+        captcha_result = captcha_response.json()
+
+        if not captcha_result.get("success", False):
+            return Response('Час дії капчі вичерпано', status=status.HTTP_400_BAD_REQUEST)
+
+        cached_otp = cache.get(f"otp_{email}")
+        if not cached_otp or cached_otp != otp:
+            return Response('Невірний або прострочений OTP', status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response('Користувача з таким email не знайдено', status=status.HTTP_404_NOT_FOUND)
+
+        if not user.check_password(password):
+            return Response('Невірний пароль', status=status.HTTP_400_BAD_REQUEST)
+
+        # Видалення акаунту
+        user.auth_token.delete()
+        user.delete()
+
+        return Response({'message': 'Обліковий запис успішно видалено'}, status=status.HTTP_200_OK)
+
+
+class SendOTPEmailView(APIView):
+    def post(self, request):
+        data = request.data
+        email = data.get('email')
+
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Перевірка, чи існує користувач з таким email
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'User with this email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp = generate_otp()
+
+        # Зберігаємо OTP у кеш для валідації через 10 хвилин
+        cache.set(f"otp_{email}", otp, timeout=600)
+
+        try:
+            # Підготовка листа
+            subject = 'Підтвердження зміни електронної адреси FarmsteadHelper'
+            from_email = 'from@example.com'
+            to_email = [email]
+            html_content = f""" 
+            <!DOCTYPE html>
+            <html lang="uk">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Запит на зміну електронної пошти</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f6f5cb;
+                        margin: 0;
+                        padding: 0;
+                        color: #333;
+                    }}
+                    .email-container {{
+                        max-width: 600px;
+                        margin: 30px auto;
+                        padding: 20px;
+                        background-color: #f6f5cb;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    }}
+                    .email-container h2 {{
+                        font-size: 24px; 
+                        color: #367557; 
+                        text-align: center; 
+                        margin-top: 20px; 
+                        font-weight: bold;
+                    }}
+                    .email-body {{
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }}
+                    .email-body p {{
+                        margin-bottom: 15px;
+                    }}
+                    .email-footer {{
+                        text-align: center;
+                        font-size: 14px;
+                        color: #777;
+                        margin-top: 30px;
+                    }}
+                    .warning {{
+                        font-weight: bold;
+                        color: #ff8000;
+                    }}
+                    .otp-code {{
+                        text-align: center;
+                        font-weight: bold;
+                        color: #007bff;
+                        font-size: 20px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="email-body">
+                        <h2>Запит на зміну електронної пошти</h2>
+                        <p>Ви подали запит на зміну електронної пошти, пов’язаної з вашим акаунтом у <strong>FarmsteadHelper</strong>. Для підтвердження цієї дії вам потрібно ввести код OTP, наведений нижче:</p>
+                        <p>
+                            Ваш OTP код (дійсний протягом 10 хвилин): 
+                            <br><h3 class="otp-code">{otp}</h3>
+                        </p>
+                        <p>Після введення цього коду, ваша електронна пошта буде змінена. Усі майбутні повідомлення, включаючи важливі сповіщення, будуть надсилатися на нову адресу.</p>
+                        <p class="warning">
+                            Зверніть увагу! Ви несете повну відповідальність за коректність нової електронної пошти. Команда <strong>FarmsteadHelper</strong> не несе відповідальності за будь-які наслідки, пов’язані з помилками під час введення нової адреси, втратою доступу до неї або ненадійністю її захисту.
+                        </p>
+                        <p>
+                            Ми рекомендуємо перевірити всі дані перед завершенням процесу зміни електронної пошти. У разі виникнення питань, наша команда підтримки завжди готова допомогти.
+                        </p>
+                        <p>Дякуємо, що користуєтеся <strong>FarmsteadHelper</strong>!</p>
+                    </div>
+                    <div class="email-footer">
+                        <p>&copy; 2024 FarmsteadHelper. Усі права захищено.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+
+            # Створення HTML-листа
+            msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=to_email)
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+
+
+class ChangeEmailView(APIView):
+    def post(self, request):
+        data = request.data
+        token = data.get('token')
+        new_email = data.get('email')
+        otp = data.get('otp')
+
+        if not token or not new_email or not otp:
+            return Response({'error': 'Token, new email, and OTP are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            auth_token = Token.objects.get(key=token)
+            user = auth_token.user
+        except Token.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(email=new_email).exists():
+            return Response({'error': 'This email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        cached_otp = cache.get(f"otp_{new_email}")
+        if cached_otp != otp:
+            return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user.email = new_email
+            user.save()
+        except Exception as e:
+            return Response({'error': f'Failed to update email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'message': 'Email updated successfully'}, status=status.HTTP_200_OK)
+
+class SendOTPDeleteView(APIView):
+    def post(self, request):
+        data = request.data
+        email = data.get('email')
+
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        otp = generate_otp()
+        
+        # Збереження OTP в кеші на 10 хвилин
+        cache.set(f"otp_{email}", otp, timeout=600)
+        
+        try:
+            # Підготовка листа
+            subject = 'Запит на видалення акаунту FarmsteadHelper'
+            from_email = 'from@example.com'
+            to_email = [email]
+            html_content = f""" 
+            <!DOCTYPE html>
+            <html lang="uk">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Запит на видалення акаунту FarmsteadHelper</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f7cfdb;
+                        margin: 0;
+                        padding: 0;
+                        color: #333;
+                    }}
+                    .email-container {{
+                        max-width: 600px;
+                        margin: 30px auto;
+                        padding: 20px;
+                        background-color: #f7cfdb;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    }}
+                    .email-container h2 {{
+                        font-size: 24px; 
+                        color: #d9534f; 
+                        text-align: center; 
+                        margin-top: 20px; 
+                        font-weight: bold;
+                    }}
+                    .email-body {{
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }}
+                    .email-body p {{
+                        margin-bottom: 15px;
+                    }}
+                    .email-footer {{
+                        text-align: center;
+                        font-size: 14px;
+                        color: #777;
+                        margin-top: 30px;
+                    }}
+                    .otp-code {{
+                        text-align: center;
+                        font-weight: bold;
+                        color: #d9534f;
+                        font-size: 20px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="email-body">
+                        <h2>Запит на видалення акаунту</h2>
+                        <p>Доброго дня!</p>
+                        <p>Ви надіслали запит на видалення свого акаунту в <strong>FarmsteadHelper</strong>. Ми розуміємо, що прийняття цього рішення могло бути непростим, і шкодуємо, що ви вирішили припинити використання нашого сервісу.</p>
+                        <p>
+                            Для підтвердження вашого запиту, будь ласка, введіть наступний код OTP: 
+                            <br><h3 class="otp-code">{otp}</h3>
+                        </p>
+                        <p>Код дійсний протягом 10 хвилин. Після завершення цього періоду він стане недійсним, і вам доведеться надіслати новий запит на видалення акаунту.</p>
+                        <p>Ми хотіли б зазначити, що після підтвердження видалення:</p>
+                        <ul>
+                            <li>Вся інформація про ваш акаунт буде безповоротно видалена.</li>
+                            <li>Доступ до ваших персоналізованих даних та історії буде втрачено.</li>
+                            <li>Відновлення акаунту буде неможливим.</li>
+                        </ul>
+                        <p>Якщо у вас є якісь невирішені питання або ви зіткнулися з труднощами, ми завжди готові допомогти. Ви можете зв’язатися з нашою командою підтримки через форму зворотного зв’язку.</p>
+                        <p>Якщо цей запит був зроблений помилково або ви передумали, просто проігноруйте цей лист. Ваш акаунт залишиться без змін.</p>
+                        <p>Ми дякуємо вам за використання <strong>FarmsteadHelper</strong> та сподіваємося, що ви повернетесь у майбутньому. Ваші відгуки та пропозиції завжди вітаються — вони допомагають нам ставати краще.</p>
+                        <p>Будь ласка, не відповідайте на цей лист, оскільки він був надісланий автоматичною системою.</p>
+                        <p>З найкращими побажаннями,<br>Команда <strong>FarmsteadHelper</strong></p>
+                    </div>
+                    <div class="email-footer">
+                        <p>&copy; 2024 FarmsteadHelper. Усі права захищено.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+
+            # Створення HTML-листа
+            msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=to_email)
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
