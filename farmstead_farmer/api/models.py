@@ -1,8 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 from django.utils.timezone import now
 
 class CustomUser(AbstractUser):
@@ -21,8 +19,11 @@ class CustomUser(AbstractUser):
     
     def get_avatar_url(self):
         if self.avatar:
-            return self.avatar.url.replace('/media/', '')
-        return None
+            avatar_url = self.avatar.url
+            if avatar_url.startswith(f"{settings.MEDIA_URL}media/"):
+                avatar_url = avatar_url.replace(f"{settings.MEDIA_URL}media/", f"{settings.MEDIA_URL}", 1)
+            return avatar_url
+        return f"{settings.STATIC_URL}default-avatar.png"
 
 class OTP(models.Model):
     email = models.EmailField()

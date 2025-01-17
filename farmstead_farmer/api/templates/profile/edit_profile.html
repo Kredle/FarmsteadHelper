@@ -14,7 +14,7 @@ function onCaptchaSuccess() {
     const captchaResponse1 = grecaptcha.getResponse('second-recaptcha');
     if (captchaResponse1) {
         console.log('Капча пройдена успішно');
-        document.getElementById('send-otp-button').disabled = false; // Активуємо кнопку
+        document.getElementById('send-otp-button').disabled = false; 
     } else {
         console.log('Капча не пройдена');
     }

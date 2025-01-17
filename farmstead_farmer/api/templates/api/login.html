@@ -9,7 +9,7 @@
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
 </head>
 <body>
-
+    
 
     
     <!-- Хедер -->
@@ -27,12 +27,7 @@
                 padding: 10px 20px;
                 background-color: #333;
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
+                position: relative;
             }
     
             .logo {
@@ -78,6 +73,15 @@
                 height: 70px;
                 border-radius: 50%;
                 cursor: pointer;
+                filter: invert(1);
+            }
+    
+            .user-avatar img {
+                width: 50px !important;
+                height: 50px !important;
+                border-radius: 50% !important;
+                cursor: pointer;
+                filter: invert(1);
             }
     
             .auth-menu {
@@ -134,10 +138,6 @@
                 flex-direction: column;
                 padding-top: 20px;
                 z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
             }
     
             .side-menu a {
