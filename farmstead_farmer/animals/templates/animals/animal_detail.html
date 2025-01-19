@@ -434,9 +434,12 @@
 
     <div class="container">
         <div class="aboutanimal">
-            <img id="animal-image" src="{{ animal.image.url }}" alt="{{ animal.common_name }}">
+            <img id="animal-image" src="{{ animal.image }}" alt="{{ animal.common_name }}">
             <h1 id="animal-name">{{ animal.common_name|default:"Назва тварини" }}</h1>
             <p id="animal-description">{{ animal.description|default:"Опис відсутній" }}</p>
+            <button id="favorite-button" class="favorite-btn">
+                Додати в обране
+            </button>
         </div>
         
         <div class="section">
@@ -531,5 +534,86 @@
             &copy; 2024 FarmsteadHelper. Усі права захищено.
         </div>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const favoriteButton = document.getElementById('favorite-button');
+            const token = localStorage.getItem('authToken');
+            const animalName = document.getElementById('animal-name').innerText;
+    
+            if (!token) {
+                favoriteButton.textContent = 'Додати в обране';
+                return;
+            }
+    
+            const animalData = {
+                    token: token,
+                    name: animalName,
+                    image_url: document.getElementById('animal-image').src,
+                    link: window.location.href,
+                    category: 'Тварини'  // або будь-яка інша категорія
+                };
+    
+            // Запит на перевірку, чи в обраних
+            fetch('/api/check_favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(animalData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'inside') {
+                    favoriteButton.textContent = 'В обраних';
+                } else {
+                    favoriteButton.textContent = 'Додати в обране';
+                }
+            })
+            .catch(error => {
+                console.error('Помилка:', error);
+                favoriteButton.textContent = 'Додати в обране';
+            });
+    
+            // Обробник для кнопки "Додати в обране"
+            favoriteButton.addEventListener('click', () => {
+                if (!token) {
+                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    return;
+                }
+    
+                // Дані для запиту на додавання в обране
+                const animalData = {
+                    token: token,
+                    name: animalName,
+                    image_url: document.getElementById('animal-image').src,
+                    link: window.location.href,
+                    category: 'Тварини'  // або будь-яка інша категорія
+                };
+    
+                // Запит на додавання/видалення з обраних
+                fetch('/api/toggle_favorite/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(animalData),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'added') {
+                        favoriteButton.textContent = 'В обраних';
+                    } else if (data.status === 'removed') {
+                        favoriteButton.textContent = 'Додати в обране';
+                    } else {
+                        alert('Сталася помилка при оновленні обраного.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при збереженні в обране.');
+                });
+            });
+        });
+    </script>    
 </body>
 </html>
