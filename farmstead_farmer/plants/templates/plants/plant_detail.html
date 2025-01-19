@@ -435,6 +435,9 @@
             <img id="plant-image" src="{{ plant.image }}" alt="{{ plant.name }}">
             <h1 id="plant-name">{{ plant.name|default:"Назва квітки" }}</h1>
             <p id="plant-description">{{ plant.description|default:"Опис відсутній" }}</p>
+            <button id="favorite-button" class="favorite-btn">
+                Додати в обране
+            </button>
         </div>
         
         <div class="section">
@@ -541,5 +544,85 @@
             &copy; 2024 FarmsteadHelper. Усі права захищено.
         </div>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const favoriteButton = document.getElementById('favorite-button');
+            const token = localStorage.getItem('authToken');
+            const plantName = document.getElementById('plant-name').innerText;
+    
+            if (!token) {
+                favoriteButton.textContent = 'Додати в обране';
+                return;
+            }
+    
+            const animalData = {
+                    token: token,
+                    name: plantName,
+                    image_url: document.getElementById('plant-image').src,
+                    link: window.location.href,
+                    category: 'Квіти'  // або будь-яка інша категорія
+                };
+    
+            // Запит на перевірку, чи в обраних
+            fetch('/api/check_favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(animalData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'inside') {
+                    favoriteButton.textContent = 'В обраних';
+                } else {
+                    favoriteButton.textContent = 'Додати в обране';
+                }
+            })
+            .catch(error => {
+                console.error('Помилка:', error);
+                favoriteButton.textContent = 'Додати в обране';
+            });
+    
+            // Обробник для кнопки "Додати в обране"
+            favoriteButton.addEventListener('click', () => {
+                if (!token) {
+                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    return;
+                }
+    
+                const animalData = {
+                    token: token,
+                    name: plantName,
+                    image_url: document.getElementById('plant-image').src,
+                    link: window.location.href,
+                    category: 'Квіти'  // або будь-яка інша категорія
+                };
+    
+                // Запит на додавання/видалення з обраних
+                fetch('/api/toggle_favorite/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(animalData),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'added') {
+                        favoriteButton.textContent = 'В обраних';
+                    } else if (data.status === 'removed') {
+                        favoriteButton.textContent = 'Додати в обране';
+                    } else {
+                        alert('Сталася помилка при оновленні обраного.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при збереженні в обране.');
+                });
+            });
+        });
+    </script> 
 </body>
 </html>
