@@ -434,9 +434,12 @@
     <div class="container">
         <!-- Дерево та сорт -->
         <div class="abouttree">
-            <h2>{{ sort.sort }}</h2>
+            <h2 id="sort-name">{{ sort.sort }}</h2>
             <img id="sort-image" src="{{ sort.image_fruit }}" alt="Зображення плоду">
             <p id="sort-description">{{ sort.discription|default:"Опис відсутній" }}</p>
+            <button id="favorite-button" class="favorite-btn">
+                Додати в обране
+            </button>
             
         </div>
 
@@ -617,5 +620,86 @@
             &copy; 2024 FarmsteadHelper. Усі права захищено.
         </div>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const favoriteButton = document.getElementById('favorite-button');
+            const token = localStorage.getItem('authToken');
+            const treeName = document.getElementById('sort-name').innerText;
+    
+            if (!token) {
+                favoriteButton.textContent = 'Додати в обране';
+                return;
+            }
+    
+            const animalData = {
+                    token: token,
+                    name: treeName,
+                    image_url: document.getElementById('sort-image').src,
+                    link: window.location.href,
+                    category: 'Дерева'  // або будь-яка інша категорія
+                };
+    
+            // Запит на перевірку, чи в обраних
+            fetch('/api/check_favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(animalData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'inside') {
+                    favoriteButton.textContent = 'В обраних';
+                } else {
+                    favoriteButton.textContent = 'Додати в обране';
+                }
+            })
+            .catch(error => {
+                console.error('Помилка:', error);
+                favoriteButton.textContent = 'Додати в обране';
+            });
+    
+            // Обробник для кнопки "Додати в обране"
+            favoriteButton.addEventListener('click', () => {
+                if (!token) {
+                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    return;
+                }
+    
+                const animalData = {
+                    token: token,
+                    name: treeName,
+                    image_url: document.getElementById('sort-image').src,
+                    link: window.location.href,
+                    category: 'Дерева'  // або будь-яка інша категорія
+                };
+    
+    
+                // Запит на додавання/видалення з обраних
+                fetch('/api/toggle_favorite/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(animalData),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'added') {
+                        favoriteButton.textContent = 'В обраних';
+                    } else if (data.status === 'removed') {
+                        favoriteButton.textContent = 'Додати в обране';
+                    } else {
+                        alert('Сталася помилка при оновленні обраного.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при збереженні в обране.');
+                });
+            });
+        });
+    </script> 
 </body>
 </html>
