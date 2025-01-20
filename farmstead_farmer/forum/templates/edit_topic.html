@@ -1,10 +1,11 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Форма створення обговорення</title>
+    <title>Редагувати тему</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -66,9 +67,6 @@
     </style>
 </head>
 <body>
-    
-
-    
     <!-- Хедер -->
     <header>
         <style>
@@ -423,9 +421,10 @@
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
+
     <div class="form-container">
-        <h2>Створення обговорення</h2>
-        <form id="discussion-form" method="POST" action="/forum/create/">
+        <h2>Редагувати тему</h2>
+        <form id="edit-form" method="POST" action="/forum/edit_topic/{{topic_id}}/">
             {% csrf_token %}
             <div class="form-group">
                 <label for="category">Категорія:</label>
@@ -454,13 +453,12 @@
             <input type="hidden" id="likes" name="likes">
             <input type="hidden" id="dislikes" name="dislikes">
             <input type="hidden" id="comm" name="comm">
-            <a id="submit-link" href="" class="submit-btn" style="text-align: center; display: none;">Створити обговорення</a>
-            <button type="button" id="submit-btn" class="submit-btn generate-link-btn">Створити обговорення</button>
+            <a id="submit-link" href="" class="submit-btn" style="text-align: center; display: none;">Зберегти зміни</a>
+            <button type="button" id="submit-btn" class="submit-btn generate-link-btn">Зберегти зміни</button>
         </form>
     </div>
-
     <script>
-        const form = document.getElementById('discussion-form');
+        const form = document.getElementById('edit-form');
         const titleInput = document.getElementById('title');
         const descriptionInput = document.getElementById('description');
         const titleError = document.getElementById('title-error');
@@ -472,26 +470,13 @@
         const categorySelect = document.getElementById('category');
         let Author;
         let selectedCategory = null; // Змінна для збереження вибору
-        const likesInput = document.getElementById('likes');
-        const dislikesInput = document.getElementById('dislikes');
-        const commentsInput = document.getElementById('comm');
         const categoryTextInput = document.getElementById('category-text');
-        let likes = 0;
-        let dislikes = 0;
-        let comme = 0;
+
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('authToken');
             const authContainer = document.querySelector('.auth');
             const sideMenuAuth = document.getElementById('side-menu-auth');
-            if (likes === null){
-                likes = 0
-            }
-            if(dislikes === null){
-                dislikes = 0
-            }
-            if(comme === null){
-                comme = 0;
-            }
+            
             if (token) {
                 fetch('/api/user-data/', {
                     method: 'POST',
@@ -512,51 +497,49 @@
                         Author = data.username;
                     })
                 }
-        })
-            
-        
-        function containsLink(text) {
+                function containsLink(text) {
             const linkRegex = /(https?:\/\/[^\s]+)/g;
-            return linkRegex.test(text);
-        }
-        categorySelect.addEventListener('change', (event) => {
-            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-            categoryTextInput.value = selectedOption.text; // Зберігаємо текст вибраної опції
-        });
-        submitBtn.addEventListener('click', () => {
-            let hasError = false;
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0'); // Додаємо 1, бо місяці індексуються з 0
-            const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
-            const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
-            console.log(createdDateInput); // Наприклад: 2025-01-13
-            const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
-            console.log(createdTimeInput); // Наприклад: 2025-01-13
-            usernameInput.value = Author;
-            likesInput.value = likes;
-            dislikesInput.value = dislikes;
-            commentsInput.value = comme;
-            document.getElementById('created_date').value = createdDateInput;
-            document.getElementById('created_time').value = createdTimeInput;
-            if (containsLink(titleInput.value)) {
-                titleError.style.display = 'block';
-                hasError = true;
-            } else {
-                titleError.style.display = 'none';
+                return linkRegex.test(text);
             }
+            categorySelect.addEventListener('change', (event) => {
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                categoryTextInput.value = selectedOption.text; // Зберігаємо текст вибраної опції
+            });
+            submitBtn.addEventListener('click', () => {
+                let hasError = false;
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // Додаємо 1, бо місяці індексуються з 0
+                const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
+                const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
+                console.log(createdDateInput); // Наприклад: 2025-01-13
+                const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
+                console.log(createdTimeInput); // Наприклад: 2025-01-13
+                usernameInput.value = Author;
+                //likesInput.value = likes;
+                //dislikesInput.value = dislikes;
+                //commentsInput.value = comme;
+                document.getElementById('created_date').value = createdDateInput;
+                document.getElementById('created_time').value = createdTimeInput;
+                if (containsLink(titleInput.value)) {
+                    titleError.style.display = 'block';
+                    hasError = true;
+                } else {
+                    titleError.style.display = 'none';
+                }
 
-            if (containsLink(descriptionInput.value)) {
-                descriptionError.style.display = 'block';
-                hasError = true;
-            } else {
-                descriptionError.style.display = 'none';
-            }
+                if (containsLink(descriptionInput.value)) {
+                    descriptionError.style.display = 'block';
+                    hasError = true;
+                } else {
+                    descriptionError.style.display = 'none';
+                }
 
-            if (!hasError) {
-                document.getElementById('discussion-form').submit();
-            }
-        });
+                if (!hasError) {
+                    document.getElementById('edit-form').submit();
+                }
+            });
+        })
     </script>
 </body>
 </html>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Форум</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
-    <script defer src="script.js"></script>
+    <!--<script defer src="script.js"></script>-->
 </head>
 <body>
  
@@ -19,7 +19,9 @@
                 margin: 0;
                 font-family: Arial, sans-serif;
             }
-    
+            main {
+                margin-top: 100px; /* Відступ дорівнює висоті хедера */
+            }
             header {
                 display: flex;
                 align-items: center;
@@ -27,7 +29,7 @@
                 padding: 10px 20px;
                 background-color: #333;
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
+                position: relative;
                 z-index: 1000; /* Забезпечує верхній шар */
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
                 top: 0;
@@ -365,6 +367,32 @@
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
+    <header>
+        <h1>Форум</h1>
+        <div class="search-panel">
+            <input type="text" id="search" placeholder="Пошук за ключовими словами...">
+            <div class="filter-dropdown">
+                <button id="filter-toggle-btn">Фільтри</button>
+                <div id="filter-options" class="filter-options hidden">
+                    <label>
+                        <input type="checkbox" value="Дерева"> Дерева
+                    </label>
+                    <label>
+                        <input type="checkbox" value="Овочі"> Овочі
+                    </label>
+                    <label>
+                        <input type="checkbox" value="Квіти"> Квіти
+                    </label>
+                    <label>
+                        <input type="checkbox" value="Тварини"> Тварини
+                    </label>
+                </div>
+            </div>                      
+            <button id="search-btn">Шукати</button>
+        </div>
+        <button id="create-topic-btn">+ Створити тему</button>
+    </header>
+
     <main>
         <section class="popular-topics">
             <h2>Популярні теми</h2>
@@ -375,34 +403,19 @@
 
         <section class="discussions">
             <h2>Обговорення</h2>
-            <div id="discussion-list">
-                <!-- Обговорення будуть завантажуватися динамічно -->
-            </div>
+            <div id="discussion-list"></div>
             <button id="load-more-btn" class="hidden">Завантажити ще</button>
-        </section>        
+        </section>     
     </main>
 
     <script>
-     document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
     const categories = {
         "Дерева": "/static/images/tree.jpg",
         "Овочі": "/static/images/vegetables.png",
         "Квіти": "/static/images/flowers.jpg",
         "Тварини": "/static/images/animals.jpg"
     };
-
-    const discussions = [
-        { title: 'Як доглядати за дубом?', author: 'Іван', date: '2024-12-30', content: 'Дуб - одне з найміцніших дерев, але потребує правильного догляду...', likes: 15, comments: 5, category: 'Дерева' },
-        { title: 'Секрети вирощування помідорів', author: 'Марія', date: '2024-12-29', content: 'Хочу поділитися досвідом вирощування помідорів без хімії...', likes: 20, comments: 8, category: 'Овочі' },
-        { title: 'Кращі способи прикрасити сад квітами', author: 'Олена', date: '2024-12-28', content: 'Чи знаєте ви, що троянди чудово поєднуються з лавандою?', likes: 12, comments: 3, category: 'Квіти' },
-        { title: 'Як доглядати за собаками?', author: 'Андрій', date: '2024-12-27', content: 'Собаки потребують регулярного вигулу та збалансованого харчування...', likes: 10, comments: 4, category: 'Тварини' },
-        { title: 'Чи варто вирощувати картоплю?', author: 'Оксана', date: '2024-12-26', content: 'Картопля - це один з основних продуктів, але догляд за нею може бути складним...', likes: 8, comments: 2, category: 'Овочі' },
-        { title: 'Які дерева краще садити в місті?', author: 'Петро', date: '2024-12-25', content: 'У місті важливо садити дерева, які очищають повітря...', likes: 13, comments: 5, category: 'Дерева' },
-        { title: 'Секрети вирощування троянд', author: 'Анна', date: '2024-12-24', content: 'Троянди потребують постійного догляду та підживлення...', likes: 15, comments: 6, category: 'Квіти' },
-        { title: 'Кращі породи котів для будинку', author: 'Олег', date: '2024-12-23', content: 'Коти - чудові домашні улюбленці, але варто вибирати породи відповідно до умов проживання...', likes: 10, comments: 3, category: 'Тварини' },
-        { title: 'Як вирощувати огірки на балконі?', author: 'Лариса', date: '2024-12-22', content: 'Огірки можна вирощувати навіть на балконі за допомогою спеціальних контейнерів...', likes: 18, comments: 7, category: 'Овочі' },
-        { title: 'Чи можна садити ялинки вдома?', author: 'Сергій', date: '2024-12-21', content: 'Ялинки - символ свята, але їхнє вирощування вимагає терпіння...', likes: 9, comments: 2, category: 'Дерева' }
-    ];
 
     const discussionList = document.getElementById('discussion-list');
     const filterToggleBtn = document.getElementById('filter-toggle-btn');
@@ -411,8 +424,6 @@
     const searchInput = document.getElementById('search');
     const loadMoreBtn = document.getElementById('load-more-btn');
     const discussionsPerLoad = 3;
-    let currentIndex = 0;
-    let filteredDiscussions = discussions; // Створюємо змінну для відфільтрованих обговорень
 
     // Показати/сховати випадаючий список із фільтрами
     filterToggleBtn.addEventListener('click', () => {
@@ -442,62 +453,135 @@
     }
 
     // Функція для завантаження обговорень
-    function loadDiscussions(discussionsToLoad) {
+    // Функція для завантаження даних через fetch
+    function fetchDiscussions() {
+        return fetch('/forum/get_topics') // Шлях до вашого API
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json(); // Парсимо JSON-відповідь
+            })
+            .catch(error => {
+                console.error('Error fetching discussions:', error); // Обробка помилок
+                return []; // Повертаємо порожній масив у разі помилки
+            });
+    }
+
+    // Функція для відображення дискусій
+    function loadDiscussions(discussions) {
+        console.log(discussions); // Лог для перевірки масиву дискусій
+
+        const discussionList = document.querySelector('#discussion-list'); // Ваш контейнер для обговорень
+        if (!discussionList) {
+            console.error("Container for discussions not found");
+            return;
+        }
+
+        // Очищуємо контейнер перед додаванням нових елементів
+        //discussionList.innerHTML = '';
+
+        // Ініціалізуємо фрагмент
         const fragment = document.createDocumentFragment();
-        discussionsToLoad.forEach(disc => {
-            const truncatedContent = truncateText(disc.content, 30);
+
+        discussions.forEach(topic => {
+            const content = topic.Content || 'Немає опису';
+            const truncatedContent = truncateText(content, 30); // Функція для скорочення тексту
             const discussionDiv = document.createElement('div');
             discussionDiv.classList.add('discussion');
             discussionDiv.innerHTML = `
                 <div class="discussion-header">
-                    <img src="${categories[disc.category]}" alt="${disc.category}" class="category-img">
+                    <img src="${categories[topic.Category] || '/images/default.png'}" alt="${topic.Category}" class="category-img">
                     <div>
-                        <h3>${disc.title}</h3>
-                        <p>Категорія: ${disc.category}</p>
-                        <p>Автор: ${disc.author} | Дата: ${disc.date}</p>
+                        <h3><a href="/forum/topic/${topic.idTopic}/">${topic.Title}</a></h3>
+                        <p>Категорія: ${topic.Category}</p>
+                        <p>Автор: ${topic.Author} | Дата: ${topic.Date}</p>
                     </div>
                 </div>
                 <p>${truncatedContent}</p>
-                <p>Лайки: ${disc.likes} | Коментарі: ${disc.comments}</p>
+                <p>Лайки: ${topic.Likes || 0} | Коментарі: ${topic.Comments || 0}</p>
             `;
             fragment.appendChild(discussionDiv);
         });
+
+        // Додаємо елементи в контейнер
         discussionList.appendChild(fragment);
     }
 
+    // Використання
+    fetchDiscussions().then(discussions => {
+        loadDiscussions(discussions);
+    });
+
     // Завантаження обговорень з кнопкою "Завантажити ще"
+    let currentIndex = 0; // Ініціалізуємо індекс
+    let filteredDiscussions = []; // Глобальна змінна для фільтрованих тем
+    // Функція для завантаження більше обговорень
     function loadMoreDiscussions() {
+        // Завантажуємо наступну порцію тем
+        console.log(currentIndex);
         const discussionsToLoad = filteredDiscussions.slice(currentIndex, currentIndex + discussionsPerLoad);
         loadDiscussions(discussionsToLoad);
+
+        // Оновлюємо індекс
         currentIndex += discussionsPerLoad;
 
+        // Якщо всі обговорення завантажено, ховаємо кнопку
         if (currentIndex >= filteredDiscussions.length) {
-            loadMoreBtn.classList.add('hidden'); // Ховати кнопку, якщо всі обговорення завантажені
+            loadMoreBtn.classList.add('hidden');
         }
     }
 
     // Функція для об'єднаної фільтрації
-    function filterDiscussions() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedCategories = getSelectedCategories();
+        function filterDiscussions() {
+            const searchTerm = searchInput.value.toLowerCase(); // Отримуємо значення пошуку
+            const selectedCategories = getSelectedCategories(); // Отримуємо вибрані категорії
 
-        filteredDiscussions = discussions.filter(disc => {
-            const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(disc.category);
-            const matchesSearch = disc.title.toLowerCase().includes(searchTerm) || disc.content.toLowerCase().includes(searchTerm);
-            return matchesCategory && matchesSearch;
-        });
+            fetch('/forum/get_topics') // Запит до вашого API
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json(); // Парсимо JSON-відповідь
+                })
+                .then(topics => {
+                    // Фільтруємо отримані теми
+                    let filteredDiscussionsTemp;
+                    
+                    // Якщо searchTerm порожній, не фільтруємо за ним
+                    if (searchTerm === '') {
+                        filteredDiscussionsTemp = topics; // Якщо пошуковий запит порожній, беремо всі теми
+                    } else {
+                        // Фільтруємо отримані теми за категорією та пошуковим запитом
+                        filteredDiscussionsTemp = topics.filter(topic => {
+                            const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(topic.Category);
+                            const matchesSearch = topic.Title.toLowerCase().includes(searchTerm) || topic.Content.toLowerCase().includes(searchTerm);
+                            return matchesCategory && matchesSearch;
+                        });
+                    }
 
-        discussionList.innerHTML = '';
-        currentIndex = 0; // Скидаємо індекс для завантаження
-        loadDiscussions(filteredDiscussions.slice(0, discussionsPerLoad));
-        currentIndex = discussionsPerLoad;
+                    // Оновлюємо глобальний масив
+                    filteredDiscussions = filteredDiscussionsTemp;
 
-        if (filteredDiscussions.length > discussionsPerLoad) {
-            loadMoreBtn.classList.remove('hidden');
-        } else {
-            loadMoreBtn.classList.add('hidden');
+                    // Очищаємо список обговорень перед оновленням
+                    discussionList.innerHTML = '';
+                    currentIndex = 0; // Скидаємо індекс для завантаження
+
+                    // Завантажуємо перші обговорення
+                    loadDiscussions(filteredDiscussions.slice(0, discussionsPerLoad));
+                    currentIndex = discussionsPerLoad;
+
+                    // Якщо є більше тем для завантаження, показуємо кнопку "Завантажити ще"
+                    if (filteredDiscussions.length > discussionsPerLoad) {
+                        loadMoreBtn.classList.remove('hidden');
+                    } else {
+                        loadMoreBtn.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching topics:", error);
+                });
         }
-    }
 
     // Обробники для фільтрації та кнопки "Завантажити ще"
     filterOptions.addEventListener('change', filterDiscussions);
@@ -506,11 +590,10 @@
 
     // Початкове завантаження перших трьох обговорень
     loadMoreDiscussions();
-});
-document.getElementById('create-topic-btn').addEventListener('click', () => {
+    });
+    document.getElementById('create-topic-btn').addEventListener('click', () => {
             window.location.href = 'create-discussion';
-        });
-
-        </script>        
+    });
+    </script>        
 </body>
 </html>
