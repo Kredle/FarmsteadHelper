@@ -143,3 +143,9 @@ def add_comment(request, topic_id):
             print(f"Помилка при додаванні коментаря: {e}")
             return JsonResponse({'error': 'Не вдалося додати коментар.'}, status=500)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def get_popular_topics(request):
+    # Отримуємо теми з бази даних, сортуємо їх за лайками у порядку спадання
+    topics = Topic.objects.all().order_by('-Likes')  # Поле `likes` повинно бути у вашій моделі
+    popular_topics_list = list(topics.values())  # Перетворюємо QuerySet в список словників
+    return JsonResponse(popular_topics_list, safe=False)

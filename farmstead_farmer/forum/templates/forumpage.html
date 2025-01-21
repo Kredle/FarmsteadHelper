@@ -394,11 +394,9 @@
     </header>
 
     <main>
-        <section class="popular-topics">
+        <section class="discussions">
             <h2>Популярні теми</h2>
-            <ul id="popular-topics-list">
-                <!-- Динамічне завантаження популярних тем -->
-            </ul>
+            <div id="discussion-list-popular"></div>
         </section>
 
         <section class="discussions">
@@ -407,7 +405,6 @@
             <button id="load-more-btn" class="hidden">Завантажити ще</button>
         </section>     
     </main>
-
     <script>
     document.addEventListener('DOMContentLoaded', () => {
     const categories = {
@@ -467,7 +464,61 @@
                 return []; // Повертаємо порожній масив у разі помилки
             });
     }
+    function fetchPopularDiscussions() {
+        return fetch('/forum/get_popular_topics') // Шлях до вашого API
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json(); // Парсимо JSON-відповідь
+            })
+            .catch(error => {
+                console.error('Error fetching discussions:', error); // Обробка помилок
+                return []; // Повертаємо порожній масив у разі помилки
+            });
+    }
+    // Функція для відображення популярних тем
+    function loadPopularDiscussions(discussions) {
+        console.log(discussions); // Лог для перевірки масиву дискусій
 
+        const discussionList = document.querySelector('#discussion-list-popular'); // Ваш контейнер для обговорень
+        if (!discussionList) {
+            console.error("Container for discussions not found");
+            return;
+        }
+
+        // Очищуємо контейнер перед додаванням нових елементів
+        //discussionList.innerHTML = '';
+
+        // Ініціалізуємо фрагмент
+        const fragment = document.createDocumentFragment();
+
+        discussions.forEach(topic => {
+            const content = topic.Content || 'Немає опису';
+            const truncatedContent = truncateText(content, 30); // Функція для скорочення тексту
+            const discussionDiv = document.createElement('div');
+            discussionDiv.classList.add('discussion');
+            discussionDiv.innerHTML = `
+                <div class="discussion-header">
+                    <img src="${categories[topic.Category] || '/images/default.png'}" alt="${topic.Category}" class="category-img">
+                    <div>
+                        <h3><a href="/forum/topic/${topic.idTopic}/">${topic.Title}</a></h3>
+                        <p>Категорія: ${topic.Category}</p>
+                        <p>Автор: ${topic.Author} | Дата: ${topic.Date}</p>
+                    </div>
+                </div>
+                <p>${truncatedContent}</p>
+                <p>Лайки: ${topic.Likes || 0} | Коментарі: ${topic.Comments || 0}</p>
+            `;
+            fragment.appendChild(discussionDiv);
+        });
+
+        // Додаємо елементи в контейнер
+        discussionList.appendChild(fragment);
+    }
+    fetchPopularDiscussions().then(discussions => {
+        loadPopularDiscussions(discussions);
+    });
     // Функція для відображення дискусій
     function loadDiscussions(discussions) {
         console.log(discussions); // Лог для перевірки масиву дискусій
