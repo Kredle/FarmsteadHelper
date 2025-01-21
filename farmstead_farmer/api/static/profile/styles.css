@@ -1,3 +1,4 @@
+/* Загальні стилі */
 body {
     margin: 0;
     padding: 0;
@@ -6,11 +7,11 @@ body {
     justify-content: center;
 }
 
+/* Контейнер профілю */
 .profile-container {
     width: 80%;
-    max-width: 800px;
-    margin: 20px auto;
-    margin-top: 100px;
+    max-width: 1200px;
+    margin: 40px auto;
     padding: 20px;
     background-color: var(--box_color);
     border-radius: 8px;
@@ -26,16 +27,31 @@ h2 {
 
 h3, h4 {
     color: var(--textcolor_dark);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Заголовки */
+h2 {
+    text-align: center;
+    font-size: 2rem;
+    color: #333;
+}
+
+h3, h4 {
+    color: #333;
+}
+
+/* Стилі для інформації профілю (вертикальне розташування) */
 .profile-info {
-    margin-bottom: 20px;
+    margin-bottom: 40px;
 }
 
 .profile-info p {
     font-size: 1.1rem;
     color: var(--textcolor_dark);
     margin: 10px 0;
+    color: #555;
+    margin: 10px 0; /* Відступи між елементами */
 }
 
 .profile-avatar {
@@ -45,9 +61,10 @@ h3, h4 {
 }
 
 .avatar-img {
-    width: 100px;
-    height: 100px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
+    object-fit: cover;
 }
 
 /* Стилі для секції обраних елементів */
@@ -120,6 +137,7 @@ h3, h4 {
     background-color: var(--accent_hover);
 }
 
+/* Форматування для інпутів та textarea */
 .form-group {
     margin-bottom: 15px;
 }
@@ -284,4 +302,73 @@ p {
 
 .modal input{
     width: 95%;
+}
+
+/* Стилі для порожнього списку */
+p {
+    font-size: 1rem;
+    color: #777;
+    text-align: center;
+}
+
+.profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    overflow: hidden; /* Забезпечує, щоб нічого не виходило за межі */
+}
+
+.favorites-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.favorites-category {
+    background: #f9f9f9;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.favorites-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: flex-start;
+}
+
+.card {
+    flex: 0 1 calc(25% - 20px); /* Картки займуть 25% простору */
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.card img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.card-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.card-button:hover {
+    background: #0056b3;
 }

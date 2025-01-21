@@ -215,9 +215,8 @@
             <h2>Обговорення</h2>
             <div id="discussion-list"></div>
             <button id="load-more-btn" class="hidden">Завантажити ще</button>
-        </section>        
+        </section>     
     </main>
-
     <script>
     document.addEventListener('DOMContentLoaded', () => {
     const categories = {
@@ -234,7 +233,6 @@
     const searchInput = document.getElementById('search');
     const loadMoreBtn = document.getElementById('load-more-btn');
     const discussionsPerLoad = 3;
-    
     // Показати/сховати випадаючий список із фільтрами
     filterToggleBtn.addEventListener('click', () => {
         filterOptions.classList.toggle('visible');
@@ -295,7 +293,6 @@
         console.log(discussions); // Лог для перевірки масиву дискусій
 
         const discussionList = document.querySelector('#discussion-list-popular'); // Ваш контейнер для обговорень
-        
         if (!discussionList) {
             console.error("Container for discussions not found");
             return;
@@ -412,7 +409,7 @@
                 .then(topics => {
                     // Фільтруємо отримані теми
                     let filteredDiscussionsTemp;
-
+                    
                     // Якщо searchTerm порожній, не фільтруємо за ним
                     if (searchTerm === '') {
                         filteredDiscussionsTemp = topics; // Якщо пошуковий запит порожній, беремо всі теми
@@ -427,7 +424,6 @@
 
                     // Оновлюємо глобальний масив
                     filteredDiscussions = filteredDiscussionsTemp;
-
                     // Очищаємо список обговорень перед оновленням
                     discussionList.innerHTML = '';
                     currentIndex = 0; // Скидаємо індекс для завантаження
@@ -455,11 +451,10 @@
 
     // Початкове завантаження перших трьох обговорень
     loadMoreDiscussions();
-});
-document.getElementById('create-topic-btn').addEventListener('click', () => {
+    });
+    document.getElementById('create-topic-btn').addEventListener('click', () => {
             window.location.href = 'create-discussion';
-        });
-
-        </script>        
+    });
+    </script>        
 </body>
 </html>

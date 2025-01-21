@@ -1,18 +1,258 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
-    <title>Форма створення обговорення</title>
+    <title>Редагувати тему</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .form-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            height: 100px;
+            resize: none;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .submit-btn:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
-    
     <!-- Хедер -->
     <header>
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+            }
+    
+            header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px 20px;
+                background-color: #333;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                position: fixed;
+                z-index: 1000; /* Забезпечує верхній шар */
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
+                top: 0;
+                left: 0;
+                width: 98%;
+            }
+    
+            .logo {
+                display: flex;
+                align-items: center;
+            }
+    
+            .logo img {
+                height: 60px;
+                margin-right: 10px;
+            }
+    
+            .logo span {
+                font-size: 20px;
+                font-weight: bold;
+                color: #fff;
+            }
+    
+            nav {
+                display: flex;
+                gap: 20px;
+            }
+    
+            nav a {
+                text-decoration: none;
+                color: #fff;
+                font-size: 16px;
+                padding: 5px 10px;
+                transition: background-color 0.3s, color 0.3s;
+            }
+    
+            nav a:hover {
+                background-color: #444;
+                border-radius: 5px;
+            }
+    
+            .auth {
+                position: relative;
+            }
+    
+            .auth img {
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                cursor: pointer;
+            }
+    
+            .auth-menu {
+                display: none;
+                position: absolute;
+                top: 50px;
+                right: 0;
+                background-color: #fff;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+            }
+    
+            .auth-menu a {
+                display: block;
+                padding: 10px;
+                text-decoration: none;
+                color: #333;
+                font-size: 14px;
+            }
+    
+            .auth-menu a:hover {
+                background-color: #f4f4f4;
+            }
+    
+            .auth:hover .auth-menu {
+                display: block;
+            }
+    
+            .hamburger {
+                display: none;
+                flex-direction: column;
+                cursor: pointer;
+            }
+    
+            .hamburger div {
+                width: 25px;
+                height: 3px;
+                background-color: #fff;
+                margin: 4px 0;
+            }
+    
+            .side-menu {
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100%;
+                background-color: #333;
+                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+                transition: right 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                padding-top: 20px;
+                z-index: 1000;
+                overflow-y: auto; /* Додає вертикальну прокрутку */
+                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
+                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
+                scrollbar-color: #555 #333; /* Колір скролбару */
+            }
+    
+            .side-menu a {
+                text-decoration: none;
+                color: #fff;
+                font-size: 18px;
+                padding: 15px 20px;
+                transition: background-color 0.3s;
+            }
+    
+            .side-menu a:hover {
+                background-color: #444;
+            }
+    
+            .side-menu-close {
+                text-align: right;
+                padding: 10px;
+            }
+    
+            .side-menu-close button {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 20px;
+                cursor: pointer;
+            }
+    
+            .side-menu .auth-buttons {
+                margin-top: auto;
+                padding: 20px;
+            }
+    
+            .side-menu .auth-buttons a {
+                display: block;
+                text-align: center;
+                padding: 10px;
+                background-color: #444;
+                color: #fff;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                text-decoration: none;
+            }
+    
+            .side-menu .auth-buttons a:hover {
+                background-color: #555;
+            }
+    
+            @media (max-width: 768px) {
+                nav,
+                .auth {
+                    display: none;
+                }
+    
+                .hamburger {
+                    display: flex;
+                    margin-left: auto;
+                }
+            }
+        </style>
+    
     <div class="logo">
         <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
@@ -181,9 +421,10 @@
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
+
     <div class="form-container">
-        <h2>Створення обговорення</h2>
-        <form id="discussion-form" method="POST" action="/forum/create/">
+        <h2>Редагувати тему</h2>
+        <form id="edit-form" method="POST" action="/forum/edit_topic/{{topic_id}}/">
             {% csrf_token %}
             <div class="form-group">
                 <label for="category">Категорія:</label>
@@ -212,13 +453,12 @@
             <input type="hidden" id="likes" name="likes">
             <input type="hidden" id="dislikes" name="dislikes">
             <input type="hidden" id="comm" name="comm">
-            <a id="submit-link" href="" class="submit-btn" style="text-align: center; display: none;">Створити обговорення</a>
-            <button type="button" id="submit-btn" class="submit-btn generate-link-btn">Створити обговорення</button>
+            <a id="submit-link" href="" class="submit-btn" style="text-align: center; display: none;">Зберегти зміни</a>
+            <button type="button" id="submit-btn" class="submit-btn generate-link-btn">Зберегти зміни</button>
         </form>
     </div>
-
     <script>
-        const form = document.getElementById('discussion-form');
+        const form = document.getElementById('edit-form');
         const titleInput = document.getElementById('title');
         const descriptionInput = document.getElementById('description');
         const titleError = document.getElementById('title-error');
@@ -230,26 +470,13 @@
         const categorySelect = document.getElementById('category');
         let Author;
         let selectedCategory = null; // Змінна для збереження вибору
-        const likesInput = document.getElementById('likes');
-        const dislikesInput = document.getElementById('dislikes');
-        const commentsInput = document.getElementById('comm');
         const categoryTextInput = document.getElementById('category-text');
-        let likes = 0;
-        let dislikes = 0;
-        let comme = 0;
+
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('authToken');
             const authContainer = document.querySelector('.auth');
             const sideMenuAuth = document.getElementById('side-menu-auth');
-            if (likes === null){
-                likes = 0
-            }
-            if(dislikes === null){
-                dislikes = 0
-            }
-            if(comme === null){
-                comme = 0;
-            }
+            
             if (token) {
                 fetch('/api/user-data/', {
                     method: 'POST',
@@ -270,49 +497,49 @@
                         Author = data.username;
                     })
                 }
-        })
-        function containsLink(text) {
+                function containsLink(text) {
             const linkRegex = /(https?:\/\/[^\s]+)/g;
-            return linkRegex.test(text);
-        }
-        categorySelect.addEventListener('change', (event) => {
-            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-            categoryTextInput.value = selectedOption.text; // Зберігаємо текст вибраної опції
-        });
-        submitBtn.addEventListener('click', () => {
-            let hasError = false;
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0'); // Додаємо 1, бо місяці індексуються з 0
-            const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
-            const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
-            console.log(createdDateInput); // Наприклад: 2025-01-13
-            const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
-            console.log(createdTimeInput); // Наприклад: 2025-01-13
-            usernameInput.value = Author;
-            likesInput.value = likes;
-            dislikesInput.value = dislikes;
-            commentsInput.value = comme;
-            document.getElementById('created_date').value = createdDateInput;
-            document.getElementById('created_time').value = createdTimeInput;
-            if (containsLink(titleInput.value)) {
-                titleError.style.display = 'block';
-                hasError = true;
-            } else {
-                titleError.style.display = 'none';
+                return linkRegex.test(text);
             }
+            categorySelect.addEventListener('change', (event) => {
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                categoryTextInput.value = selectedOption.text; // Зберігаємо текст вибраної опції
+            });
+            submitBtn.addEventListener('click', () => {
+                let hasError = false;
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // Додаємо 1, бо місяці індексуються з 0
+                const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
+                const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
+                console.log(createdDateInput); // Наприклад: 2025-01-13
+                const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
+                console.log(createdTimeInput); // Наприклад: 2025-01-13
+                usernameInput.value = Author;
+                //likesInput.value = likes;
+                //dislikesInput.value = dislikes;
+                //commentsInput.value = comme;
+                document.getElementById('created_date').value = createdDateInput;
+                document.getElementById('created_time').value = createdTimeInput;
+                if (containsLink(titleInput.value)) {
+                    titleError.style.display = 'block';
+                    hasError = true;
+                } else {
+                    titleError.style.display = 'none';
+                }
 
-            if (containsLink(descriptionInput.value)) {
-                descriptionError.style.display = 'block';
-                hasError = true;
-            } else {
-                descriptionError.style.display = 'none';
-            }
+                if (containsLink(descriptionInput.value)) {
+                    descriptionError.style.display = 'block';
+                    hasError = true;
+                } else {
+                    descriptionError.style.display = 'none';
+                }
 
-            if (!hasError) {
-                document.getElementById('discussion-form').submit();
-            }
-        });
+                if (!hasError) {
+                    document.getElementById('edit-form').submit();
+                }
+            });
+        })
     </script>
 </body>
 </html>

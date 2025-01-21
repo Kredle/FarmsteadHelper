@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
 </head>
 <body>
+
     
     <!-- Хедер -->
     <header>
@@ -179,17 +180,19 @@
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
+<body>
     <div class="profile-container">
+        <h2>Профіль користувача {{ user.username }}</h2>
         <h2>Профіль користувача {{ user.username }}</h2>
         <div class="profile-info">
             <p><strong>Ім'я:</strong> {{ user.firstname }} {{ user.lastname }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Біо:</strong> {{ user.bio }}</p>
             <p><strong>Дата реєстрації:</strong> {{ user.date_joined }}</p>
+            <p><strong>Останнє в мережі був/була о</strong> {{ user.last_activity}}</p>
             <div class="profile-avatar">
                 {% if user.get_avatar_url %}
                     <script>
-                        // Розшифровуємо URL за допомогою decodeURIComponent
                         var avatarUrl = decodeURIComponent("{{ user.get_avatar_url }}");
                         document.write('<img src="' + avatarUrl + '" alt="Аватар" class="avatar-img">');
                     </script>
@@ -205,205 +208,205 @@
                 <a href="/profile/edit/" class="button">Редагувати профіль</a>
             </div>
         {% endif %}
+
+        <!-- Відображення обраних елементів -->
+        <div class="favorites-section">
+
+            {% if favorites %}
+                <div class="favorites-category">
+                    <h4>Обрані дерева</h4>
+                    <div class="favorites-cards">
+                        {% for item in favorites %}
+                            {% if item.category == 'Дерева' %}
+                                <div class="card" data-category="{{ item.category }}">
+                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="favorites-category">
+                    <h4>Обрані квіти</h4>
+                    <div class="favorites-cards">
+                        {% for item in favorites %}
+                            {% if item.category == 'Квіти' %}
+                                <div class="card" data-category="{{ item.category }}">
+                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="favorites-category">
+                    <h4>Обрані овочі</h4>
+                    <div class="favorites-cards">
+                        {% for item in favorites %}
+                            {% if item.category == 'Овочі' %}
+                                <div class="card" data-category="{{ item.category }}">
+                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="favorites-category">
+                    <h4>Обрані тварини</h4>
+                    <div class="favorites-cards">
+                        {% for item in favorites %}
+                            {% if item.category == 'Тварини' %}
+                                <div class="card" data-category="{{ item.category }}">
+                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+            {% endif %}
+        </div>
     </div>
 
-    <!-- Відображення обраних елементів -->
-    <div class="favorites-section">
+    <div id="favorites-list" class="favorites-section"></div>
 
-        {% if favorites %}
-            <div class="favorites-category">
-                <h4>Обрані дерева</h4>
-                <div class="favorites-cards">
-                    {% for item in favorites %}
-                        {% if item.category == 'Дерева' %}
-                            <div class="card" data-category="{{ item.category }}">
-                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                <a class="card-button" href="{{ item.url }}">Інформація</a>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="favorites-category">
-                <h4>Обрані квіти</h4>
-                <div class="favorites-cards">
-                    {% for item in favorites %}
-                        {% if item.category == 'Квіти' %}
-                            <div class="card" data-category="{{ item.category }}">
-                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                <a class="card-button" href="{{ item.url }}">Інформація</a>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="favorites-category">
-                <h4>Обрані овочі</h4>
-                <div class="favorites-cards">
-                    {% for item in favorites %}
-                        {% if item.category == 'Овочі' %}
-                            <div class="card" data-category="{{ item.category }}">
-                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                <a class="card-button" href="{{ item.url }}">Інформація</a>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="favorites-category">
-                <h4>Обрані тварини</h4>
-                <div class="favorites-cards">
-                    {% for item in favorites %}
-                        {% if item.category == 'Тварини' %}
-                            <div class="card" data-category="{{ item.category }}">
-                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                <a class="card-button" href="{{ item.url }}">Інформація</a>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-        {% else %}
-        {% endif %}
-    </div>
-</div>
-<div id="favorites-list" class="favorites-section"></div>
 </body>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-const token = localStorage.getItem('authToken');
-const favoritesList = document.getElementById('favorites-list');
+    document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('authToken');
+    const favoritesList = document.getElementById('favorites-list');
 
-if (!token) {
-    // Якщо немає токена, запитуємо порожні обрані елементи
-    fetch('/api/check_profile/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: '', username: '' }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Якщо елементи є, оновлюємо їх в UI
-        if (data.favorites && data.favorites.length > 0) {
-            updateFavorites(data.favorites);
-        } else {
-            
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching profile:', error);
-        favoritesList.innerHTML = '<p>Не вдалося завантажити обрані елементи.</p>';
-    });
-} else {
-    // Якщо користувач авторизований, запитуємо його улюблені елементи
-    fetch('/api/check_profile/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: token, username: "{{ user.username }}" }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.favorites && data.favorites.length > 0) {
-            updateFavorites(data.favorites);
-        } else {
-            
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching user favorites:', error);
-        favoritesList.innerHTML = '<p>Не вдалося завантажити обрані елементи.</p>';
-    });
-}
-
-function updateFavorites(favorites) {
-// Отримуємо контейнер профілю або створюємо, якщо його немає
-let profileContainer = document.querySelector('.profile-container');
-
-if (!profileContainer) {
-    console.error('Елемент з класом profile-container не знайдено!');
-    return;
-}
-
-
-// Створюємо список обраного
-const favoritesList = document.createElement('div');
-favoritesList.classList.add('favorites-list'); // Додаємо клас для стилізації
-
-const categorizedFavorites = {
-    'Дерева': [],
-    'Квіти': [],
-    'Овочі': [],
-    'Тварини': []
-};
-
-// Сортуємо обрані елементи за категоріями
-favorites.forEach(item => {
-    if (categorizedFavorites[item.category]) {
-        categorizedFavorites[item.category].push(item);
-    }
-});
-
-// Генеруємо категорії з картками
-Object.keys(categorizedFavorites).forEach(category => {
-    const categoryItems = categorizedFavorites[category];
-    if (categoryItems.length > 0) {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.classList.add('favorites-category');
-
-        const categoryTitle = document.createElement('h4');
-        categoryTitle.innerText = `Обрані ${category}`;
-        categoryDiv.appendChild(categoryTitle);
-
-        const cardsContainer = document.createElement('div');
-        cardsContainer.classList.add('favorites-cards');
-
-        // Додаємо картки до контейнера
-        categoryItems.forEach(item => {
-            const card = document.createElement('div');
-            card.classList.add('card');
-
-            const img = document.createElement('img');
-            img.src = item.image_url || 'default.jpg';
-            img.alt = item.common_name || 'Невідомий обʼєкт';
-
-            const title = document.createElement('div');
-            title.classList.add('card-title');
-            title.innerText = item.common_name || 'Невідомий обʼєкт';
-
-            const button = document.createElement('a');
-            button.classList.add('card-button');
-            button.href = item.url;
-            button.innerText = 'Інформація';
-
-            card.appendChild(img);
-            card.appendChild(title);
-            card.appendChild(button);
-            cardsContainer.appendChild(card);
+    if (!token) {
+        // Якщо немає токена, запитуємо порожні обрані елементи
+        fetch('/api/check_profile/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: '', username: '' }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Якщо елементи є, оновлюємо їх в UI
+            if (data.favorites && data.favorites.length > 0) {
+                updateFavorites(data.favorites);
+            } else {
+                
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching profile:', error);
+            favoritesList.innerHTML = '<p>Не вдалося завантажити обрані елементи.</p>';
         });
-
-        categoryDiv.appendChild(cardsContainer);
-        favoritesList.appendChild(categoryDiv);
+    } else {
+        // Якщо користувач авторизований, запитуємо його улюблені елементи
+        fetch('/api/check_profile/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token, username: "{{ user.username }}" }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.favorites && data.favorites.length > 0) {
+                updateFavorites(data.favorites);
+            } else {
+                
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching user favorites:', error);
+            favoritesList.innerHTML = '<p>Не вдалося завантажити обрані елементи.</p>';
+        });
     }
-});
 
-// Додаємо список до контейнера профілю
-profileContainer.appendChild(favoritesList);
+    function updateFavorites(favorites) {
+    // Отримуємо контейнер профілю або створюємо, якщо його немає
+    let profileContainer = document.querySelector('.profile-container');
+
+    if (!profileContainer) {
+        console.error('Елемент з класом profile-container не знайдено!');
+        return;
+    }
+
+
+    // Створюємо список обраного
+    const favoritesList = document.createElement('div');
+    favoritesList.classList.add('favorites-list'); // Додаємо клас для стилізації
+
+    const categorizedFavorites = {
+        'Дерева': [],
+        'Квіти': [],
+        'Овочі': [],
+        'Тварини': []
+    };
+
+    // Сортуємо обрані елементи за категоріями
+    favorites.forEach(item => {
+        if (categorizedFavorites[item.category]) {
+            categorizedFavorites[item.category].push(item);
+        }
+    });
+
+    // Генеруємо категорії з картками
+    Object.keys(categorizedFavorites).forEach(category => {
+        const categoryItems = categorizedFavorites[category];
+        if (categoryItems.length > 0) {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.classList.add('favorites-category');
+
+            const categoryTitle = document.createElement('h4');
+            categoryTitle.innerText = `Обрані ${category}`;
+            categoryDiv.appendChild(categoryTitle);
+
+            const cardsContainer = document.createElement('div');
+            cardsContainer.classList.add('favorites-cards');
+
+            // Додаємо картки до контейнера
+            categoryItems.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+
+                const img = document.createElement('img');
+                img.src = item.image_url || 'default.jpg';
+                img.alt = item.common_name || 'Невідомий обʼєкт';
+
+                const title = document.createElement('div');
+                title.classList.add('card-title');
+                title.innerText = item.common_name || 'Невідомий обʼєкт';
+
+                const button = document.createElement('a');
+                button.classList.add('card-button');
+                button.href = item.url;
+                button.innerText = 'Інформація';
+
+                card.appendChild(img);
+                card.appendChild(title);
+                card.appendChild(button);
+                cardsContainer.appendChild(card);
+            });
+
+            categoryDiv.appendChild(cardsContainer);
+            favoritesList.appendChild(categoryDiv);
+        }
+    });
+
+    // Додаємо список до контейнера профілю
+    profileContainer.appendChild(favoritesList);
 }
 
 
 });
 
 </script>
-</body>
 </html>

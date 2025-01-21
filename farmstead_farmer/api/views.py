@@ -37,18 +37,66 @@ from django.core.mail import EmailMultiAlternatives
 
 def edit_profile_view(request):
     return render(request, 'profile/edit_profile.html')
+
+@api_view(['POST'])
+def check_profile(request):
+    token = request.data.get('token')
+    username = request.data.get('username')
     
-# Головна сторінка та профіль користувача
+    if not username:
+        return Response({'detail': 'Username відсутній'}, status=400)
+
+    if not token:
+        return Response({'favorites': []})
+
+    try:
+        # Отримуємо користувача по токену
+        user_from_token = CustomUser.objects.get(auth_token=token)
+    except CustomUser.DoesNotExist:
+        return Response({'detail': 'Невірний токен'}, status=400)
+
+    if user_from_token.username != username:
+        return Response({'favorites': []})
+
+    try:
+        user = CustomUser.objects.get(username=username)
+    except CustomUser.DoesNotExist:
+        return Response({'detail': 'Користувача не знайдено'}, status=404)
+
+    favorite_items = []
+    if user_from_token == user and user.is_favorite_private:
+        for item in user.favorites:
+            favorite_items.append({
+                'common_name': item.get('name', 'Невідомий обʼєкт'),
+                'image_url': item.get('image_url', 'default.jpg'),
+                'url': item.get('link', '#'),
+                'category': item.get('category', 'Без категорії')
+            })
+
+    return Response({'favorites': favorite_items})
+
+
 def profile_view(request, username):
     try:
-        user = User.objects.get(username=username)
-    except User.DoesNotExist:
+        user = CustomUser.objects.get(username=username)
+    except CustomUser.DoesNotExist:
         return render(request, 'error.html', {'error': 'Користувача не знайдено'})
 
-    if request.user == user:
-        return render(request, 'profile/edit_profile.html', {'user': user})
-    else:
-        return render(request, 'profile/view_profile.html', {'user': user})
+    favorite_items = []
+
+    if not user.is_favorite_private:
+        for item in user.favorites:
+            favorite_items.append({
+                    'common_name': item.get('name', 'Невідомий обʼєкт'),
+                    'image_url': item.get('image_url', 'default.jpg'),
+                    'url': item.get('link', '#'),
+                    'category': item.get('category', 'Без категорії')
+                })
+
+    return render(request, 'profile/view_profile.html', {'user': user, 'favorites': favorite_items, 'is_own_profile': False})
+
+
+
 
 
 class UserProfileView(APIView):
@@ -457,6 +505,7 @@ class UserProfileView(APIView):
             "avatarUrl": avatar_url,
             "lastActivity": user.last_activity,
             "dateJoined": user.date_joined,
+            "flag" : user.is_favorite_private
         }
 
         return Response(data, status=200)
@@ -1011,3 +1060,94 @@ class SendOTPDeleteView(APIView):
             return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+
+User = get_user_model()
+
+@api_view(['POST'])
+def toggle_favorite(request):
+    data = request.data
+
+    token = data.get('token')
+    if not token:
+        return Response({'error': 'Токен не надано.'}, status=400)
+
+    try:
+        user = Token.objects.get(key=token).user
+    except Token.DoesNotExist:
+        return Response({'error': 'Недійсний токен.'}, status=403)
+
+    required_fields = ['name', 'image_url', 'link', 'category']
+    if not all(field in data for field in required_fields):
+        return Response({'error': 'Відсутні необхідні дані.'}, status=400)
+
+    favorite_item = {
+        'name': data['name'],
+        'image_url': data['image_url'],
+        'link': data['link'],
+        'category': data['category']
+    }
+
+    if favorite_item in user.favorites:
+        user.favorites.remove(favorite_item)
+        action = 'removed'
+    else:
+        user.favorites.append(favorite_item)
+        action = 'added'
+
+    user.save()
+    return Response({'status': action, 'favorites': user.favorites})
+
+@api_view(['POST'])
+def check_favorite(request):
+    data = request.data
+
+    # Отримуємо токен
+    token = data.get('token')
+    if not token:
+        return Response({'error': 'Токен не надано.'}, status=400)
+
+    # Перевірка на дійсність токену
+    try:
+        user = Token.objects.get(key=token).user
+    except Token.DoesNotExist:
+        return Response({'error': 'Недійсний токен.'}, status=403)
+
+    # Перевіряємо, чи є всі необхідні дані
+    required_fields = ['name', 'image_url', 'link', 'category']
+    if not all(field in data for field in required_fields):
+        return Response({'error': 'Відсутні необхідні дані.'}, status=400)
+
+    favorite_item = {
+        'name': data['name'],
+        'image_url': data['image_url'],
+        'link': data['link'],
+        'category': data['category']
+    }
+
+    if favorite_item in user.favorites:
+        action = 'inside'
+    else:
+        action = 'not inside'
+    return Response({'status': action})
+
+@api_view(['POST'])
+def is_favorite_private_change(request):
+    token = request.data.get('token')
+
+    if not token:
+        return Response({'detail': 'Неправильний токен'}, status=400)
+    try:
+        user = CustomUser.objects.get(auth_token=token)
+    except CustomUser.DoesNotExist:
+        return Response({'detail': 'Невірний токен'}, status=400)
+    
+    if user.is_favorite_private:
+        user.is_favorite_private = 0
+        user.save()
+        return Response({'status':'Статус змінено на 0'})
+    else:
+        user.is_favorite_private = 1
+        user.save()
+        return Response({'status':'Статус змінено на 1'})
+    
+    
