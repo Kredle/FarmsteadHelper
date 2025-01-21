@@ -14,7 +14,7 @@ class Animal(models.Model):
     features = models.TextField(blank=True, null=True)
     care_conditions = models.TextField(blank=True, null=True)
     reproduction = models.TextField(blank=True, null=True)
-    usage = models.TextField(blank=True, null=True)
+    usage = models.TextField(blank=True, null=True, db_column = 'application')
     image = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
