@@ -5,198 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Профіль користувача</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
 </head>
 <body>
     
-
-    
     <!-- Хедер -->
     <header>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
-    
-            header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 10px 20px;
-                background-color: #333;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
-            }
-    
-            .logo {
-                display: flex;
-                align-items: center;
-            }
-    
-            .logo img {
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .logo span {
-                font-size: 20px;
-                font-weight: bold;
-                color: #fff;
-            }
-    
-            nav {
-                display: flex;
-                gap: 20px;
-            }
-    
-            nav a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 16px;
-                padding: 5px 10px;
-                transition: background-color 0.3s, color 0.3s;
-            }
-    
-            nav a:hover {
-                background-color: #444;
-                border-radius: 5px;
-            }
-    
-            .auth {
-                position: relative;
-            }
-    
-            .auth img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-    
-            .auth-menu {
-                display: none;
-                position: absolute;
-                top: 50px;
-                right: 0;
-                background-color: #fff;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-            }
-    
-            .auth-menu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: #333;
-                font-size: 14px;
-            }
-    
-            .auth-menu a:hover {
-                background-color: #f4f4f4;
-            }
-    
-            .auth:hover .auth-menu {
-                display: block;
-            }
-    
-            .hamburger {
-                display: none;
-                flex-direction: column;
-                cursor: pointer;
-            }
-    
-            .hamburger div {
-                width: 25px;
-                height: 3px;
-                background-color: #fff;
-                margin: 4px 0;
-            }
-    
-            .side-menu {
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100%;
-                background-color: #333;
-                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-                transition: right 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                padding-top: 20px;
-                z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
-            }
-    
-            .side-menu a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 18px;
-                padding: 15px 20px;
-                transition: background-color 0.3s;
-            }
-    
-            .side-menu a:hover {
-                background-color: #444;
-            }
-    
-            .side-menu-close {
-                text-align: right;
-                padding: 10px;
-            }
-    
-            .side-menu-close button {
-                background: none;
-                border: none;
-                color: #fff;
-                font-size: 20px;
-                cursor: pointer;
-            }
-    
-            .side-menu .auth-buttons {
-                margin-top: auto;
-                padding: 20px;
-            }
-    
-            .side-menu .auth-buttons a {
-                display: block;
-                text-align: center;
-                padding: 10px;
-                background-color: #444;
-                color: #fff;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                text-decoration: none;
-            }
-    
-            .side-menu .auth-buttons a:hover {
-                background-color: #555;
-            }
-    
-            @media (max-width: 768px) {
-                nav,
-                .auth {
-                    display: none;
-                }
-    
-                .hamburger {
-                    display: flex;
-                    margin-left: auto;
-                }
-            }
-        </style>
-    
     <div class="logo">
         <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
@@ -391,5 +206,204 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Відображення обраних елементів -->
+    <div class="favorites-section">
+
+        {% if favorites %}
+            <div class="favorites-category">
+                <h4>Обрані дерева</h4>
+                <div class="favorites-cards">
+                    {% for item in favorites %}
+                        {% if item.category == 'Дерева' %}
+                            <div class="card" data-category="{{ item.category }}">
+                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                <a class="card-button" href="{{ item.url }}">Інформація</a>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="favorites-category">
+                <h4>Обрані квіти</h4>
+                <div class="favorites-cards">
+                    {% for item in favorites %}
+                        {% if item.category == 'Квіти' %}
+                            <div class="card" data-category="{{ item.category }}">
+                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                <a class="card-button" href="{{ item.url }}">Інформація</a>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="favorites-category">
+                <h4>Обрані овочі</h4>
+                <div class="favorites-cards">
+                    {% for item in favorites %}
+                        {% if item.category == 'Овочі' %}
+                            <div class="card" data-category="{{ item.category }}">
+                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                <a class="card-button" href="{{ item.url }}">Інформація</a>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="favorites-category">
+                <h4>Обрані тварини</h4>
+                <div class="favorites-cards">
+                    {% for item in favorites %}
+                        {% if item.category == 'Тварини' %}
+                            <div class="card" data-category="{{ item.category }}">
+                                <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                <a class="card-button" href="{{ item.url }}">Інформація</a>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+        {% endif %}
+    </div>
+</div>
+<div id="favorites-list" class="favorites-section"></div>
+</body>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+const token = localStorage.getItem('authToken');
+const favoritesList = document.getElementById('favorites-list');
+
+if (!token) {
+    // Якщо немає токена, запитуємо порожні обрані елементи
+    fetch('/api/check_profile/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: '', username: '' }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Якщо елементи є, оновлюємо їх в UI
+        if (data.favorites && data.favorites.length > 0) {
+            updateFavorites(data.favorites);
+        } else {
+            
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching profile:', error);
+        favoritesList.innerHTML = '<p>Не вдалося завантажити обрані елементи.</p>';
+    });
+} else {
+    // Якщо користувач авторизований, запитуємо його улюблені елементи
+    fetch('/api/check_profile/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: token, username: "{{ user.username }}" }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.favorites && data.favorites.length > 0) {
+            updateFavorites(data.favorites);
+        } else {
+            
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching user favorites:', error);
+        favoritesList.innerHTML = '<p>Не вдалося завантажити обрані елементи.</p>';
+    });
+}
+
+function updateFavorites(favorites) {
+// Отримуємо контейнер профілю або створюємо, якщо його немає
+let profileContainer = document.querySelector('.profile-container');
+
+if (!profileContainer) {
+    console.error('Елемент з класом profile-container не знайдено!');
+    return;
+}
+
+
+// Створюємо список обраного
+const favoritesList = document.createElement('div');
+favoritesList.classList.add('favorites-list'); // Додаємо клас для стилізації
+
+const categorizedFavorites = {
+    'Дерева': [],
+    'Квіти': [],
+    'Овочі': [],
+    'Тварини': []
+};
+
+// Сортуємо обрані елементи за категоріями
+favorites.forEach(item => {
+    if (categorizedFavorites[item.category]) {
+        categorizedFavorites[item.category].push(item);
+    }
+});
+
+// Генеруємо категорії з картками
+Object.keys(categorizedFavorites).forEach(category => {
+    const categoryItems = categorizedFavorites[category];
+    if (categoryItems.length > 0) {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.classList.add('favorites-category');
+
+        const categoryTitle = document.createElement('h4');
+        categoryTitle.innerText = `Обрані ${category}`;
+        categoryDiv.appendChild(categoryTitle);
+
+        const cardsContainer = document.createElement('div');
+        cardsContainer.classList.add('favorites-cards');
+
+        // Додаємо картки до контейнера
+        categoryItems.forEach(item => {
+            const card = document.createElement('div');
+            card.classList.add('card');
+
+            const img = document.createElement('img');
+            img.src = item.image_url || 'default.jpg';
+            img.alt = item.common_name || 'Невідомий обʼєкт';
+
+            const title = document.createElement('div');
+            title.classList.add('card-title');
+            title.innerText = item.common_name || 'Невідомий обʼєкт';
+
+            const button = document.createElement('a');
+            button.classList.add('card-button');
+            button.href = item.url;
+            button.innerText = 'Інформація';
+
+            card.appendChild(img);
+            card.appendChild(title);
+            card.appendChild(button);
+            cardsContainer.appendChild(card);
+        });
+
+        categoryDiv.appendChild(cardsContainer);
+        favoritesList.appendChild(categoryDiv);
+    }
+});
+
+// Додаємо список до контейнера профілю
+profileContainer.appendChild(favoritesList);
+}
+
+
+});
+
+</script>
 </body>
 </html>

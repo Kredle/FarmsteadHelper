@@ -6,262 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ plant.name|default:"Назва рослини" }}</title>
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            margin-top: 7%;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .aboutanimal {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .aboutanimal img {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 8px;
-        }
-        .aboutanimal h1 {
-            margin: 20px 0 10px;
-            color: #333;
-        }
-        .section {
-            margin-bottom: 30px;
-        }
-        .section h2 {
-            color: #444;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-        }
-        .section .grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .card {
-            flex: 1 1 calc(50% - 20px);
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 6px;
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
-        }
-        .card h3 {
-            margin-bottom: 10px;
-            color: #444;
-        }
-        .card p {
-            margin: 0;
-            color: #555;
-        }
-        @media (max-width: 768px) {
-            .card {
-                flex: 1 1 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
 </head>
 <body>
 
-
-    
     <!-- Хедер -->
-    <header>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
-    
-            header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 10px 20px;
-                background-color: #333;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
-            }
-    
-            .logo {
-                display: flex;
-                align-items: center;
-            }
-    
-            .logo img {
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .logo span {
-                font-size: 20px;
-                font-weight: bold;
-                color: #fff;
-            }
-    
-            nav {
-                display: flex;
-                gap: 20px;
-            }
-    
-            nav a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 16px;
-                padding: 5px 10px;
-                transition: background-color 0.3s, color 0.3s;
-            }
-    
-            nav a:hover {
-                background-color: #444;
-                border-radius: 5px;
-            }
-    
-            .auth {
-                position: relative;
-            }
-    
-            .auth img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-    
-            .auth-menu {
-                display: none;
-                position: absolute;
-                top: 50px;
-                right: 0;
-                background-color: #fff;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-            }
-    
-            .auth-menu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: #333;
-                font-size: 14px;
-            }
-    
-            .auth-menu a:hover {
-                background-color: #f4f4f4;
-            }
-    
-            .auth:hover .auth-menu {
-                display: block;
-            }
-    
-            .hamburger {
-                display: none;
-                flex-direction: column;
-                cursor: pointer;
-            }
-    
-            .hamburger div {
-                width: 25px;
-                height: 3px;
-                background-color: #fff;
-                margin: 4px 0;
-            }
-    
-            .side-menu {
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100%;
-                background-color: #333;
-                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-                transition: right 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                padding-top: 20px;
-                z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
-            }
-    
-            .side-menu a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 18px;
-                padding: 15px 20px;
-                transition: background-color 0.3s;
-            }
-    
-            .side-menu a:hover {
-                background-color: #444;
-            }
-    
-            .side-menu-close {
-                text-align: right;
-                padding: 10px;
-            }
-    
-            .side-menu-close button {
-                background: none;
-                border: none;
-                color: #fff;
-                font-size: 20px;
-                cursor: pointer;
-            }
-    
-            .side-menu .auth-buttons {
-                margin-top: auto;
-                padding: 20px;
-            }
-    
-            .side-menu .auth-buttons a {
-                display: block;
-                text-align: center;
-                padding: 10px;
-                background-color: #444;
-                color: #fff;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                text-decoration: none;
-            }
-    
-            .side-menu .auth-buttons a:hover {
-                background-color: #555;
-            }
-    
-            @media (max-width: 768px) {
-                nav,
-                .auth {
-                    display: none;
-                }
-    
-                .hamburger {
-                    display: flex;
-                    margin-left: auto;
-                }
-            }
-        </style>
-    
+    <header>   
     <div class="logo">
         <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
@@ -430,59 +181,60 @@
     </script>
     </header>
 
-    <div class="container">
-        <div class="aboutanimal">
+    <div class="detail_container">
+        <div class="detail_aboutanimal">
             <img id="plant-image" src="{{ plant.image }}" alt="{{ plant.name }}">
             <h1 id="plant-name">{{ plant.name|default:"Назва квітки" }}</h1>
             <p id="plant-description">{{ plant.description|default:"Опис відсутній" }}</p>
+            <button id="favorite-button" class="favorite-btn">Додати в обране</button>
         </div>
         
-        <div class="section">
+        <div class="detail_section">
             <h2>Загальна інформація</h2>
-            <div class="grid">
-                <div class="card">
+            <div class="detail_grid">
+                <div class="detail_card">
                     <h3>Родина</h3>
                     <p>{{ plant.family|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Тип</h3>
                     <p>{{ plant.type_of_life|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Висота</h3>
                     <p>{{ plant.height|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Колір</h3>
                     <p>{{ plant.flower_color|default:"-" }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="section">
+        <div class="detail_section">
             <h2>Опис та характеристика</h2>
-            <div class="grid">
-                <div class="card">
+            <div class="detail_grid">
+                <div class="detail_card">
                     <h3>Період цвітіння</h3>
                     <p>{{ plant.flowering_period|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Придатні умови</h3>
                     <p>{{ plant.conditions_of_care|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Регіони зростання</h3>
                     <p>{{ plant.growth_regions|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Ґрунт</h3>
                     <p>{{ plant.soil|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Рекомендована вологість</h3>
                     <p>{{ plant.recommended_humidity|default:"-" }}</p>
                 </div>
-                <div class="card">
+                <div class="detail_card">
                     <h3>Рекомендована температура</h3>
                     <p>{{ plant.temperature|default:"-" }}</p>
                 </div>
@@ -492,44 +244,6 @@
 
     <!-- Футер -->
     <footer>
-        <style>
-            footer {
-                background-color: #333;
-                color: #fff;
-                padding: 20px 10px;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-    
-            .legal-links {
-                display: flex;
-                justify-content: center;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-    
-            .legal-links a {
-                color: #fff;
-                text-decoration: none;
-                font-size: 14px;
-            }
-    
-            .legal-links a:hover {
-                text-decoration: underline;
-            }
-    
-            .legal-links span {
-                color: #fff;
-                font-size: 14px;
-            }
-    
-            .copyright {
-                font-size: 14px;
-                color: #ccc;
-            }
-        </style>
         <div class="legal-links">
             <a href="{% static 'terms_of_use.pdf' %}">Умови використання</a>
             <span>|</span>
@@ -541,5 +255,85 @@
             &copy; 2024 FarmsteadHelper. Усі права захищено.
         </div>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const favoriteButton = document.getElementById('favorite-button');
+            const token = localStorage.getItem('authToken');
+            const plantName = document.getElementById('plant-name').innerText;
+    
+            if (!token) {
+                favoriteButton.textContent = 'Додати в обране';
+                return;
+            }
+    
+            const animalData = {
+                    token: token,
+                    name: plantName,
+                    image_url: document.getElementById('plant-image').src,
+                    link: window.location.href,
+                    category: 'Квіти'  // або будь-яка інша категорія
+                };
+    
+            // Запит на перевірку, чи в обраних
+            fetch('/api/check_favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(animalData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'inside') {
+                    favoriteButton.textContent = 'В обраних';
+                } else {
+                    favoriteButton.textContent = 'Додати в обране';
+                }
+            })
+            .catch(error => {
+                console.error('Помилка:', error);
+                favoriteButton.textContent = 'Додати в обране';
+            });
+    
+            // Обробник для кнопки "Додати в обране"
+            favoriteButton.addEventListener('click', () => {
+                if (!token) {
+                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    return;
+                }
+    
+                const animalData = {
+                    token: token,
+                    name: plantName,
+                    image_url: document.getElementById('plant-image').src,
+                    link: window.location.href,
+                    category: 'Квіти'  // або будь-яка інша категорія
+                };
+    
+                // Запит на додавання/видалення з обраних
+                fetch('/api/toggle_favorite/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(animalData),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'added') {
+                        favoriteButton.textContent = 'В обраних';
+                    } else if (data.status === 'removed') {
+                        favoriteButton.textContent = 'Додати в обране';
+                    } else {
+                        alert('Сталася помилка при оновленні обраного.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при збереженні в обране.');
+                });
+            });
+        });
+    </script> 
 </body>
 </html>

@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Редагування профілю</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
     <script>
 
@@ -61,6 +62,31 @@ function onCaptchaSuccess() {
                 bioField.value = data.bio || "";
                 firstnameField.value = data.firstname || "";
                 lastnameField.value = data.lastname || "";
+
+                const fav_button = document.getElementById('toggle-favorites-visibility');
+
+                if(data.flag){
+                    fav_button.textContent = 'Показати Favorites';
+                }
+                else {
+                    fav_button.textContent = 'Приховати Favorites';
+                }
+
+                fav_button.addEventListener('click', function (){
+                fetch('/api/is_favorite_private_change/',{
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({token: token}),
+                });
+                if(fav_button.textContent == 'Показати Favorites'){
+                    fav_button.textContent = 'Приховати Favorites';
+                }
+                else{
+                    fav_button.textContent = 'Показати Favorites';
+                }
+            });
 
                 // Handle account deletion
                 const deleteAccountButton = document.getElementById('delete-account-button');
@@ -459,96 +485,108 @@ changeEmailForm.addEventListener('submit', function (event) {
             <p id="bio-display"></p> 
         </div>
 
-        <form id="change-username-form" enctype="application/json">
-            <div class="form-group">
-                <label for="new-username">Ім'я користувача</label>
-                <input type="text" id="new-username" name="username" required>
-            </div>
-            <button type="submit">Зберегти зміни</button>
-        </form>
+        <hr>
+        
+        <div class="profile-display">
+            <form id="change-username-form" enctype="application/json">
+                <div class="form-group">
+                    <label for="new-username">Ім'я користувача</label>
+                    <input type="text" id="new-username" name="username" required>
+                </div>
+                <button type="submit">Зберегти зміни</button>
+            </form>
 
-        <form id="change-bio-form" enctype="application/json">
-            <div class="form-group">
-                <label for="bio">Біографія</label>
-                <textarea id="bio" name="bio"></textarea>
-            </div>
-            <button type="submit">Зберегти біографію</button>
-        </form>
-
+            <form id="change-bio-form" enctype="application/json">
+                <div class="form-group">
+                    <label for="bio">Біографія</label>
+                    <textarea id="bio" name="bio"></textarea>
+                </div>
+                <button type="submit">Зберегти біографію</button>
+            </form>
+        </div>
 
         <hr>
 
-        <h3>Змінити пароль</h3>
-        <form id="change-password-form">
-            <div class="form-group">
-                <label for="current-password">Теперішній пароль</label>
-                <input type="password" id="current-password" name="current_password" required>
-            </div>
-            <div class="form-group">
-                <label for="new-password">Новий пароль</label>
-                <input type="password" id="new-password" name="new_password" required>
-            </div>
-            <div class="form-group">
-                <label for="confirm-password">Підтвердження нового пароля</label>
-                <input type="password" id="confirm-password" name="confirm_password" required>
-            </div>
-            <button type="submit">Змінити пароль</button>
-        </form>
+        <div class="profile-display">
+            <h3>Змінити пароль</h3>
+
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Теперішній пароль</label>
+                    <input type="password" id="current-password" name="current_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Новий пароль</label>
+                    <input type="password" id="new-password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Підтвердження нового пароля</label>
+                    <input type="password" id="confirm-password" name="confirm_password" required>
+                </div>
+                <button type="submit">Змінити пароль</button>
+            </form>
+        </div>
     </div>
+
+    <div class="forms">
     
-    <button id="delete-account-button">Видалити акаунт</button>
+        <button id="delete-account-button">Видалити акаунт</button>
 
-<div id="delete-form-dialog" class="modal" style="display: none;">
-    <div class="modal-content">
-        <form id="delete-account-form">
-            <h3>Видалення акаунту</h3>
-            <div class="form-group">
-                <label for="delete-password">Пароль</label>
-                <input type="password" id="delete-password" name="password" required>
+        <div id="delete-form-dialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <form id="delete-account-form">
+                    <h3>Видалення акаунту</h3>
+                    <div class="form-group">
+                        <label for="delete-password">Пароль</label>
+                        <input type="password" id="delete-password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="otp-code">OTP код</label>
+                        <input type="text" id="otp-code" name="otp" required>
+                    </div>
+                    <div class="form-group">
+                        <div class="g-recaptcha" data-sitekey="6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd"></div>
+                    </div>
+                    <button type="submit">Підтвердити</button>
+                </form>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="otp-code">OTP код</label>
-                <input type="text" id="otp-code" name="otp" required>
+        </div>
+
+        <!-- Кнопка для зміни електронної пошти -->
+        <button id="change-email-button">Змінити електронну пошту</button>
+
+        <!-- Модальне вікно для зміни електронної пошти -->
+        <div id="email-form-dialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <form id="email-form">
+                    <h3>Змінити електронну пошту</h3>
+                    <div class="form-group">
+                        <label for="new-email">Нова електронна пошта</label>
+                        <input type="email" id="new-email" name="email" required>
+                    </div>
+                    <button type="button" id="send-otp-button">Надіслати OTP код</button>
+                </form>
             </div>
-            <div class="form-group">
-                <div class="g-recaptcha" data-sitekey="6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd"></div>
+        </div>
+
+        <!-- Модальне вікно для введення OTP коду -->
+        <div id="otp-form-dialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <form id="otp-form">
+                    <h3>Введіть OTP код</h3>
+                    <div class="form-group">
+                        <label for="otp-code-email">OTP код</label>
+                        <input type="text" id="otp-code-email" name="otp" placeholder="Введіть OTP код" required>
+                    </div>
+                    <button type="submit">Змінити електронну пошту</button>
+                </form>
             </div>
-            <button type="submit">Підтвердити</button>
-        </form>
-        </form>
+        </div>
+
+        <button id="toggle-favorites-visibility">Приховати Favorites</button>
+
     </div>
-</div>
-
-<!-- Кнопка для зміни електронної пошти -->
-<button id="change-email-button">Змінити електронну пошту</button>
-
-<!-- Модальне вікно для зміни електронної пошти -->
-<div id="email-form-dialog" class="modal" style="display: none;">
-    <div class="modal-content">
-        <form id="email-form">
-            <h3>Змінити електронну пошту</h3>
-            <div class="form-group">
-                <label for="new-email">Нова електронна пошта</label>
-                <input type="email" id="new-email" name="email" required>
-            </div>
-            <button type="button" id="send-otp-button">Надіслати OTP код</button>
-        </form>
-    </div>
-</div>
-
-<!-- Модальне вікно для введення OTP коду -->
-<div id="otp-form-dialog" class="modal" style="display: none;">
-    <div class="modal-content">
-        <form id="otp-form">
-            <h3>Введіть OTP код</h3>
-            <div class="form-group">
-                <label for="otp-code-email">OTP код</label>
-                <input type="text" id="otp-code-email" name="otp" placeholder="Введіть OTP код" required>
-            </div>
-            <button type="submit">Змінити електронну пошту</button>
-        </form>
-    </div>
-</div>
 
 </body>
 </html>
