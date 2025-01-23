@@ -213,8 +213,34 @@ def add_comment(request, topic_id):
             return JsonResponse({'error': 'Не вдалося додати коментар.'}, status=500)
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+@csrf_exempt
+def increace_comment_counter_topic(request, topic_id):
+    print(f"Метод запиту: {request.method}")
+    print(f"Шлях запиту: {request.path}")
+    topic = Topic.objects.get(idTopic=topic_id)
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            comments_counter = data.get('Comments')
+            if comments_counter is None:
+                return JsonResponse({'error': 'Поле Comments відсутнє в запиті'}, status=400)
+            topic.Comments = int(comments_counter) + 1
+            topic.save()
+            return JsonResponse(status=201)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Невірний формат JSON'}, status=400)
+        except Exception as e:
+            print(f"Помилка при збільшенні лічильника коментарів: {e}")
+            return JsonResponse({'error': 'Не вдалося збільшети лічильник коментарів.'}, status=500)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+    
 def get_popular_topics(request):
     # Отримуємо теми з бази даних, сортуємо їх за лайками у порядку спадання
     topics = Topic.objects.all().order_by('-Likes')  # Поле `likes` повинно бути у вашій моделі
     popular_topics_list = list(topics.values())  # Перетворюємо QuerySet в список словників
     return JsonResponse(popular_topics_list, safe=False)
+
+def comments_list(request, topic_id):
+    comments = Comment.objects.filter(Topics_id=topic_id).values('Author', 'Content', 'Likes', 'Dislikes', 'Comments', 'Date', 'Time')
+    return JsonResponse(list(comments), safe=False)
