@@ -11,6 +11,9 @@ class Topic(models.Model):
     Category = models.CharField(max_length=45, db_column = 'Category')
     Comments = models.IntegerField(db_column = 'Comments')
     Author = models.TextField(db_column = 'Author')
+    Likes_list =models.JSONField(default=list, blank=True)
+    Dislikes_list = models.JSONField(default=list, blank=True)
+
 
     class Meta:
         managed = False
