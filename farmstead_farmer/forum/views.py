@@ -6,6 +6,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
+from api.models import CustomUser
 def forum_main(request):
     topics = Topic.objects.all().values(
         'idTopic', 'Title', 'Content', 'Category', 'Author', 'Date', 'Likes', 'Comments'
@@ -34,7 +35,7 @@ def create_discussion(request):
         likes = request.POST.get('likes')
         dislikes = request.POST.get('dislikes')
         comments = request.POST.get('comm')
-        topic = Topic.objects.create(Category=category, Title=title, Content=description, Author = author, Time = time, Date = date, Likes = likes, Dislikes = dislikes, Comments = comments)
+        topic = Topic.objects.create(Category=category, Title=title, Content=description, Author = author, Time = time, Date = date, Likes = likes, Dislikes = dislikes, Comments = comments, Likes_list = '[]', Dislikes_list = '[]' )
         topic_id = topic.idTopic
         print(topic_id)
         return redirect('topic_detail', topic_id)  # Перенаправлення на список обговорень
@@ -54,25 +55,93 @@ import json
 def update_topic_reaction(request, topic_id):
     if request.method == 'POST':
         try:
-            topic = Topic.objects.get(idTopic=topic_id)
             data = json.loads(request.body)
-            likes_count = data.get('likes')  # Лічильник лайків
-            dislikes_count = data.get('dislike')  # Лічильник дизлайків
-            print(f"Received likes: {likes_count}, dislikes: {dislikes_count}")
-            topic.Likes = likes_count
-            topic.Dislikes = dislikes_count
+            token = data.get('token')
+            status = data.get('status')
+
+            if not token or not status:
+                return JsonResponse({'error': 'Token and status are required'}, status=400)
+
+            try:
+                user = CustomUser.objects.get(auth_token=token)
+            except CustomUser.DoesNotExist:
+                return JsonResponse({'error': 'Invalid token'}, status=401)
+
+            topic = Topic.objects.get(idTopic=topic_id)
+            username = user.username
+
+            # Reset status
+            if status == "reset":
+                if username in topic.Likes_list:
+                    topic.Likes_list.remove(username)
+                    topic.Likes -= 1
+                if username in topic.Dislikes_list:
+                    topic.Dislikes_list.remove(username)
+                    topic.Dislikes -= 1
+
+            # Like status
+            elif status == "like":
+                if username not in topic.Likes_list:
+                    topic.Likes_list.append(username)
+                    topic.Likes += 1
+                if username in topic.Dislikes_list:
+                    topic.Dislikes_list.remove(username)
+                    topic.Dislikes -= 1
+
+            # Dislike status
+            elif status == "dislike":
+                if username not in topic.Dislikes_list:
+                    topic.Dislikes_list.append(username)
+                    topic.Dislikes += 1
+                if username in topic.Likes_list:
+                    topic.Likes_list.remove(username)
+                    topic.Likes -= 1
+
             topic.save()
 
-            # Логування результатів
-            print(f"Updated Likes: {topic.Likes}, Updated Dislikes: {topic.Dislikes}")
-
-            return JsonResponse({'Likes': topic.Likes, 'Dislikes': topic.Dislikes}, status=200)
+            return JsonResponse({
+                'Likes': topic.Likes,
+                'Dislikes': topic.Dislikes,
+                'Likes_list': topic.Likes_list,
+                'Dislikes_list': topic.Dislikes_list
+            }, status=200)
 
         except Topic.DoesNotExist:
             return JsonResponse({'error': 'Topic not found'}, status=404)
-
         except Exception as e:
-            print(f"Error: {e}")
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@csrf_exempt
+def get_user_reaction(request, topic_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+
+            if not token:
+                return JsonResponse({'error': 'Token is required'}, status=400)
+
+            try:
+                user = CustomUser.objects.get(auth_token=token)
+            except CustomUser.DoesNotExist:
+                return JsonResponse({'error': 'Invalid token'}, status=401)
+
+            topic = Topic.objects.get(idTopic=topic_id)
+            username = user.username
+
+            if username in topic.Likes_list:
+                return JsonResponse({'status': 'like'}, status=200)
+            elif username in topic.Dislikes_list:
+                return JsonResponse({'status': 'dislike'}, status=200)
+            else:
+                return JsonResponse({'status': 'reset'}, status=200)
+
+        except Topic.DoesNotExist:
+            return JsonResponse({'error': 'Topic not found'}, status=404)
+        except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
