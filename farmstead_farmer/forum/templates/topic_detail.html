@@ -737,87 +737,101 @@
         }
         likeBtn.addEventListener('click', () => {
             event.preventDefault(); // Запобігаємо надсиланню форми
-            handleReaction('like')
+
         });
         dislikeBtn.addEventListener('click', () => {
             event.preventDefault(); // Запобігаємо надсиланню форми
-            handleReaction('dislike')
         });
         //let previousAction = null;  // Змінна для відстеження попередньої реакції
+        document.addEventListener('DOMContentLoaded', function () {
+    const likeBtn = document.getElementById('like-btn');
+    const dislikeBtn = document.getElementById('dislike-btn');
+    const token = localStorage.getItem('authToken');
+    const topicId = document.querySelector('.topic-stats').dataset.topicId;
 
-        let previousAction = null;  // Змінна для відстеження попередньої реакції
-        let likesCount = parseInt(document.getElementById('likes-count').textContent);  // Поточний лічильник лайків
-        let dislikesCount = parseInt(document.getElementById('dislikes-count').textContent);  // Поточний лічильник дизлайків
-        if (likesCount === null){
-            likesCount = 0;
+    let currentStatus = null;
+
+    async function updateReaction(status) {
+        if (!token) {
+            alert('You need to log in first.');
+            return;
         }
-        if (dislikesCount === null){
-            dislikesCount = 0;
-        }
-        function handleReaction(actionType) {
-            // Перевіряємо, чи не вибрана вже та сама реакція
-            console.log(`Previous action: ${previousAction}, Current action: ${actionType}`);
-            
-            if(previousAction === 'like'){
-                if(actionType === 'like'){
-                    likesCount--;
-                    previousAction = null
-                }
-                else if(actionType === 'dislike'){
-                    likesCount--;
-                    dislikesCount++;
-                    previousAction = actionType
-                }
-            }
-            else if(previousAction === 'dislike'){
-                if(actionType === 'dislike'){
-                    dislikesCount--;
-                    previousAction = null
-                }
-                else if (actionType === 'like'){
-                    dislikesCount--;
-                    likesCount++;
-                    previousAction = actionType
-                }
-            }
-            else if (previousAction === null) {
-                if(actionType === 'like'){
-                    likesCount++;
-                    previousAction = actionType
-                }
-                else if (actionType === 'dislike'){
-                    dislikesCount++;
-                    previousAction = actionType
-                }
-            } 
 
-            
-
-            // Відправляємо запит на сервер
-            fetch(`/forum/update_topic/${topicId}/`, {
+        try {
+            const response = await fetch(`/forum/update_topic/${topicId}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken'),
                 },
-                body: JSON.stringify({ likes: likesCount, dislike: dislikesCount }),  // Відправляємо поточну та попередню реакцію
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Оновлюємо лічильники лайків і дизлайків в DOM
-                document.getElementById('likes-count').textContent = data.Likes;
-                document.getElementById('dislikes-count').textContent = data.Dislikes;
-            })
-            .catch(error => {
-                console.error('Error updating reaction:', error);
-                alert('Error: ' + error.message);  // Показати помилку користувачеві
+                body: JSON.stringify({ token, status }),
             });
+
+            if (!response.ok) throw new Error('Failed to update reaction');
+
+            const data = await response.json();
+            document.getElementById('likes-count').textContent = data.Likes;
+            document.getElementById('dislikes-count').textContent = data.Dislikes;
+            currentStatus = status === currentStatus ? 'reset' : status;
+
+            // Оновлення кнопок
+            updateButtonStatus();
+        } catch (error) {
+            console.error(error);
+            alert('Error updating reaction.');
         }
+    }
+
+    likeBtn.addEventListener('click', () => {
+        const newStatus = currentStatus === 'like' ? 'reset' : 'like';
+        updateReaction(newStatus);
+    });
+
+    dislikeBtn.addEventListener('click', () => {
+        const newStatus = currentStatus === 'dislike' ? 'reset' : 'dislike';
+        updateReaction(newStatus);
+    });
+
+    async function loadUserReaction() {
+        if (!token) return;
+
+        try {
+            const response = await fetch(`/forum/get_user_reaction/${topicId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch user reaction');
+
+            const data = await response.json();
+            currentStatus = data.status;
+
+            // Оновлюємо кнопки відповідно до статусу користувача
+            updateButtonStatus();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function updateButtonStatus() {
+        // Очищаємо попередні активні кнопки
+        likeBtn.classList.remove('active');
+        dislikeBtn.classList.remove('active');
+
+        if (currentStatus === 'like') {
+            likeBtn.classList.add('active');
+        } else if (currentStatus === 'dislike') {
+            dislikeBtn.classList.add('active');
+        }
+    }
+
+    // Завантажуємо реакцію користувача при завантаженні сторінки
+    loadUserReaction();
+});
+
+
+        
 
 
 
