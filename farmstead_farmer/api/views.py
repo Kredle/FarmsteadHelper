@@ -647,16 +647,16 @@ def change_username(request):
     if not token or not new_username:
         return Response({'error': 'Token and new username are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate token and get the user
     user = User.objects.filter(auth_token=token).first()
     if not user:
-        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Неправильний токен'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check if 7 days have passed since the last username change
+    if User.objects.filter(username=new_username).exists():
+        return Response({'error': 'Користувач із таким ім’ям уже існує'}, status=status.HTTP_400_BAD_REQUEST)
+
     if user.last_username_update and timezone.now() - user.last_username_update < timedelta(days=7):
-        return Response({'error': 'You can only change your username once every 7 days'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Ви можете змінити ім\'я користувача раз у 7 днів'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Change the username
     user.username = new_username
     user.last_username_update = timezone.now()
     user.save()
