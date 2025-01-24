@@ -546,9 +546,7 @@
         <p><strong>Категорія:</strong> {{ topic.Category }}</p>
         <p><strong>Автор:</strong> {{ topic.Author }} | <strong>Дата:</strong> {{ topic.Date }}</p>
         <p>{{ topic.Content }}</p>
-        <div class="Comment">
-            <button id="comment">Відповісти</button>
-        </div>
+        <button id="comment">Відповісти</button>
         <div class="topic-stats" data-topic-id="{{ topic.idTopic }}">
             <button id="like-btn">👍 Like (<span id="likes-count">{{ topic.Likes }}</span>)</button>
             <button id="dislike-btn">👎 Dislike (<span id="dislikes-count">{{ topic.Dislikes }}</span>)</button>
@@ -568,26 +566,127 @@
     </div>
     <a href="/forum/">Повернутись до списку тем</a>
     <script>
+        let commentId;
         const topicStats = document.querySelector('.topic-stats');
         const topicId = topicStats.dataset.topicId;
         function loadComments(topicId) {
             fetch(`/forum/topic/${topicId}/comments_list/`)
                 .then(response => response.json())
                 .then(data => {
+
                     const commentsSection = document.getElementById('comments-section');
                     commentsSection.innerHTML = ''; // Очищення попередніх коментарів
                     if (data.length > 0) {
+                        const commentDivs = [];
                         data.forEach(comment => {
                             const commentDiv = document.createElement('div');
                             commentDiv.className = 'comment';
+                            commentDiv.setAttribute('data-comment-id', comment.idComments); // Зберігаємо ID коментаря в атрибуті
                             commentDiv.innerHTML = `
                             <p>Автор: ${comment.Author} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
-                            <p>${comment.Content}</p>
+                            <p class="comment-content">${comment.Content}</p>
                             <p>Лайки: ${comment.Likes} | Коментарі: ${comment.Comments}</p>
-                            <button id="comment-like-btn">👍 Like</button>
-                            <button id="comment-dislike-btn">👎 Dislike</button>
-                            <button id="CommentToComment">Відповісти</button>`;
+                            <button class="comment-like-btn">👍 Like</button>
+                            <button class="comment-dislike-btn">👎 Dislike</button>
+                            <button class="comment-reply-btn">Відповісти</button>
+                            <button class="edit-comment-btn" id="edit-comment-btn" style="display: none;">Редагувати коментар</button>
+                            <button class="delete-comment-btn" id="delete-comment-btn" style="display: none;" ><a href="/forum/delete_topic/${ comment.idComments }">Видалити коментар</a></button>`;
+                            const editButton = commentDiv.querySelector('.edit-comment-btn');
+                            const deleteButton = commentDiv.querySelector('.delete-comment-btn');
                             commentsSection.appendChild(commentDiv);
+                            commentDivs.push(commentDiv); // Додаємо у масив
+                            // Додаємо обробник для кнопки "Редагувати"
+                            //const editButton = commentDiv.querySelector('.edit-comment-btn');
+                            let user;
+                            if (token) {
+                                fetch('/api/user-data/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ token: token }),
+                                })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            return response.json().then(err => {
+                                                throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                                            });
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(data => {
+                                        user = data.username;
+                                        commentAuthor = comment.Author; // Отримуємо автора теми з серверу (через шаблон)
+                                        //const editButton = commentDiv.querySelector('.edit-comment-btn');
+                                        const editButton = commentDiv.querySelector(`.edit-comment-btn`);
+                                        const deleteButton = commentDiv.querySelector(`.delete-comment-btn`);
+                                        // Перевіряємо, чи є користувач автором цієї теми
+                                        if (user === commentAuthor) {
+                                            // Якщо користувач є автором, відображаємо кнопку видалення
+                                            editButton.style.display = 'inline-block';
+                                            deleteButton.style.display = 'inline-block';
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                    });
+                            };
+                            deleteButton.addEventListener('click',() =>{
+                                commentId = comment.idComments;
+                            });
+                            editButton.addEventListener('click', () => {
+                                const commentContentElement = commentDiv.querySelector('.comment-content');
+
+                                // Перевірка, чи вже відкрите текстове поле
+                                if (commentDiv.querySelector('.edit-comment-form')) {
+                                    alert('Редагування вже активне для цього коментаря.');
+                                    return;
+                                }
+
+                                // Створюємо текстове поле для редагування
+                                const editForm = document.createElement('div');
+                                editForm.className = 'edit-comment-form';
+                                editForm.innerHTML = `
+                                    <textarea class="edit-comment-input" style="width: 100%; margin-bottom: 5px;">${commentContentElement.textContent.trim()}</textarea>
+                                    <button class="save-comment-btn" style="margin-right: 5px;">Зберегти</button>
+                                    <button class="cancel-comment-btn">Скасувати</button>
+                                `;
+                                commentDiv.appendChild(editForm);
+
+                                // Обробник для збереження змін
+                                editForm.querySelector('.save-comment-btn').addEventListener('click', async () => {
+                                    event.preventDefault()
+                                    const updatedContent = editForm.querySelector('.edit-comment-input').value.trim();
+
+                                    if (updatedContent) {
+                                        const url = `/forum/update_comment/${comment.idComments}/`;
+                                        const response = await fetch(url, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRFToken': getCookie('csrftoken'),
+                                            },
+                                            body: JSON.stringify({
+                                                Content: updatedContent,
+                                            }),
+                                        });
+
+                                        if (response.ok) {
+                                            commentContentElement.textContent = updatedContent; // Оновлюємо текст коментаря
+                                            editForm.remove(); // Видаляємо форму редагування
+                                        } else {
+                                            alert('Сталася помилка при збереженні коментаря.');
+                                        }
+                                    } else {
+                                        alert('Текст коментаря не може бути порожнім.');
+                                    }
+                                });
+
+                                // Обробник для скасування змін
+                                editForm.querySelector('.cancel-comment-btn').addEventListener('click', () => {
+                                    editForm.remove(); // Видаляємо форму без змін
+                                });
+                            });
                         });
                     } else {
                         commentsSection.innerHTML = '<p>No comments found.</p>';
@@ -629,14 +728,17 @@
                     //user_id=data.id;
                     // Отримуємо дані про тему (наприклад, з HTML або API)
                     topicAuthor = "{{ topic.Author }}"; // Отримуємо автора теми з серверу (через шаблон)
-
+                    //const editButton = commentDiv.querySelector('.edit-comment-btn');
                     // Перевіряємо, чи є користувач автором цієї теми
                     if (user === topicAuthor) {
                         // Якщо користувач є автором, відображаємо кнопку видалення
                         document.getElementById('edit-btn').style.display = 'inline-block';
                         document.getElementById('delete-btn').style.display = 'inline-block';
                         document.getElementById('delete-btn').addEventListener('click', () => {
-                        deleteTopic(user);
+                            deleteTopic(user);
+                        });
+                        document.getElementById('delete-comment-btn').addEventListener('click', () => {
+                            deleteComment(user, commentId);
                         });
                         document.getElementById('edit-btn').addEventListener('click', () => {
                             editTopic(user);
@@ -651,6 +753,25 @@
             const topicId = "{{ topic.idTopic }}"; // id теми
             window.location.href = `/forum/edit-topic/${topicId}`; // Перенаправлення на тему 
         }
+        /*function editComment(user){
+            const topicId = "{{ topic.idTopic }}"; // id теми
+            fetch(`/forum/delete_comment/${commentId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),  // Якщо використовуєте CSRF токен
+                },
+                body: JSON.stringify({ username: user, topicId: topicId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    //alert('Тему успішно видалено!');
+                    window.location.href = '/forum/'; // Перенаправлення на список тем
+                } else {
+                    alert('Не вдалося видалити тему.');
+                }
+            }) // Перенаправлення на тему 
+        }*/
         function deleteTopic(user) {
             const topicId = "{{ topic.idTopic }}";  // id теми
 
@@ -675,6 +796,30 @@
                 alert('Помилка при видаленні теми: ' + error.message);
             });
         }
+        function deleteComment(user, commentId) {
+            const topicId = "{{ topic.idTopic }}";  // id теми
+
+            fetch(`/forum/delete_comment/${commentId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),  // Якщо використовуєте CSRF токен
+                },
+                body: JSON.stringify({ username: user, commentId: commentId, topicId: topicId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    //alert('Тему успішно видалено!');
+                    window.location.href = '/forum/topic/{{topic.idTopic}}'; // Перенаправлення на список тем
+                } else {
+                    alert('Не вдалося видалити коментар.');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting comment:', error);
+                alert('Помилка при видаленні коментаря: ' + error.message);
+            });
+        }
         const actionsBtn = document.querySelector('.actions-btn');
         const actionsMenu = document.querySelector('.actions-menu');
 
@@ -695,8 +840,7 @@
         document.getElementById('comment').addEventListener('click', () => {
             let isAnswer = true;
             let reciver = topicAuthor;
-            const commentsSection = document.getElementById('comments-section');
-
+            const topicInfo = document.querySelector('.topic-info'); // Знаходимо блок з класом "topic-info"
             // Перевірка наявності форми
             if (document.getElementById('comment-content')) {
                 alert('Форма вже відображена.');
@@ -705,11 +849,12 @@
             // Додати форму для введення коментаря
             const commentForm = document.createElement('div');
             commentForm.id = 'comment-form';
+            commentForm.style.marginTop = '10px'; // Додаємо відступ для гарного вигляду
             commentForm.innerHTML = `
                 <textarea id="comment-content" placeholder="Введіть ваш коментар"></textarea>
                 <button id="submit-comment">Додати коментар</button>
             `;
-            commentsSection.appendChild(commentForm);
+            topicInfo.appendChild(commentForm); // Додаємо форму до блоку "topic-info"
 
             // Обробка надсилання коментаря
             document.getElementById('submit-comment').addEventListener('click', async () => {
@@ -789,7 +934,7 @@
                         }),
                     });
                     if (response.ok) {
-                        alert('Коментар успішно додано!');
+                        //alert('Коментар успішно додано!');
                         location.reload(); // Оновлення сторінки
                     } else {
                         alert('Сталася помилка при додаванні коментаря.');

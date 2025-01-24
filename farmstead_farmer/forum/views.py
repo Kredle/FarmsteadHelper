@@ -154,6 +154,7 @@ def delete_topic(request, topic_id):
         topic = get_object_or_404(Topic, idTopic=topic_id)
         
         if topic.Author == user:  # Перевіряємо, чи це автор теми
+            Comment.objects.filter(Topics_id=topic_id).delete()
             topic.delete()  # Видаляємо тему
             return redirect('forum_main')  # Перенаправляємо на список тем
         else:
@@ -183,9 +184,9 @@ def edit_topic(request, topic_id):
 
 @csrf_exempt
 def add_comment(request, topic_id):
-    print(request.method)
-    print(request.body)
-    print(request.headers)
+    #print(request.method)
+    #print(request.body)
+    #print(request.headers)
     #topic = get_object_or_404(Topic, idTopic=topic_id)
     if request.method == 'POST':
         try:
@@ -205,7 +206,7 @@ def add_comment(request, topic_id):
                 IsAnswer=data.get('IsAnswer'),
             )
             comment.save()
-            return JsonResponse({'message': 'Коментар успішно додано!'}, status=201)
+            return JsonResponse({}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Невірний формат JSON'}, status=400)
         except Exception as e:
@@ -215,8 +216,8 @@ def add_comment(request, topic_id):
 
 @csrf_exempt
 def increace_comment_counter_topic(request, topic_id):
-    print(f"Метод запиту: {request.method}")
-    print(f"Шлях запиту: {request.path}")
+    #print(f"Метод запиту: {request.method}")
+    #print(f"Шлях запиту: {request.path}")
     topic = Topic.objects.get(idTopic=topic_id)
 
     if request.method == 'POST':
@@ -231,7 +232,7 @@ def increace_comment_counter_topic(request, topic_id):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Невірний формат JSON'}, status=400)
         except Exception as e:
-            print(f"Помилка при збільшенні лічильника коментарів: {e}")
+            #print(f"Помилка при збільшенні лічильника коментарів: {e}")
             return JsonResponse({'error': 'Не вдалося збільшети лічильник коментарів.'}, status=500)
     return JsonResponse({'error': 'Invalid request'}, status=400)
     
@@ -242,5 +243,48 @@ def get_popular_topics(request):
     return JsonResponse(popular_topics_list, safe=False)
 
 def comments_list(request, topic_id):
-    comments = Comment.objects.filter(Topics_id=topic_id).values('Author', 'Content', 'Likes', 'Dislikes', 'Comments', 'Date', 'Time')
+    comments = Comment.objects.filter(Topics_id=topic_id).values('Author', 'Content', 'Likes', 'Dislikes', 'Comments', 'Date', 'Time', 'idComments')
     return JsonResponse(list(comments), safe=False)
+
+@csrf_exempt
+def update_comment(request, comment_id):
+    if request.method == 'POST':
+        try:
+            # Отримання даних з запиту
+            data = json.loads(request.body)
+            updated_content = data.get('Content')
+
+            if not updated_content:
+                return JsonResponse({'error': 'Текст коментаря не може бути порожнім.'}, status=400)
+
+            # Знаходимо коментар за ID
+            comment = Comment.objects.get(idComments=comment_id)
+
+            # Оновлюємо текст коментаря
+            comment.Content = updated_content
+            comment.save()
+
+            return JsonResponse({'message': 'Коментар успішно оновлено.'}, status=200)
+
+        except Comment.DoesNotExist:
+            return JsonResponse({'error': 'Коментар не знайдено.'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Невірний формат запиту.'}, status=400)
+    else:
+        return JsonResponse({'error': 'Метод не дозволений.'}, status=405)
+
+def delete_comment(request, comment_id):
+    # Перевіряємо, чи це POST запит
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = data.get('username')
+        topic_id = data.get('topicId')
+        comment = get_object_or_404(Comment, idComments=comment_id)
+        topic = get_object_or_404(Topic, idTopic =topic_id)
+        topic.Comments = int(topic.Comments) -1
+        topic.save()
+        if comment.Author == user:  # Перевіряємо, чи це автор теми
+            comment.delete()  # Видаляємо тему
+            return redirect('forum_main')  # Перенаправляємо на список тем
+        else:
+            return redirect('forum_main')  # Якщо не автор, перенаправляємо на головну
