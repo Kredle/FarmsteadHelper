@@ -68,33 +68,33 @@ def update_topic_reaction(request, topic_id):
                 return JsonResponse({'error': 'Invalid token'}, status=401)
 
             topic = Topic.objects.get(idTopic=topic_id)
-            username = user.username
+            id = user.id
 
             # Reset status
             if status == "reset":
-                if username in topic.Likes_list:
-                    topic.Likes_list.remove(username)
+                if id in topic.Likes_list:
+                    topic.Likes_list.remove(id)
                     topic.Likes -= 1
-                if username in topic.Dislikes_list:
-                    topic.Dislikes_list.remove(username)
+                if id in topic.Dislikes_list:
+                    topic.Dislikes_list.remove(id)
                     topic.Dislikes -= 1
 
             # Like status
             elif status == "like":
-                if username not in topic.Likes_list:
-                    topic.Likes_list.append(username)
+                if id not in topic.Likes_list:
+                    topic.Likes_list.append(id)
                     topic.Likes += 1
-                if username in topic.Dislikes_list:
-                    topic.Dislikes_list.remove(username)
+                if id in topic.Dislikes_list:
+                    topic.Dislikes_list.remove(id)
                     topic.Dislikes -= 1
 
             # Dislike status
             elif status == "dislike":
-                if username not in topic.Dislikes_list:
-                    topic.Dislikes_list.append(username)
+                if id not in topic.Dislikes_list:
+                    topic.Dislikes_list.append(id)
                     topic.Dislikes += 1
-                if username in topic.Likes_list:
-                    topic.Likes_list.remove(username)
+                if id in topic.Likes_list:
+                    topic.Likes_list.remove(id)
                     topic.Likes -= 1
 
             topic.save()
@@ -130,11 +130,11 @@ def get_user_reaction(request, topic_id):
                 return JsonResponse({'error': 'Invalid token'}, status=401)
 
             topic = Topic.objects.get(idTopic=topic_id)
-            username = user.username
+            id = user.id
 
-            if username in topic.Likes_list:
+            if id in topic.Likes_list:
                 return JsonResponse({'status': 'like'}, status=200)
-            elif username in topic.Dislikes_list:
+            elif id in topic.Dislikes_list:
                 return JsonResponse({'status': 'dislike'}, status=200)
             else:
                 return JsonResponse({'status': 'reset'}, status=200)
