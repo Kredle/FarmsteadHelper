@@ -31,7 +31,9 @@ class Comment(models.Model):
     Topics_id = models.IntegerField(db_column = 'Topics_idTopic')
     Receiver = models.TextField(db_column = 'Receiver')
     IsAnswer = models.BooleanField(null=True, db_column = 'IsAnswer')
-
+    Likes_list =models.JSONField(default=list, blank=True)
+    Dislikes_list = models.JSONField(default=list, blank=True)
+    
     class Meta:
         managed = False
         db_table = 'comments'

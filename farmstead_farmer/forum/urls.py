@@ -19,4 +19,5 @@ urlpatterns = [
     path('topic/<int:topic_id>/comments_list/', views.comments_list, name='comments_list'),
     path('update_comment/<int:comment_id>/', views.update_comment, name='update_comment'),
     path('delete_comment/<int:comment_id>/', views.delete_comment, name='delete_comment'),
+    path('update-comment-reaction/', views.update_comment_reaction, name='update_comment_reaction'),
 ]

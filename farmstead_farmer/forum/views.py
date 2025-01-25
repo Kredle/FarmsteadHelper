@@ -7,6 +7,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from api.models import CustomUser
+
+
 def forum_main(request):
     topics = Topic.objects.all().values(
         'idTopic', 'Title', 'Content', 'Category', 'Author', 'Date', 'Likes', 'Comments'
@@ -113,6 +115,76 @@ def update_topic_reaction(request, topic_id):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@csrf_exempt
+def update_comment_reaction(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            id = data.get('id')
+            token = data.get('token')
+            status = data.get('status')
+
+            if not token or not status or not id:
+                return JsonResponse({'error': 'Token and status and id are required'}, status=400)
+
+            try:
+                user = CustomUser.objects.get(auth_token=token)
+            except CustomUser.DoesNotExist:
+                return JsonResponse({'error': 'Invalid token'}, status=401)
+
+            comment = Comment.objects.get(idComments=id)
+            id_user = user.id
+
+            # Reset status
+            if status == "reset":
+                if id_user in comment.Likes_list:
+                    comment.Likes_list.remove(id_user)
+                    comment.Likes -= 1
+                if id_user in comment.Dislikes_list:
+                    comment.Dislikes_list.remove(id_user)
+                    comment.Dislikes -= 1
+
+            # Like status
+            elif status == "like":
+                is_inside = True
+                if id_user not in comment.Likes_list:
+                    comment.Likes_list.append(id_user)
+                    comment.Likes += 1
+                    is_inside = False
+                if id_user in comment.Dislikes_list:
+                    comment.Dislikes_list.remove(id_user)
+                    comment.Dislikes -= 1
+                if is_inside:
+                    comment.Likes_list.remove(id_user)
+                    comment.Likes -= 1
+
+            # Dislike status
+            elif status == "dislike":
+                is_inside = True
+                if id_user not in comment.Dislikes_list:
+                    comment.Dislikes_list.append(id_user)
+                    comment.Dislikes += 1
+                    is_inside = False
+                if id_user in comment.Likes_list:
+                    comment.Likes_list.remove(id_user)
+                    comment.Likes -= 1
+                if is_inside:
+                    comment.Dislikes_list.remove(id_user)
+                    comment.Dislikes -= 1
+
+            comment.save()
+
+            return JsonResponse({
+                'Likes': comment.Likes,
+                'Dislikes': comment.Dislikes,
+                'Likes_list': comment.Likes_list,
+                'Dislikes_list': comment.Dislikes_list
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @csrf_exempt
 def get_user_reaction(request, topic_id):
@@ -288,3 +360,4 @@ def delete_comment(request, comment_id):
             return redirect('forum_main')  # Перенаправляємо на список тем
         else:
             return redirect('forum_main')  # Якщо не автор, перенаправляємо на головну
+    return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)

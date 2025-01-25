@@ -566,171 +566,168 @@
     </div>
     <a href="/forum/">Повернутись до списку тем</a>
     <script>
-        //let user;
-        const token = localStorage.getItem('authToken');
-        async function fetchUserData() {
-            if (token) {
-                try {
-                    const response = await fetch('/api/user-data/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ token: token }),
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
-                    }
-
-                    const data = await response.json();
-                    user = data.username;
-                    //console.log('User:', user); // Значення user буде доступне тут
-                    return user;
-                } catch (error) {
-                    console.error('Error fetching user data:', error.message);
-                }
-            }
-        }
-        console.log(token);
-        //console.log(fetchUserData());
-        const userc = fetchUserData();
         let commentId;
-        const topicStats = document.querySelector('.topic-stats');
-        const topicId = topicStats.dataset.topicId;
-        function loadComments(topicId) {
-            fetch(`/forum/topic/${topicId}/comments_list/`)
-                .then(response => response.json())
-                .then(data => {
+const topicStats = document.querySelector('.topic-stats');
+const topicId = topicStats.dataset.topicId;
 
-                    const commentsSection = document.getElementById('comments-section');
-                    commentsSection.innerHTML = ''; // Очищення попередніх коментарів
-                    if (data.length > 0) {
-                        const commentDivs = [];
-                        data.forEach(comment => {
-                            const commentDiv = document.createElement('div');
-                            commentDiv.className = 'comment';
-                            commentDiv.setAttribute('data-comment-id', comment.idComments); // Зберігаємо ID коментаря в атрибуті
-                            //const idComment = comment.idComments;
-                            commentDiv.innerHTML = `
-                            <p>Автор: ${comment.Author} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
-                            <p class="comment-content">${comment.Content}</p>
-                            <p>Лайки: ${comment.Likes} | Коментарі: ${comment.Comments}</p>
-                            <button class="comment-like-btn">👍 Like</button>
-                            <button class="comment-dislike-btn">👎 Dislike</button>
-                            <button class="comment-reply-btn">Відповісти</button>
-                            <button class="edit-comment-btn" id="edit-comment-btn" style="display: none;">Редагувати коментар</button>
-                            <button class="delete-comment-btn" id="delete-comment-btn" style="display: none;">Видалити коментар</button>`;
-                            const editButton = commentDiv.querySelector('.edit-comment-btn');
-                            const deleteButton = commentDiv.querySelector('.delete-comment-btn');
-                            commentsSection.appendChild(commentDiv);
-                            commentDivs.push(commentDiv); // Додаємо у масив
-                            // Додаємо обробник для кнопки "Редагувати"
-                            //const editButton = commentDiv.querySelector('.edit-comment-btn');
-                            let user;
-                            if (token) {
-                                fetch('/api/user-data/', {
+function loadComments(topicId) {
+    fetch(`/forum/topic/${topicId}/comments_list/`)
+        .then(response => response.json())
+        .then(data => {
+
+            const commentsSection = document.getElementById('comments-section');
+            commentsSection.innerHTML = ''; // Очищення попередніх коментарів
+            if (data.length > 0) {
+                const commentDivs = [];
+                data.forEach(comment => {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment';
+                    commentDiv.setAttribute('data-comment-id', comment.idComments); // Зберігаємо ID коментаря в атрибуті
+                    commentDiv.innerHTML = `
+                        <p>Автор: ${comment.Author} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
+                        <p class="comment-content">${comment.Content}</p>
+                        <p>Коментарі: ${comment.Comments}</p>
+                        <button class="comment-like-btn">👍 Like (<span id="comment-likes-count">${comment.Likes}</span>)</button>
+                        <button class="comment-dislike-btn">👎 Dislike (<span id="comment-dislikes-count">${comment.Dislikes}</span>)</button>
+                        <button class="comment-reply-btn">Відповісти</button>
+                        <button class="edit-comment-btn" id="edit-comment-btn" style="display: none;">Редагувати коментар</button>
+                        <button class="delete-comment-btn" id="delete-comment-btn" style="display: none;" >
+                            <a href="/forum/delete_comment/${comment.idComments}">Видалити коментар</a>
+                        </button>`;
+                    
+                    const editButton = commentDiv.querySelector('.edit-comment-btn');
+                    const deleteButton = commentDiv.querySelector('.delete-comment-btn');
+                    commentsSection.appendChild(commentDiv);
+                    commentDivs.push(commentDiv);
+
+                    let user;
+                    if (token) {
+                        fetch('/api/user-data/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ token: token }),
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    return response.json().then(err => {
+                                        throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                                    });
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                user = data.username;
+                                commentAuthor = comment.Author;
+                                if (user === commentAuthor) {
+                                    editButton.style.display = 'inline-block';
+                                    deleteButton.style.display = 'inline-block';
+                                }
+                            })
+                            .catch(error => console.error('Error:', error));
+                    };
+
+                    // Додавання запиту на оновлення реакцій
+                    commentDiv.querySelector('.comment-like-btn').addEventListener('click', () => updateCommentReaction(comment.idComments, 'like'));
+                    commentDiv.querySelector('.comment-dislike-btn').addEventListener('click', () => updateCommentReaction(comment.idComments, 'dislike'));
+
+                    editButton.addEventListener('click', () => {
+                        const commentContentElement = commentDiv.querySelector('.comment-content');
+
+                        if (commentDiv.querySelector('.edit-comment-form')) {
+                            alert('Редагування вже активне для цього коментаря.');
+                            return;
+                        }
+
+                        const editForm = document.createElement('div');
+                        editForm.className = 'edit-comment-form';
+                        editForm.innerHTML = `
+                            <textarea class="edit-comment-input" style="width: 100%; margin-bottom: 5px;">${commentContentElement.textContent.trim()}</textarea>
+                            <button class="save-comment-btn" style="margin-right: 5px;">Зберегти</button>
+                            <button class="cancel-comment-btn">Скасувати</button>
+                        `;
+                        commentDiv.appendChild(editForm);
+
+                        editForm.querySelector('.save-comment-btn').addEventListener('click', async (event) => {
+                            event.preventDefault();
+                            const updatedContent = editForm.querySelector('.edit-comment-input').value.trim();
+
+                            if (updatedContent) {
+                                const url = `/forum/update_comment/${comment.idComments}/`;
+                                const response = await fetch(url, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
+                                        'X-CSRFToken': getCookie('csrftoken'),
                                     },
-                                    body: JSON.stringify({ token: token }),
-                                })
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            return response.json().then(err => {
-                                                throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                                            });
-                                        }
-                                        return response.json();
-                                    })
-                                    .then(data => {
-                                        user = data.username;
-                                        commentAuthor = comment.Author; // Отримуємо автора теми з серверу (через шаблон)
-                                        //const editButton = commentDiv.querySelector('.edit-comment-btn');
-                                        const editButton = commentDiv.querySelector(`.edit-comment-btn`);
-                                        const deleteButton = commentDiv.querySelector(`.delete-comment-btn`);
-                                        // Перевіряємо, чи є користувач автором цієї теми
-                                        if (user === commentAuthor) {
-                                            // Якщо користувач є автором, відображаємо кнопку видалення
-                                            editButton.style.display = 'inline-block';
-                                            deleteButton.style.display = 'inline-block';
-                                            deleteButton.addEventListener('click',() =>{
-                                                commentId = comment.idComments;
-                                            });
-                                            document.getElementById('delete-comment-btn').addEventListener('click', () => {
-                                                deleteComment(user, commentId);
-                                            });
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error('Error:', error);
-                                    });
-                            };
-                            /*deleteButton.addEventListener('click',() =>{
-                                commentId = comment.idComments;
-                            });*/
-                            editButton.addEventListener('click', () => {
-                                const commentContentElement = commentDiv.querySelector('.comment-content');
+                                    body: JSON.stringify({
+                                        Content: updatedContent,
+                                    }),
+                                });
 
-                                // Перевірка, чи вже відкрите текстове поле
-                                if (commentDiv.querySelector('.edit-comment-form')) {
-                                    alert('Редагування вже активне для цього коментаря.');
-                                    return;
+                                if (response.ok) {
+                                    commentContentElement.textContent = updatedContent;
+                                    editForm.remove();
+                                } else {
+                                    alert('Сталася помилка при збереженні коментаря.');
                                 }
-
-                                // Створюємо текстове поле для редагування
-                                const editForm = document.createElement('div');
-                                editForm.className = 'edit-comment-form';
-                                editForm.innerHTML = `
-                                    <textarea class="edit-comment-input" style="width: 100%; margin-bottom: 5px;">${commentContentElement.textContent.trim()}</textarea>
-                                    <button class="save-comment-btn" style="margin-right: 5px;">Зберегти</button>
-                                    <button class="cancel-comment-btn">Скасувати</button>
-                                `;
-                                commentDiv.appendChild(editForm);
-
-                                // Обробник для збереження змін
-                                editForm.querySelector('.save-comment-btn').addEventListener('click', async () => {
-                                    event.preventDefault()
-                                    const updatedContent = editForm.querySelector('.edit-comment-input').value.trim();
-
-                                    if (updatedContent) {
-                                        const url = `/forum/update_comment/${comment.idComments}/`;
-                                        const response = await fetch(url, {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRFToken': getCookie('csrftoken'),
-                                            },
-                                            body: JSON.stringify({
-                                                Content: updatedContent,
-                                            }),
-                                        });
-
-                                        if (response.ok) {
-                                            commentContentElement.textContent = updatedContent; // Оновлюємо текст коментаря
-                                            editForm.remove(); // Видаляємо форму редагування
-                                        } else {
-                                            alert('Сталася помилка при збереженні коментаря.');
-                                        }
-                                    } else {
-                                        alert('Текст коментаря не може бути порожнім.');
-                                    }
-                                });
-
-                                // Обробник для скасування змін
-                                editForm.querySelector('.cancel-comment-btn').addEventListener('click', () => {
-                                    editForm.remove(); // Видаляємо форму без змін
-                                });
-                            });
+                            } else {
+                                alert('Текст коментаря не може бути порожнім.');
+                            }
                         });
-                    } else {
-                        commentsSection.innerHTML = '<p>No comments found.</p>';
-                    }
-                })
-                .catch(error => console.error('Error fetching comments:', error));
-        }
+
+                        editForm.querySelector('.cancel-comment-btn').addEventListener('click', () => {
+                            editForm.remove();
+                        });
+                    });
+                });
+            } else {
+                commentsSection.innerHTML = '<p>No comments found.</p>';
+            }
+        })
+        .catch(error => console.error('Error fetching comments:', error));
+}
+
+function updateCommentReaction(commentId, status) {
+    const token = localStorage.getItem('authToken');
+    
+    console.log(token)
+    console.log(commentId)
+    console.log(status)
+
+    if (!token) {
+        alert('Ви не авторизовані. Будь ласка, увійдіть у систему.');
+        return;
+    }
+
+    fetch('/forum/update-comment-reaction/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+            id: commentId,
+            token: token,
+            status: status,
+        }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            const commentDiv = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (commentDiv) {
+                const likesCount = commentDiv.querySelector('#comment-likes-count');
+                const dislikesCount = commentDiv.querySelector('#comment-dislikes-count');
+
+                if (likesCount) likesCount.textContent = data.Likes;
+                if (dislikesCount) dislikesCount.textContent = data.Dislikes;
+            }
+        })
+        .catch(error => console.error('Помилка оновлення реакції:', error));
+}
+
+
 
         // Виклик функції для завантаження коментарів
         loadComments(topicId);
@@ -738,10 +735,10 @@
             const menu = document.querySelector('.actions-menu');
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
         });*/
-        //const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken');
         //const authContainer = document.querySelector('.auth');
         //const sideMenuAuth = document.getElementById('side-menu-auth');
-        //let user;
+        let user;
         let user_id;
         let topicAuthor;
         if (token) {
@@ -774,7 +771,9 @@
                         document.getElementById('delete-btn').addEventListener('click', () => {
                             deleteTopic(user);
                         });
-                        
+                        document.getElementById('delete-comment-btn').addEventListener('click', () => {
+                            deleteComment(user, commentId);
+                        });
                         document.getElementById('edit-btn').addEventListener('click', () => {
                             editTopic(user);
                         });
@@ -788,7 +787,7 @@
             const topicId = "{{ topic.idTopic }}"; // id теми
             window.location.href = `/forum/edit-topic/${topicId}`; // Перенаправлення на тему 
         }
-        function editComment(user){
+        /*function editComment(user){
             const topicId = "{{ topic.idTopic }}"; // id теми
             fetch(`/forum/delete_comment/${commentId}/`, {
                 method: 'POST',
@@ -806,7 +805,7 @@
                     alert('Не вдалося видалити тему.');
                 }
             }) // Перенаправлення на тему 
-        }
+        }*/
         function deleteTopic(user) {
             const topicId = "{{ topic.idTopic }}";  // id теми
 
