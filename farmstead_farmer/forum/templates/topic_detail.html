@@ -566,6 +566,34 @@
     </div>
     <a href="/forum/">Повернутись до списку тем</a>
     <script>
+        //let user;
+        const token = localStorage.getItem('authToken');
+        async function fetchUserData() {
+            if (token) {
+                try {
+                    const response = await fetch('/api/user-data/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ token: token }),
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
+                    }
+                    const data = await response.json();
+                    user = data.username;
+                    //console.log('User:', user); // Значення user буде доступне тут
+                    return user;
+                } catch (error) {
+                    console.error('Error fetching user data:', error.message);
+                }
+            }
+        }
+        console.log(token);
+        //console.log(fetchUserData());
+        const userc = fetchUserData();
         let commentId;
 const topicStats = document.querySelector('.topic-stats');
 const topicId = topicStats.dataset.topicId;
@@ -591,9 +619,7 @@ function loadComments(topicId) {
                         <button class="comment-dislike-btn">👎 Dislike (<span id="comment-dislikes-count">${comment.Dislikes}</span>)</button>
                         <button class="comment-reply-btn">Відповісти</button>
                         <button class="edit-comment-btn" id="edit-comment-btn" style="display: none;">Редагувати коментар</button>
-                        <button class="delete-comment-btn" id="delete-comment-btn" style="display: none;" >
-                            <a href="/forum/delete_comment/${comment.idComments}">Видалити коментар</a>
-                        </button>`;
+                        <button class="delete-comment-btn" id="delete-comment-btn" style="display: none;" >Видалити коментар</button>`;
                     
                     const editButton = commentDiv.querySelector('.edit-comment-btn');
                     const deleteButton = commentDiv.querySelector('.delete-comment-btn');
@@ -623,6 +649,12 @@ function loadComments(topicId) {
                                 if (user === commentAuthor) {
                                     editButton.style.display = 'inline-block';
                                     deleteButton.style.display = 'inline-block';
+                                    deleteButton.addEventListener('click',() =>{
+                                        commentId = comment.idComments;
+                                    });
+                                    document.getElementById('delete-comment-btn').addEventListener('click', () => {
+                                        deleteComment(user, commentId);
+                                    });
                                 }
                             })
                             .catch(error => console.error('Error:', error));
@@ -735,10 +767,10 @@ function updateCommentReaction(commentId, status) {
             const menu = document.querySelector('.actions-menu');
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
         });*/
-        const token = localStorage.getItem('authToken');
+        //const token = localStorage.getItem('authToken');
         //const authContainer = document.querySelector('.auth');
         //const sideMenuAuth = document.getElementById('side-menu-auth');
-        let user;
+        //let user;
         let user_id;
         let topicAuthor;
         if (token) {
@@ -771,9 +803,7 @@ function updateCommentReaction(commentId, status) {
                         document.getElementById('delete-btn').addEventListener('click', () => {
                             deleteTopic(user);
                         });
-                        document.getElementById('delete-comment-btn').addEventListener('click', () => {
-                            deleteComment(user, commentId);
-                        });
+                        
                         document.getElementById('edit-btn').addEventListener('click', () => {
                             editTopic(user);
                         });
@@ -787,7 +817,7 @@ function updateCommentReaction(commentId, status) {
             const topicId = "{{ topic.idTopic }}"; // id теми
             window.location.href = `/forum/edit-topic/${topicId}`; // Перенаправлення на тему 
         }
-        /*function editComment(user){
+        function editComment(user){
             const topicId = "{{ topic.idTopic }}"; // id теми
             fetch(`/forum/delete_comment/${commentId}/`, {
                 method: 'POST',
@@ -805,7 +835,7 @@ function updateCommentReaction(commentId, status) {
                     alert('Не вдалося видалити тему.');
                 }
             }) // Перенаправлення на тему 
-        }*/
+        }
         function deleteTopic(user) {
             const topicId = "{{ topic.idTopic }}";  // id теми
 
