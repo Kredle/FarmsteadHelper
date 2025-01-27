@@ -49,8 +49,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'algowizzards.feedback@gmail.com'
-EMAIL_HOST_PASSWORD = 'pxez grlq jfnk yuaw' 
+EMAIL_HOST_USER = 'algowizzards.farmsteadhelper@gmail.com'
+EMAIL_HOST_PASSWORD = 'gmmt omxn kpcf fict' 
 DEFAULT_FROM_EMAIL = 'algowizzards.feedback@gmail.com'
 
 
