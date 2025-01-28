@@ -11,4 +11,5 @@ urlpatterns = [
     path('catalog/flowers/', include('plants.urls')),
     path('', include('catalog.urls')),
     path('forum/', include('forum.urls')),
+    path('map/', include('interactive_map.urls')),
 ]
