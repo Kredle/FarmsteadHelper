@@ -343,7 +343,7 @@
             const treeName = document.getElementById('sort-name').innerText;
     
             if (!token) {
-                favoriteButton.textContent = 'Додати в обране';
+                favoriteButton.style.display = 'none';
                 return;
             }
     
@@ -366,14 +366,14 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'inside') {
-                    favoriteButton.textContent = 'В обраних';
+                    favoriteButton.style.backgroundColor = 'red';
                 } else {
-                    favoriteButton.textContent = 'Додати в обране';
+                    favoriteButton.style.backgroundColor = 'gray';
                 }
             })
             .catch(error => {
                 console.error('Помилка:', error);
-                favoriteButton.textContent = 'Додати в обране';
+                favoriteButton.style.backgroundColor = 'gray';
             });
     
             // Обробник для кнопки "Додати в обране"
@@ -403,9 +403,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'added') {
-                        favoriteButton.textContent = 'В обраних';
+                        favoriteButton.style.backgroundColor = 'red';
                     } else if (data.status === 'removed') {
-                        favoriteButton.textContent = 'Додати в обране';
+                        favoriteButton.style.backgroundColor = 'gray';
                     } else {
                         alert('Сталася помилка при оновленні обраного.');
                     }
