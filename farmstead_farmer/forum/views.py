@@ -3,11 +3,11 @@ from .models import Topic, Comment
 from .forms import DiscussionForm
 import json
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import JsonResponse
+from django.http import JsonResponse,  HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from api.models import CustomUser
-
+from django.contrib import messages
 
 def forum_main(request):
     topics = Topic.objects.all().values(
@@ -55,6 +55,7 @@ import json
 
 @csrf_exempt
 def update_topic_reaction(request, topic_id):
+    #print(f"Метод запиту: {request.method}")
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -71,7 +72,21 @@ def update_topic_reaction(request, topic_id):
 
             topic = Topic.objects.get(idTopic=topic_id)
             id = user.id
-
+            #print(f"topic_id: {topic_id}")
+            #print(f"token: {token}")
+            #print(f"status: {status}")
+            #print(f"id: {id}")
+            #print(f"Likes_list: {topic.Likes_list}")
+            if not isinstance(topic.Likes_list, list):
+                try:
+                    topic.Likes_list = json.loads(topic.Likes_list)  # Якщо поле зберігається як текст
+                except (json.JSONDecodeError, TypeError):
+                    topic.Likes_list = []
+            if not isinstance(topic.Dislikes_list, list):
+                try:
+                    topic.Dislikes_list = json.loads(topic.Likes_list)  # Якщо поле зберігається як текст
+                except (json.JSONDecodeError, TypeError):
+                    topic.Dislikes_list = []
             # Reset status
             if status == "reset":
                 if id in topic.Likes_list:
@@ -83,13 +98,15 @@ def update_topic_reaction(request, topic_id):
 
             # Like status
             elif status == "like":
+                #print(f"Likes_list: {topic.Likes_list}")
                 if id not in topic.Likes_list:
                     topic.Likes_list.append(id)
                     topic.Likes += 1
+                    #print(f"Likes_list: {topic.Likes_list}")
                 if id in topic.Dislikes_list:
                     topic.Dislikes_list.remove(id)
                     topic.Dislikes -= 1
-
+                #print(f"Likes_list: {topic.Likes_list}")
             # Dislike status
             elif status == "dislike":
                 if id not in topic.Dislikes_list:
@@ -186,6 +203,20 @@ def update_comment_reaction(request):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+def get_comment(request, comment_id):
+    if request.method == 'POST':
+        comment = Comment.objects.get(idComments = comment_id)
+        return JsonResponse({
+                'status': 'success',
+                'id': comment_id,
+                'Author': comment.Author,
+                'Content': comment.Content,
+                'Date': comment.Date,
+                'Time': comment.Time,
+                'ParentId': comment.ParentId ,
+                'Comments': 0
+            }, status=201)
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 @csrf_exempt
 def get_user_reaction(request, topic_id):
     if request.method == 'POST':
@@ -263,6 +294,13 @@ def add_comment(request, topic_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            topic = Topic.objects.get(idTopic = topic_id)
+            parent_comment_id = data.get('ParentId', None)
+            parent_comment = None
+
+            if parent_comment_id:
+                parent_comment = Comment.objects.get(idComments=parent_comment_id)
+
             print(f"Дані коментаря: {data}")
 
             comment = Comment(
@@ -276,9 +314,28 @@ def add_comment(request, topic_id):
                 Topics_id=data.get('Topics_id'),
                 Receiver=data.get('Receiver'),
                 IsAnswer=data.get('IsAnswer'),
+                ParentId = data.get('ParentId')
             )
+            topic.Comments += 1
+            topic.save()
+
+            # Оновлення лічильника коментарів у батьківського коментаря (якщо є)
+            if parent_comment:
+                parent_comment.Comments += 1
+                parent_comment.save()
+
             comment.save()
-            return JsonResponse({}, status=201)
+            return JsonResponse({
+                'status': 'success',
+                'id': comment.idComments,
+                'Author': comment.Author,
+                'Content': comment.Content,
+                'Date': comment.Date,
+                'Time': comment.Time,
+                'ParentId': parent_comment_id,
+                'Comments': 0
+            }, status=201)
+            #return JsonResponse({}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Невірний формат JSON'}, status=400)
         except Exception as e:
@@ -286,27 +343,6 @@ def add_comment(request, topic_id):
             return JsonResponse({'error': 'Не вдалося додати коментар.'}, status=500)
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
-@csrf_exempt
-def increace_comment_counter_topic(request, topic_id):
-    #print(f"Метод запиту: {request.method}")
-    #print(f"Шлях запиту: {request.path}")
-    topic = Topic.objects.get(idTopic=topic_id)
-
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            comments_counter = data.get('Comments')
-            if comments_counter is None:
-                return JsonResponse({'error': 'Поле Comments відсутнє в запиті'}, status=400)
-            topic.Comments = int(comments_counter) + 1
-            topic.save()
-            return JsonResponse(status=201)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Невірний формат JSON'}, status=400)
-        except Exception as e:
-            #print(f"Помилка при збільшенні лічильника коментарів: {e}")
-            return JsonResponse({'error': 'Не вдалося збільшети лічильник коментарів.'}, status=500)
-    return JsonResponse({'error': 'Invalid request'}, status=400)
     
 def get_popular_topics(request):
     # Отримуємо теми з бази даних, сортуємо їх за лайками у порядку спадання
@@ -315,7 +351,7 @@ def get_popular_topics(request):
     return JsonResponse(popular_topics_list, safe=False)
 
 def comments_list(request, topic_id):
-    comments = Comment.objects.filter(Topics_id=topic_id).values('Author', 'Content', 'Likes', 'Dislikes', 'Comments', 'Date', 'Time', 'idComments')
+    comments = Comment.objects.filter(Topics_id=topic_id).values('Author', 'Content', 'Likes', 'Dislikes', 'Comments', 'Date', 'Time', 'idComments','ParentId')
     return JsonResponse(list(comments), safe=False)
 
 @csrf_exempt
@@ -345,6 +381,35 @@ def update_comment(request, comment_id):
     else:
         return JsonResponse({'error': 'Метод не дозволений.'}, status=405)
 
+@csrf_exempt
+def edit_comment(request, comment_id):
+    if request.method == 'POST':
+        try:
+            # Отримання даних з запиту
+            data = json.loads(request.body)
+            updated_content = data.get('Content')
+            user = data.get('User')
+
+            if not updated_content:
+                return JsonResponse({'error': 'Текст коментаря не може бути порожнім.'}, status=400)
+
+            # Знаходимо коментар за ID
+            comment = Comment.objects.get(idComments=comment_id)
+            if user == comment.Author:
+                # Оновлюємо текст коментаря
+                comment.Content = updated_content
+                comment.save()
+                return JsonResponse({'message': 'Коментар успішно оновлено.'}, status=200)
+            else:
+                return JsonResponse({'message': 'Ви не автор коментаря.'}, status=200)
+
+        except Comment.DoesNotExist:
+            return JsonResponse({'error': 'Коментар не знайдено.'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Невірний формат запиту.'}, status=400)
+    else:
+        return JsonResponse({'error': 'Метод не дозволений.'}, status=405)
+    
 def delete_comment(request, comment_id):
     # Перевіряємо, чи це POST запит
     if request.method == 'POST':

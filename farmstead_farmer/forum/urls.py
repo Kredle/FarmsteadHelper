@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+from api.views import login_view
 urlpatterns = [
     path('', views.forum_main, name='forum_main'),
     path('test', views.discussion_detail, name='discussion_detail'),
@@ -15,9 +15,12 @@ urlpatterns = [
     path('edit_topic/<int:topic_id>/', views.edit_topic, name='edit_topic'),
     path('add_comment/<int:topic_id>/', views.add_comment, name='add_comment'),
     path('get_user_reaction/<int:topic_id>/', views.get_user_reaction, name='get_user_reaction'),
-    path('increace_comment_counter_topic/<int:topic_id>/', views.increace_comment_counter_topic, name='increace_comment_counter_topic'),
+    #path('increace_comment_counter_topic/<int:topic_id>/', views.increace_comment_counter_topic, name='increace_comment_counter_topic'),
     path('topic/<int:topic_id>/comments_list/', views.comments_list, name='comments_list'),
     path('update_comment/<int:comment_id>/', views.update_comment, name='update_comment'),
     path('delete_comment/<int:comment_id>/', views.delete_comment, name='delete_comment'),
     path('update-comment-reaction/', views.update_comment_reaction, name='update_comment_reaction'),
+    path('edit_comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
+    #path('increace_comment_counter_comment/<int:parentCommentId>/', views.increace_comment_counter_comment, name='increace_comment_counter_comment'),
+    path('get_comment/<int:comment_id>/', views.get_comment, name = 'get_comment'),
 ]

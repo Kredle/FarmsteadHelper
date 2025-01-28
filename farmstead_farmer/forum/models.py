@@ -33,7 +33,7 @@ class Comment(models.Model):
     IsAnswer = models.BooleanField(null=True, db_column = 'IsAnswer')
     Likes_list =models.JSONField(default=list, blank=True)
     Dislikes_list = models.JSONField(default=list, blank=True)
-    
+    ParentId = models.IntegerField(db_column='ParentId')
     class Meta:
         managed = False
         db_table = 'comments'

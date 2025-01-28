@@ -60,7 +60,9 @@
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+        if (!token){
+            window.location.href="/login/"
+        }
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -194,17 +196,20 @@
                     <option value="flowers">Квіти</option>
                     <option value="animals">Тварини</option>
                 </select>
+                <p id="category-error" class="error-message" style="display: none; color: red;">Оберіть категорію.</p>
                 <input type="hidden" id="category-text" name="category_text">
             </div>
             <div class="form-group">
                 <label for="title">Заголовок:</label>
                 <input type="text" id="title" name="title" placeholder="Введіть заголовок" required>
                 <p id="title-error" class="error-message" style="display: none;">Заголовок не повинен містити посилань.</p>
+                <p id="title-error-null" class="error-message" style="display: none; color: red;">Заголовок не може бути пустим.</p>
             </div>
             <div class="form-group">
                 <label for="description">Опис:</label>
                 <textarea id="description" name="description" placeholder="Введіть опис" required></textarea>
                 <p id="description-error" class="error-message" style="display: none;">Опис не повинен містити посилань.</p>
+                <p id="description-error-null" class="error-message" style="display: none; color: red;">Опис не може бути пустим.</p>
             </div>
             <input type="hidden" id="created_date" name="created_date">
             <input type="hidden" id="created_time" name="created_time">
@@ -222,10 +227,12 @@
         const titleInput = document.getElementById('title');
         const descriptionInput = document.getElementById('description');
         const titleError = document.getElementById('title-error');
+        const titleErrorNull = document.getElementById('title-error-null');
         const descriptionError = document.getElementById('description-error');
+        const descriptionErrorNull = document.getElementById('description-error-null');
         const submitBtn = document.getElementById('submit-btn');
         const submitLink = document.getElementById('submit-link');
-
+        const categoryError = document.getElementById('category-error');
         const usernameInput = document.getElementById('username');
         const categorySelect = document.getElementById('category');
         let Author;
@@ -290,19 +297,39 @@
             const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
             console.log(createdTimeInput); // Наприклад: 2025-01-13
             usernameInput.value = Author;
+
+            console.log(usernameInput.value);
             likesInput.value = likes;
             dislikesInput.value = dislikes;
             commentsInput.value = comme;
             document.getElementById('created_date').value = createdDateInput;
             document.getElementById('created_time').value = createdTimeInput;
-            if (containsLink(titleInput.value)) {
+            if (!categoryTextInput.value) {
+                categoryError.style.display = 'block';
+                hasError = true;
+            } else {
+                categoryError.style.display = 'none';
+            }
+            if (!titleInput.value) {
+                titleErrorNull.style.display = 'block';
+                hasError = true;
+            } else {
+                titleErrorNull.style.display = 'none';
+            }
+            if (!descriptionInput.value) {
+                descriptionErrorNull.style.display = 'block';
+                hasError = true;
+            } else {
+                descriptionErrorNull.style.display = 'none';
+            }
+            if (/(https?:\/\/[^\s]+)/g.test(titleInput.value)) {
                 titleError.style.display = 'block';
                 hasError = true;
             } else {
                 titleError.style.display = 'none';
             }
 
-            if (containsLink(descriptionInput.value)) {
+            if (/(https?:\/\/[^\s]+)/g.test(descriptionInput.value)) {
                 descriptionError.style.display = 'block';
                 hasError = true;
             } else {
@@ -312,6 +339,7 @@
             if (!hasError) {
                 document.getElementById('discussion-form').submit();
             }
+            
         });
     </script>
 </body>
