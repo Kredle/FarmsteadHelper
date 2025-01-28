@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     'plants',
     'catalog',
     'forum',
+    'interactive_map',
 ]
 
 LOGGING = {
