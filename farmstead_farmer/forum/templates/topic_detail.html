@@ -540,17 +540,18 @@
     </script>
     </header>
     <header>
-        <h1>{{ topic.Title }}</h1>
+        <h1 id = "title">{{ topic.Title }}</h1>
     </header>
 
     <div class="topic-info">
         <p><strong>Категорія:</strong> {{ topic.Category }}</p>
-        <p><strong>Автор:</strong> {{ topic.Author }} | <strong>Дата:</strong> {{ topic.Date }}</p>
+        <p><strong>Автор:</strong><a href = "/profile/{{topic.Author}}" style => {{ topic.Author }}</a> | <strong>Дата:</strong> {{ topic.Date }}</p>
         <p>{{ topic.Content }}</p>
         <button id="comment">Відповісти</button>
         <div class="topic-stats" data-topic-id="{{ topic.idTopic }}">
             <button id="like-btn">👍 Like (<span id="likes-count">{{ topic.Likes }}</span>)</button>
             <button id="dislike-btn">👎 Dislike (<span id="dislikes-count">{{ topic.Dislikes }}</span>)</button>
+            <button id="favorite-button" class="favorite-btn">Додати в обране</button>
             <p><strong>Коментарі:</strong> {{ topic.Comments }}</p>
         </div>
     </div>
@@ -569,6 +570,72 @@
     <script>
         //let user;
         const token = localStorage.getItem('authToken');
+        function Add_Favorites(){
+            const favoriteButton = document.getElementById('favorite-button');
+            const topicName = document.getElementById('title').innerText;
+            const topicData = {
+                token: token,
+                name: topicName,
+                image_url: null,
+                link: window.location.href,
+                category: 'Обговорення'  // або будь-яка інша категорія
+            };
+            if (!token) {
+                favoriteButton.textContent = 'Додати в обране';
+                return;
+            }
+            
+            fetch('/api/check_favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(topicData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'inside') {
+                    favoriteButton.textContent = 'В обраних';
+                } else {
+                    favoriteButton.textContent = 'Додати в обране';
+                }
+            })
+            .catch(error => {
+                console.error('Помилка:', error);
+                favoriteButton.textContent = 'Додати в обране';
+            });
+            // Обробник для кнопки "Додати в обране"
+            favoriteButton.addEventListener('click', () => {
+                if (!token) {
+                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    return;
+                }
+    
+    
+                // Запит на додавання/видалення з обраних
+                fetch('/api/toggle_favorite/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(topicData),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'added') {
+                        favoriteButton.textContent = 'В обраних';
+                    } else if (data.status === 'removed') {
+                        favoriteButton.textContent = 'Додати в обране';
+                    } else {
+                        alert('Сталася помилка при оновленні обраного.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при збереженні в обране.');
+                });
+            });
+        }
         async function fetchUserData() {
             if (token) {
                 try {
@@ -637,11 +704,11 @@
             let replyToText = '';
             if (comment.ParentId) {
                 const parentAuthor = await FetchingComment(comment.ParentId);
-                replyToText = `<p class="reply-to">Відповідь на коментар ${parentAuthor}</p>`;
+                replyToText = `<p class="reply-to">Відповідь на коментар <a href = "/profile/{{topic.Author}}">${parentAuthor}</a></p>`;
             }
 
             commentDiv.innerHTML = `
-                <p>Автор: ${comment.Author} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
+                <p>Автор: <a href = "/profile/{{topic.Author}}">${comment.Author}</a> | Дата: ${comment.Date} | Час: ${comment.Time}</p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
                 <button class="comment-like-btn">👍 Like (<span id="comment-likes-count">${comment.Likes}</span>)</button>
@@ -790,6 +857,8 @@
 
         // Викликаємо функцію ініціалізації при завантаженні сторінки
         document.addEventListener('DOMContentLoaded', initializeReplyButtons);
+        document.addEventListener('DOMContentLoaded', Add_Favorites);
+        //Add_Favorites()
         // Викликаємо функцію ініціалізації при завантаженні сторінки
         //document.addEventListener('DOMContentLoaded', initializeCommentClickHandlers);
         async function loadComments(topicId) {

@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from api.views import login_view
+from api.views import toggle_favorite, check_favorite
 urlpatterns = [
     path('', views.forum_main, name='forum_main'),
     path('test', views.discussion_detail, name='discussion_detail'),
@@ -23,4 +23,6 @@ urlpatterns = [
     path('edit_comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
     #path('increace_comment_counter_comment/<int:parentCommentId>/', views.increace_comment_counter_comment, name='increace_comment_counter_comment'),
     path('get_comment/<int:comment_id>/', views.get_comment, name = 'get_comment'),
+    path('api/toggle_favorite/', toggle_favorite, name='toggle_favorite'),
+    path('api/check_favorite/', check_favorite, name='check_favorite'),
 ]
