@@ -72,7 +72,6 @@ def check_profile(request):
                 'url': item.get('link', '#'),
                 'category': item.get('category', 'Без категорії')
             })
-
     return Response({'favorites': favorite_items})
 
 
@@ -1076,13 +1075,13 @@ def toggle_favorite(request):
     except Token.DoesNotExist:
         return Response({'error': 'Недійсний токен.'}, status=403)
 
-    required_fields = ['name', 'image_url', 'link', 'category']
+    required_fields = ['name', 'link', 'category']
     if not all(field in data for field in required_fields):
         return Response({'error': 'Відсутні необхідні дані.'}, status=400)
 
     favorite_item = {
         'name': data['name'],
-        'image_url': data['image_url'],
+        'image_url': data.get('image_url'),
         'link': data['link'],
         'category': data['category']
     }
@@ -1113,13 +1112,13 @@ def check_favorite(request):
         return Response({'error': 'Недійсний токен.'}, status=403)
 
     # Перевіряємо, чи є всі необхідні дані
-    required_fields = ['name', 'image_url', 'link', 'category']
+    required_fields = ['name', 'link', 'category']
     if not all(field in data for field in required_fields):
         return Response({'error': 'Відсутні необхідні дані.'}, status=400)
 
     favorite_item = {
         'name': data['name'],
-        'image_url': data['image_url'],
+        'image_url': data.get('image_url'),
         'link': data['link'],
         'category': data['category']
     }
