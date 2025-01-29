@@ -34,6 +34,8 @@ CREATE TABLE `comments` (
   `Receiver` mediumtext,
   `IsAnswer` tinyint DEFAULT NULL,
   `Comments` int DEFAULT NULL,
+  `Likes_list` JSON,
+  `Dislikes_list` JSON,
   PRIMARY KEY (`idComments`,`Topics_idTopic`),
   UNIQUE KEY `idComments_UNIQUE` (`idComments`),
   KEY `fk_Comments_Topics_idx` (`Topics_idTopic`),
@@ -68,6 +70,8 @@ CREATE TABLE `topics` (
   `Author` mediumtext NOT NULL,
   `Title` mediumtext,
   `Comments` int DEFAULT NULL,
+  `Likes_list` JSON,
+  `Dislikes_list` JSON,
   PRIMARY KEY (`idTopic`),
   UNIQUE KEY `idTopic_UNIQUE` (`idTopic`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
