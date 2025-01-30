@@ -19,6 +19,7 @@ urlpatterns = [
     path('', include('main_page.urls')),  # Загальний шлях для головної сторінки
     path('', include('api.urls')),       # Загальний шлях для API
     path('', include('catalog.urls')),   # Загальний шлях для каталогу
+    path('', include('calendar_.urls')),
     path("400/", trigger_400),
     path("403/", trigger_403),
     path("404/", trigger_404),
