@@ -18,6 +18,7 @@ The calendar visualizes agricultural events such as planting, fertilizing, bloom
 - Displays a legend to indicate event colors.
 - Utilizes **Moment.js** for date management.
 - Generates a yearly view with month-based grids.
+- Provides widgets to filter by category and sorts for better usability.
 
 ### **Event Categories & Colors:**
 
