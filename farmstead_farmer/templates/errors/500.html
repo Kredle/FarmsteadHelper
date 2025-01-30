@@ -4,7 +4,7 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Помилка 400</title>
+    <title>Помилка 500</title>
     <style>
         body {
             margin: 0;
@@ -63,8 +63,8 @@
 <body>
     <div class="error-container">
         <img src="{% static 'logo.png' %}" alt="Лого" class="logo"> 
-        <h1>Помилка 400</h1>
-        <p>Помилка запиту. Синтаксична помилка або некоректні дані в запиті. Будь ласка, перевірте введену інформацію та спробуйте знову.</p>
+        <h1>Помилка 500</h1>
+        <p>Сталася помилка на сервері. Спробуйте ще раз пізніше.</p>
         <a href="/" class="home-btn">Повернутися на головну</a>
     </div>
 </body>
