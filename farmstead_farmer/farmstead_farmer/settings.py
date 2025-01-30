@@ -123,6 +123,7 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'api.CustomUser'
 
 MIDDLEWARE = [
+    "farmstead_farmer.middleware.CustomErrorMiddleware"
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
