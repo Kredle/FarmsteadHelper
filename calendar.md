@@ -48,7 +48,7 @@ The calendar visualizes agricultural events such as planting, fertilizing, bloom
 
 ## API Endpoints
 
-### **1. ****`get_sorts`**** (POST)**
+### **1. `get_sorts` (POST)**
 
 **URL:** `/api/get_sorts/`
 **Description:** Retrieves available sorts for a given category.
@@ -74,7 +74,7 @@ The calendar visualizes agricultural events such as planting, fertilizing, bloom
 
 ---
 
-### **2. ****`get_sort_details`**** (POST)**
+### **2. `get_sort_details` (POST)**
 
 **URL:** `/api/get_sort_details/`
 **Description:** Fetches event details for the selected sort.
@@ -105,4 +105,10 @@ The calendar visualizes agricultural events such as planting, fertilizing, bloom
 }
 ```
 
+### **Libraries Used:**
+
+1. **jQuery** (`https://code.jquery.com/jquery-3.6.0.min.js`)
+2. **Moment.js** (`https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js`)
+3. **FullCalendar v3** (`https://cdn.jsdelivr.net/npm/fullcalendar@3.2.0/dist/fullcalendar.min.js`)
+4. **FullCalendar Ukrainian Locale** (`https://cdn.jsdelivr.net/npm/fullcalendar@3.2.0/dist/locale/uk.js`)
 
