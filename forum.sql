@@ -36,6 +36,7 @@ CREATE TABLE `comments` (
   `Comments` int DEFAULT NULL,
   `Likes_list` JSON,
   `Dislikes_list` JSON,
+  `ParentId` int DEFAULT NULL,
   PRIMARY KEY (`idComments`,`Topics_idTopic`),
   UNIQUE KEY `idComments_UNIQUE` (`idComments`),
   KEY `fk_Comments_Topics_idx` (`Topics_idTopic`),
