@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інформація про дерево</title>
+    <style>
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 98%;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: #333;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 60px;
+            margin-right: 10px;
+        }
+
+        .logo span {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff; /* Білий текст */
+        }
+
+        nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #fff; /* Білий текст */
+            font-size: 16px;
+            padding: 5px 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: #444;
+            border-radius: 5px;
+        }
+
+        .auth {
+            position: relative;
+        }
+
+        .auth img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            cursor: pointer;
+            filter: invert(1); /* Інверсія кольорів іконки входу */
+        }
+
+        .auth-menu {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .auth-menu a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .auth-menu a:hover {
+            background-color: #f4f4f4;
+        }
+
+        .auth:hover .auth-menu {
+            display: block;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            margin-top: 7%;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .abouttree {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .abouttree img {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+        .abouttree h1 {
+            margin: 20px 0 10px;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #444;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .section .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .card {
+            flex: 1 1 calc(50% - 20px);
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+        }
+        .card h3 {
+            margin-bottom: 10px;
+            color: #444;
+        }
+        .card p {
+            margin: 0;
+            color: #555;
+        }
+        @media (max-width: 768px) {
+            .card {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+        <!-- Хедер -->
+    <header>
+        <div class="logo">
+            <img src="logo.png" alt="FarmsteadHelper Logo">
+            <span>FarmsteadHelper</span>
+        </div>
+        <nav>
+            <a href="/">Головна</a>
+            <a href="/catalog">Каталог</a>
+            <a href="/forum">Форум</a>
+            <a href="/map">Інтерактивна мапа</a>
+            <a href="/calendar">Календар</a>
+        </nav>
+        <div class="auth">
+            <!-- Зображення авторизації -->
+            <img src="loginlogo.png" alt="Auth Icon" id="auth-icon">
+            <div class="auth-menu">
+                <a href="login_page.html">Вхід</a>
+                <a href="registration_form.html">Реєстрація</a>
+            </div>
+        </div>    
+    </header>
+    <div class="container">
+        <div class="abouttree">
+            <img id="tree-image" src="" alt="Зображення дерева">
+            <h1 id="tree-name">Назва дерева</h1>
+            <p id="tree-description">Опис дерева</p>
+        </div>
+        
+        <!-- Загальна інформація -->
+        <div class="section">
+            <h2>Загальна інформація</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Родина</h3>
+                    <p id="tree-family"></p>
+                </div>
+                <div class="card">
+                    <h3>Сорт</h3>
+                    <p id="tree-sort"></p>
+                </div>
+                <div class="card">
+                    <h3>Період цвітіння</h3>
+                    <p id="tree-scope-of-bloom"></p>
+                </div>
+                <div class="card">
+                    <h3>Час дозрівання</h3>
+                    <p id="tree-ripe-time"></p>
+                </div>
+                <div class="card">
+                    <h3>Сумісність</h3>
+                    <p id="tree-compatible"></p>
+                </div>
+                <div class="card">
+                    <h3>Несумісність</h3>
+                    <p id="tree-incompatible"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Опис та характеристика -->
+        <div class="section">
+            <h2>Опис та характеристика</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Тип ґрунту</h3>
+                    <p id="tree-ground-type"></p>
+                </div>
+                <div class="card">
+                    <h3>Температурний діапазон</h3>
+                    <p id="tree-temperature-scope"></p>
+                </div>
+                <div class="card">
+                    <h3>Листя</h3>
+                    <p id="tree-leaves"></p>
+                </div>
+                <div class="card">
+                    <h3>Використання</h3>
+                    <p id="tree-usage"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Догляд -->
+        <div class="section">
+            <h2>Догляд</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Час обрізки</h3>
+                    <p id="tree-cutting-time"></p>
+                </div>
+                <div class="card">
+                    <h3>Опис обрізки</h3>
+                    <p id="tree-cutting-description"></p>
+                </div>
+                <div class="card">
+                    <h3>Добриво</h3>
+                    <p id="tree-fertilizer"></p>
+                </div>
+                <div class="card">
+                    <h3>Тип добрива</h3>
+                    <p id="tree-fertilizer-type"></p>
+                </div>
+                <div class="card">
+                    <h3>Дата внесення добрива</h3>
+                    <p id="tree-fertilizer-date"></p>
+                </div>
+                <div class="card">
+                    <h3>Спосіб внесення</h3>
+                    <p id="tree-application-method"></p>
+                </div>
+                <div class="card">
+                    <h3>Кількість</h3>
+                    <p id="tree-quantity"></p>
+                </div>
+                <div class="card">
+                    <h3>Опис добрива</h3>
+                    <p id="tree-fertilizer-description"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Хвороби -->
+        <div class="section">
+            <h2>Хвороби</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Назва хвороби</h3>
+                    <p id="tree-disease-name"></p>
+                </div>
+                <div class="card">
+                    <h3>Опис хвороби</h3>
+                    <p id="tree-disease-description"></p>
+                </div>
+                <div class="card">
+                    <h3>Лікування хвороби</h3>
+                    <p id="tree-disease-treatment"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Посадка -->
+        <div class="section">
+            <h2>Посадка</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Час посадки</h3>
+                    <p id="tree-plant-time"></p>
+                </div>
+                <div class="card">
+                    <h3>Опис посадки</h3>
+                    <p id="tree-planting-description"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Футер -->
+     <footer>
+        <style>
+            footer {
+                background-color: #333;
+                color: #fff;
+                padding: 20px 10px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+    
+            .legal-links {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+    
+            .legal-links a {
+                color: #fff;
+                text-decoration: none;
+                font-size: 14px;
+            }
+    
+            .legal-links a:hover {
+                text-decoration: underline;
+            }
+    
+            .legal-links span {
+                color: #fff;
+                font-size: 14px;
+            }
+    
+            .copyright {
+                font-size: 14px;
+                color: #ccc;
+            }
+        </style>
+        <div class="legal-links">
+            <a href="https://drive.google.com/file/d/1kYJ7ulJFNFk_dDLPced_ToOEeX4Ocf4y/view?usp=sharing">Умови використання</a>
+            <span>|</span>
+            <a href="https://drive.google.com/file/d/1B56gHpLaAyReM2HP_MCrBmQKi1tTMROP/view?usp=sharing">Політика конфіденційності</a>
+            <span>|</span>
+            <a href="/contact-form">Форма зворотного зв’язку</a>
+        </div>
+        <div class="copyright">
+            &copy; 2024 FarmsteadHelper. Усі права захищено.
+        </div>
+    </footer>
+
+    <script>
+        async function fetchTreeData() {
+            const params = new URLSearchParams(window.location.search);
+            const treeName = params.get("name") || "oak"; // Отримання назви дерева з параметра URL
+
+            try {
+                const response = await fetch(`https://api.example.com/trees?name=${treeName}`);
+                if (!response.ok) throw new Error("API недоступний");
+
+                const data = await response.json();
+                populateTreeData(data);
+            } catch (error) {
+                console.error("Помилка завантаження даних з API", error);
+            }
+        }
+
+        function populateTreeData(data) {
+            // Присвоєння даних полям
+            document.getElementById("tree-image").src = data.Image_tree || "https://via.placeholder.com/400";
+            document.getElementById("tree-name").textContent = data.Name || "Невідоме дерево";
+            document.getElementById("tree-description").textContent = data.Description || "Опис недоступний";
+            document.getElementById("tree-family").textContent = data.Family || "Не вказано";
+            document.getElementById("tree-sort").textContent = data.Sort || "Не вказано";
+            document.getElementById("tree-scope-of-bloom").textContent = data.Scope_of_bloom || "Не вказано";
+            document.getElementById("tree-ripe-time").textContent = data.Ripe_time || "Не вказано";
+            document.getElementById("tree-compatible").textContent = data.Compatible || "Не вказано";
+            document.getElementById("tree-incompatible").textContent = data.Incompatible || "Не вказано";
+            document.getElementById("tree-ground-type").textContent = data.Ground_type || "Не вказано";
+            document.getElementById("tree-temperature-scope").textContent = data.Temperature_scope || "Не вказано";
+            document.getElementById("tree-leaves").textContent = data.Leaves || "Не вказано";
+            document.getElementById("tree-usage").textContent = data.Usage || "Не вказано";
+            document.getElementById("tree-cutting-time").textContent = data.Cutting_time || "Не вказано";
+            document.getElementById("tree-cutting-description").textContent = data.Cutting_Discription || "Не вказано";
+            document.getElementById("tree-fertilizer").textContent = data.Fertilizer || "Не вказано";
+            document.getElementById("tree-fertilizer-type").textContent = data.Fertilizer_type || "Не вказано";
+            document.getElementById("tree-fertilizer-date").textContent = data.Fertilizer_date || "Не вказано";
+            document.getElementById("tree-application-method").textContent = data.Application_method || "Не вказано";
+            document.getElementById("tree-quantity").textContent = data.Quantity || "Не вказано";
+            document.getElementById("tree-fertilizer-description").textContent = data.Frtilizer_Discription || "Не вказано";
+            document.getElementById("tree-disease-name").textContent = data.Disease_Name || "Не вказано";
+            document.getElementById("tree-disease-description").textContent = data.Disease_Discription || "Не вказано";
+            document.getElementById("tree-disease-treatment").textContent = data.Disease_Treatment || "Не вказано";
+            document.getElementById("tree-plant-time").textContent = data.Plant_time || "Не вказано";
+            document.getElementById("tree-planting-description").textContent = data.Plantting_discription || "Не вказано";
+        }
+
+        // Завантаження даних при завантаженні сторінки
+        fetchTreeData();
+    </script>
+</body>
+</html>
