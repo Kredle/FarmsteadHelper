@@ -1,0 +1,346 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
+    <title>Форма створення обговорення</title>
+</head>
+<body>
+    
+    <!-- Хедер -->
+    <header>
+    <div class="logo">
+        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+        <span>FarmsteadHelper</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-close">
+            <button id="close-menu">&times;</button>
+        </div>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+        <div class="auth-buttons" id="side-menu-auth">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+    </nav>
+    <div class="auth">
+        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+        <div class="auth-menu">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    
+    
+    <script>
+
+    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('authToken');
+        const authContainer = document.querySelector('.auth');
+        const sideMenuAuth = document.getElementById('side-menu-auth');
+        if (!token){
+            window.location.href="/login/"
+        }
+        if (token) {
+            fetch('/api/user-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                    const Author = data.username;
+                    authContainer.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
+                        <div class="auth-menu">
+                            <span>${data.username}</span>
+                            <a href="/profile/${data.username}">Профіль</a>
+                            <a href="/edit-profile/">Налаштування профілю</a>
+                            <a href="#" id="logout-btn">Вихід</a>
+                        </div>
+                    `;
+    
+                    sideMenuAuth.innerHTML = `
+                        <a href="/profile/${data.username}">Профіль</a>
+                        <a href="/edit-profile">Налаштування профілю</a>
+                        <a href="#" id="side-menu-logout">Вихід</a>
+                    `;
+    
+                    document.getElementById('logout-btn').addEventListener('click', () => {
+                        handleLogout();
+                    });
+    
+                    document.getElementById('side-menu-logout').addEventListener('click', () => {
+                        handleLogout();
+                    });
+                })
+                .catch(error => {
+                    console.error('Помилка при отриманні даних користувача:', error);
+                    resetAuthState();
+                });
+        } else {
+            resetAuthState();
+        }
+    
+        function handleLogout() {
+            fetch('/api/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/';
+                    } else {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                })
+                .catch(error => console.error('Помилка при виході:', error));
+        }
+    
+        function resetAuthState() {
+            authContainer.innerHTML = `
+                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                <div class="auth-menu">
+                    <a href="/login">Вхід</a>
+                    <a href="/register">Реєстрація</a>
+                </div>
+            `;
+    
+            sideMenuAuth.innerHTML = `
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            `;
+        }
+    });
+    
+    const hamburger = document.getElementById('hamburger');
+    const sideMenu = document.getElementById('side-menu');
+    const closeMenu = document.getElementById('close-menu');
+    const nav = document.querySelector('nav');
+    const auth = document.querySelector('.auth');
+    
+    hamburger.addEventListener('click', () => {
+        sideMenu.style.right = '0';
+    });
+    
+    closeMenu.addEventListener('click', () => {
+        sideMenu.style.right = '-250px';
+    });
+    
+    function checkMenuVisibility() {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+        if (window.innerWidth < 900 || isMobileDevice) {
+            nav.style.display = 'none';
+            auth.style.display = 'none';
+            hamburger.style.display = 'flex';
+        } else {
+            nav.style.display = 'flex';
+            auth.style.display = 'block';
+            hamburger.style.display = 'none';
+        }
+    }
+    
+    checkMenuVisibility();
+    window.addEventListener('resize', checkMenuVisibility);
+    </script>
+    </header>
+    <div class="form-container">
+        <h2>Створення обговорення</h2>
+        <form id="discussion-form" method="POST" action="/forum/create/">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="category">Категорія:</label>
+                <select id="category" name="category" required>
+                    <option value="">Оберіть категорію</option>
+                    <option value="trees">Дерева</option>
+                    <option value="vegetables">Овочі</option>
+                    <option value="flowers">Квіти</option>
+                    <option value="animals">Тварини</option>
+                </select>
+                <p id="category-error" class="error-message" style="display: none; color: red;">Оберіть категорію.</p>
+                <input type="hidden" id="category-text" name="category_text">
+            </div>
+            <div class="form-group">
+                <label for="title">Заголовок:</label>
+                <input type="text" id="title" name="title" placeholder="Введіть заголовок" required>
+                <p id="title-error" class="error-message" style="display: none;">Заголовок не повинен містити посилань.</p>
+                <p id="title-error-null" class="error-message" style="display: none; color: red;">Заголовок не може бути пустим.</p>
+            </div>
+            <div class="form-group">
+                <label for="description">Опис:</label>
+                <textarea id="description" name="description" placeholder="Введіть опис" required></textarea>
+                <p id="description-error" class="error-message" style="display: none;">Опис не повинен містити посилань.</p>
+                <p id="description-error-null" class="error-message" style="display: none; color: red;">Опис не може бути пустим.</p>
+            </div>
+            <input type="hidden" id="created_date" name="created_date">
+            <input type="hidden" id="created_time" name="created_time">
+            <input type="hidden" id="username" name="username">
+            <input type="hidden" id="likes" name="likes">
+            <input type="hidden" id="dislikes" name="dislikes">
+            <input type="hidden" id="comm" name="comm">
+            <a id="submit-link" href="" class="submit-btn" style="text-align: center; display: none;">Створити обговорення</a>
+            <button type="button" id="submit-btn" class="submit-btn generate-link-btn">Створити обговорення</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('discussion-form');
+        const titleInput = document.getElementById('title');
+        const descriptionInput = document.getElementById('description');
+        const titleError = document.getElementById('title-error');
+        const titleErrorNull = document.getElementById('title-error-null');
+        const descriptionError = document.getElementById('description-error');
+        const descriptionErrorNull = document.getElementById('description-error-null');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitLink = document.getElementById('submit-link');
+        const categoryError = document.getElementById('category-error');
+        const usernameInput = document.getElementById('username');
+        const categorySelect = document.getElementById('category');
+        let Author;
+        let selectedCategory = null; // Змінна для збереження вибору
+        const likesInput = document.getElementById('likes');
+        const dislikesInput = document.getElementById('dislikes');
+        const commentsInput = document.getElementById('comm');
+        const categoryTextInput = document.getElementById('category-text');
+        let likes = 0;
+        let dislikes = 0;
+        let comme = 0;
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('authToken');
+            const authContainer = document.querySelector('.auth');
+            const sideMenuAuth = document.getElementById('side-menu-auth');
+            if (likes === null){
+                likes = 0
+            }
+            if(dislikes === null){
+                dislikes = 0
+            }
+            if(comme === null){
+                comme = 0;
+            }
+            if (token) {
+                fetch('/api/user-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: token }),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        Author = data.username;
+                    })
+                }
+        })
+        function containsLink(text) {
+            const linkRegex = /(https?:\/\/[^\s]+)/g;
+            return linkRegex.test(text);
+        }
+        categorySelect.addEventListener('change', (event) => {
+            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+            categoryTextInput.value = selectedOption.text; // Зберігаємо текст вибраної опції
+        });
+        submitBtn.addEventListener('click', () => {
+            let hasError = false;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0'); // Додаємо 1, бо місяці індексуються з 0
+            const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
+            const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
+            console.log(createdDateInput); // Наприклад: 2025-01-13
+            const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
+            console.log(createdTimeInput); // Наприклад: 2025-01-13
+            usernameInput.value = Author;
+
+            console.log(usernameInput.value);
+            likesInput.value = likes;
+            dislikesInput.value = dislikes;
+            commentsInput.value = comme;
+            document.getElementById('created_date').value = createdDateInput;
+            document.getElementById('created_time').value = createdTimeInput;
+            if (!categoryTextInput.value) {
+                categoryError.style.display = 'block';
+                hasError = true;
+            } else {
+                categoryError.style.display = 'none';
+            }
+            if (!titleInput.value) {
+                titleErrorNull.style.display = 'block';
+                hasError = true;
+            } else {
+                titleErrorNull.style.display = 'none';
+            }
+            if (!descriptionInput.value) {
+                descriptionErrorNull.style.display = 'block';
+                hasError = true;
+            } else {
+                descriptionErrorNull.style.display = 'none';
+            }
+            if (/(https?:\/\/[^\s]+)/g.test(titleInput.value)) {
+                titleError.style.display = 'block';
+                hasError = true;
+            } else {
+                titleError.style.display = 'none';
+            }
+
+            if (/(https?:\/\/[^\s]+)/g.test(descriptionInput.value)) {
+                descriptionError.style.display = 'block';
+                hasError = true;
+            } else {
+                descriptionError.style.display = 'none';
+            }
+
+            if (!hasError) {
+                document.getElementById('discussion-form').submit();
+            }
+            
+        });
+    </script>
+</body>
+</html>

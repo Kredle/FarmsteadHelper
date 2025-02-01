@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детальне обговорення</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" href="{% static 'detailstyles.css' %}">
+</head>
+<body>
+      
+    <!-- Хедер -->
+    <header>
+    <div class="logo">
+        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+        <span>FarmsteadHelper</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-close">
+            <button id="close-menu">&times;</button>
+        </div>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+        <div class="auth-buttons" id="side-menu-auth">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+    </nav>
+    <div class="auth">
+        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+        <div class="auth-menu">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    
+    
+    <script>
+
+    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('authToken');
+        const authContainer = document.querySelector('.auth');
+        const sideMenuAuth = document.getElementById('side-menu-auth');
+    
+        if (token) {
+            fetch('/api/user-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                    authContainer.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
+                        <div class="auth-menu">
+                            <span>${data.username}</span>
+                            <a href="/profile/${data.username}">Профіль</a>
+                            <a href="/edit-profile/">Налаштування профілю</a>
+                            <a href="#" id="logout-btn">Вихід</a>
+                        </div>
+                    `;
+    
+                    sideMenuAuth.innerHTML = `
+                        <a href="/profile/${data.username}">Профіль</a>
+                        <a href="/edit-profile">Налаштування профілю</a>
+                        <a href="#" id="side-menu-logout">Вихід</a>
+                    `;
+    
+                    document.getElementById('logout-btn').addEventListener('click', () => {
+                        handleLogout();
+                    });
+    
+                    document.getElementById('side-menu-logout').addEventListener('click', () => {
+                        handleLogout();
+                    });
+                })
+                .catch(error => {
+                    console.error('Помилка при отриманні даних користувача:', error);
+                    resetAuthState();
+                });
+        } else {
+            resetAuthState();
+        }
+    
+        function handleLogout() {
+            fetch('/api/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/';
+                    } else {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                })
+                .catch(error => console.error('Помилка при виході:', error));
+        }
+    
+        function resetAuthState() {
+            authContainer.innerHTML = `
+                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                <div class="auth-menu">
+                    <a href="/login">Вхід</a>
+                    <a href="/register">Реєстрація</a>
+                </div>
+            `;
+    
+            sideMenuAuth.innerHTML = `
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            `;
+        }
+    });
+    
+    const hamburger = document.getElementById('hamburger');
+    const sideMenu = document.getElementById('side-menu');
+    const closeMenu = document.getElementById('close-menu');
+    const nav = document.querySelector('nav');
+    const auth = document.querySelector('.auth');
+    
+    hamburger.addEventListener('click', () => {
+        sideMenu.style.right = '0';
+    });
+    
+    closeMenu.addEventListener('click', () => {
+        sideMenu.style.right = '-250px';
+    });
+    
+    function checkMenuVisibility() {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+        if (window.innerWidth < 900 || isMobileDevice) {
+            nav.style.display = 'none';
+            auth.style.display = 'none';
+            hamburger.style.display = 'flex';
+        } else {
+            nav.style.display = 'flex';
+            auth.style.display = 'block';
+            hamburger.style.display = 'none';
+        }
+    }
+    
+    checkMenuVisibility();
+    window.addEventListener('resize', checkMenuVisibility);
+    </script>
+    </header>
+    <div class="discussion-container">
+        <div class="discussion-header">
+            <img src="/static/images/tree.png" alt="Дерева" class="category-img">
+            <div>
+                <h1 class="discussion-title">Як доглядати за дубом?</h1>
+                <p class="author-info">Автор: Іван | Дата: 2024-12-30</p>
+            </div>
+        </div>
+
+        <div class="discussion-content">
+            <p class="content-text">Дуб - одне з найміцніших дерев, але потребує правильного догляду для гарного росту та розвитку. Найважливіше - це вибір правильного місця для посадки та регулярний полив в перші роки життя...</p>
+            <div class="discussion-buttons">
+                <span id="like-count">0</span>
+                <button id="like-btn" class="like-btn">Лайк</button>
+                <span id="dislike-count">0</span>
+                <button id="dislike-btn" class="dislike-btn">Дизлайк</button>
+                <button id="report-btn" class="report-btn">Репорт</button>
+            </div>
+        </div>
+
+        <div class="comments-section">
+            <h3>Коментарі</h3>
+            <div id="comments-list">
+                <!-- Демонстраційний коментар -->
+                <div class="comment">
+                    <div class="comment-header">
+                        <img src="/static/images/default.png" alt="Profile" class="comment-author-img">
+                        <div>
+                            <p class="comment-author">Андрій</p>
+                            <p class="comment-date">2024-12-31 | 14:35</p>
+                        </div>
+                    </div>
+                    <p class="comment-text">Це дійсно цікава тема! Я теж вирощую дуби на своєму дачному участку.</p>
+                    <div class="comment-buttons">
+                        <span class="like-count">0</span>
+                        <button class="like-btn">Лайк</button>
+                        <span class="dislike-count">0</span>
+                        <button class="dislike-btn">Дизлайк</button>
+                        <button class="report-btn">Репорт</button>
+                    </div>
+                    <div class="reply-section">
+                        <button class="add-reply-btn">Додати відповідь</button>
+                        <textarea class="reply-input" placeholder="Ваш коментар під цим..." style="display: none;"></textarea>
+                        <div class="replies-list"></div> <!-- Відповіді на коментар -->
+                    </div>
+                </div>
+            </div>
+            <button id="add-comment-btn">Добавити коментар</button>
+            <textarea id="comment-input" placeholder="Ваш коментар..." style="display: none;"></textarea>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Основні кнопки для обговорення
+            const likeBtn = document.getElementById('like-btn');
+            const dislikeBtn = document.getElementById('dislike-btn');
+            const reportBtn = document.getElementById('report-btn');
+            const likeCount = document.getElementById('like-count');
+            const dislikeCount = document.getElementById('dislike-count');
+
+            let likeVotes = 0, dislikeVotes = 0;
+
+            // Обробка лайка для основного обговорення
+            likeBtn.addEventListener('click', () => {
+                if (likeBtn.classList.contains('active')) {
+                    likeVotes--;
+                    likeBtn.classList.remove('active');
+                } else {
+                    likeVotes++;
+                    likeBtn.classList.add('active');
+                    if (dislikeBtn.classList.contains('active')) {
+                        dislikeVotes--;
+                        dislikeBtn.classList.remove('active');
+                    }
+                }
+                likeCount.textContent = likeVotes;
+                dislikeCount.textContent = dislikeVotes;
+            });
+
+            // Обробка дизлайка для основного обговорення
+            dislikeBtn.addEventListener('click', () => {
+                if (dislikeBtn.classList.contains('active')) {
+                    dislikeVotes--;
+                    dislikeBtn.classList.remove('active');
+                } else {
+                    dislikeVotes++;
+                    dislikeBtn.classList.add('active');
+                    if (likeBtn.classList.contains('active')) {
+                        likeVotes--;
+                        likeBtn.classList.remove('active');
+                    }
+                }
+                likeCount.textContent = likeVotes;
+                dislikeCount.textContent = dislikeVotes;
+            });
+
+            reportBtn.addEventListener('click', () => {
+                alert('Обговорення відправлено на модерацію!');
+            });
+
+            // Додавання коментаря
+            const addCommentBtn = document.getElementById('add-comment-btn');
+            const commentInput = document.getElementById('comment-input');
+            const commentsList = document.getElementById('comments-list');
+
+            addCommentBtn.addEventListener('click', () => {
+                commentInput.style.display = 'block';
+                addCommentBtn.style.display = 'none';
+
+                commentInput.addEventListener('blur', () => {
+                    if (commentInput.value.trim() !== "") {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.classList.add('comment');
+                        commentDiv.innerHTML = `
+                            <div class="comment-header">
+                                <img src="/static/images/default.png" alt="Profile" class="comment-author-img">
+                                <div>
+                                    <p class="comment-author">Андрій</p>
+                                    <p class="comment-date">2024-12-31 | 14:35</p>
+                                </div>
+                            </div>
+                            <p class="comment-text">${commentInput.value}</p>
+                            <div class="comment-buttons">
+                                <span class="like-count">0</span>
+                                <button class="like-btn">Лайк</button>
+                                <span class="dislike-count">0</span>
+                                <button class="dislike-btn">Дизлайк</button>
+                                <button class="report-btn">Репорт</button>
+                            </div>
+                            <div class="reply-section">
+                                <button class="add-reply-btn">Додати відповідь</button>
+                                <textarea class="reply-input" placeholder="Ваш коментар під цим..." style="display: none;"></textarea>
+                                <button class="add-reply-comment-btn">Додати коментар</button>
+                                <div class="replies-list"></div> <!-- Відповіді на коментар -->
+                            </div>
+                        `;
+                        commentsList.appendChild(commentDiv);
+                        commentInput.style.display = 'none';
+                        addCommentBtn.style.display = 'block';
+                        commentInput.value = ""; // очищуємо поле вводу після додавання
+                    }
+                });
+            });
+
+            // Логіка лайків і дизлайків
+            commentsList.addEventListener('click', (event) => {
+                if (event.target.classList.contains('like-btn') || event.target.classList.contains('dislike-btn')) {
+                    const btn = event.target;
+                    const likeCount = btn.closest('.comment').querySelector('.like-count');
+                    const dislikeCount = btn.closest('.comment').querySelector('.dislike-count');
+                    const likeBtn = btn.closest('.comment').querySelector('.like-btn');
+                    const dislikeBtn = btn.closest('.comment').querySelector('.dislike-btn');
+
+                    if (btn.classList.contains('like-btn')) {
+                        if (likeBtn.classList.contains('active')) {
+                            likeCount.textContent = parseInt(likeCount.textContent) - 1;
+                            likeBtn.classList.remove('active');
+                        } else {
+                            likeCount.textContent = parseInt(likeCount.textContent) + 1;
+                            likeBtn.classList.add('active');
+                            if (dislikeBtn.classList.contains('active')) {
+                                dislikeCount.textContent = parseInt(dislikeCount.textContent) - 1;
+                                dislikeBtn.classList.remove('active');
+                            }
+                        }
+                    } else if (btn.classList.contains('dislike-btn')) {
+                        if (dislikeBtn.classList.contains('active')) {
+                            dislikeCount.textContent = parseInt(dislikeCount.textContent) - 1;
+                            dislikeBtn.classList.remove('active');
+                        } else {
+                            dislikeCount.textContent = parseInt(dislikeCount.textContent) + 1;
+                            dislikeBtn.classList.add('active');
+                            if (likeBtn.classList.contains('active')) {
+                                likeCount.textContent = parseInt(likeCount.textContent) - 1;
+                                likeBtn.classList.remove('active');
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Логіка додавання відповідей до коментарів
+            commentsList.addEventListener('click', (event) => {
+                if (event.target.classList.contains('add-reply-btn')) {
+                    const replyInput = event.target.closest('.comment').querySelector('.reply-input');
+                    const repliesList = event.target.closest('.comment').querySelector('.replies-list');
+                    const replyBtn = event.target.closest('.comment').querySelector('.add-reply-comment-btn');
+                    const commentAuthor = event.target.closest('.comment').querySelector('.comment-author').textContent;
+                    replyInput.style.display = 'block';
+                    replyBtn.style.display = 'block';
+                    event.target.style.display = 'none';
+
+                    replyBtn.addEventListener('click', () => {
+                        if (replyInput.value.trim() !== "") {
+                            const replyDiv = document.createElement('div');
+                            replyDiv.classList.add('reply');
+                            replyDiv.innerHTML = `
+                                <div class="comment-header">
+                                    <img src="/static/images/default.png" alt="Profile" class="comment-author-img">
+                                    <div>
+                                        <p class="comment-author">Віталій</p>
+                                        <p class="comment-date">2024-12-31 | 15:00</p>
+                                    </div>
+                                </div>
+                                <p class="comment-text">Коментар до ${commentAuthor}: ${replyInput.value}</p>
+                            `;
+                            repliesList.appendChild(replyDiv);
+                            replyInput.style.display = 'none';
+                            replyBtn.style.display = 'none';
+                            event.target.style.display = 'block';
+                            replyInput.value = ""; // очищуємо поле вводу після додавання
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

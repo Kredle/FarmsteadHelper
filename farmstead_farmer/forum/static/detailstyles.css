@@ -1,0 +1,167 @@
+:root{
+    --button_idle: #dddddd;
+    --button_like: #f44336;
+    --button_dislike: #000000;
+    --button_report: #ff9800;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: var(--background);
+}
+
+.discussion-container {
+    width: 70%;
+    margin: 20px auto;
+    margin-top: 100px;
+    background-color: var(--box_color);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border-radius: 5px;
+}
+
+.discussion-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.category-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.discussion-title {
+    margin: 0;
+    font-size: 24px;
+}
+
+.author-info {
+    color: var(--textcolor_dark);
+    font-size: 14px;
+}
+
+.discussion-content {
+    margin-bottom: 20px;
+}
+
+.content-text {
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.discussion-buttons {
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 16px;
+    margin-right: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.like-btn, .dislike-btn {
+    background-color: var(--button_idle);
+}
+
+.like-btn.active {
+    background-color: var(--button_like);
+    color: var(--textcolor_light);
+}
+
+.dislike-btn.active {
+    background-color: var(--button_dislike);
+    color: var(--textcolor_light);
+}
+
+.report-btn {
+    background-color: var(--button_report);
+}
+
+.comments-section {
+    margin-top: 30px;
+}
+
+#comments-list {
+    margin-bottom: 15px;
+}
+
+textarea {
+    width: 95%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--card_border);
+}
+
+#add-comment-btn {
+    padding: 10px 15px;
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+#add-comment-btn:hover{
+    background-color: var(--accent_hover)
+}
+
+/* Стилі для коментарів */
+.comment {
+    background-color: var(--card_color);
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.comment-header {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.comment-author-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.comment-author {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.comment-date {
+    font-size: 14px;
+    color: #888;
+}
+
+.comment-text {
+    font-size: 16px;
+}
+
+.comment-buttons {
+    margin-top: 10px;
+}
+
+.comment-buttons button {
+    font-size: 14px;
+}
+
+.reply-section {
+    margin-top: 15px;
+}
+
+.replies-list {
+    margin-top: 15px;
+}
