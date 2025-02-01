@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редагування профілю</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
+    <script>
+
+        
+function onCaptchaSuccess() {
+    const captchaResponse1 = grecaptcha.getResponse('second-recaptcha');
+    if (captchaResponse1) {
+        console.log('Капча пройдена успішно');
+        document.getElementById('send-otp-button').disabled = false; 
+    } else {
+        console.log('Капча не пройдена');
+    }
+}
+
+      window.onload = function () {
+    const token = localStorage.getItem('authToken');
+    const bioForm = document.getElementById('change-bio-form');
+    const usernameForm = document.getElementById('change-username-form');
+    const passwordForm = document.getElementById('change-password-form');
+    const avatarForm = document.getElementById('change-avatar-form');
+    const avatarImg = document.getElementById('avatar-img');
+    const bioField = document.getElementById('bio');
+    const usernameField = document.getElementById('new-username');
+    const nameForm = document.getElementById('change-name-form');
+    const firstnameField = document.getElementById('new-firstname');
+    const lastnameField = document.getElementById('new-lastname');
+
+    let userData = {};  
+
+    if (token) {
+        console.log('Завантаження даних користувача...');
+
+        fetch('/api/user-data/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("User data:", data);
+                userData = data;
+
+                let avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "/static/defaultlogo.png";
+                avatarImg.src = avatarUrl;
+                usernameField.value = data.username;
+                bioField.value = data.bio || "";
+                firstnameField.value = data.firstname || "";
+                lastnameField.value = data.lastname || "";
+
+                const fav_button = document.getElementById('toggle-favorites-visibility');
+
+                if(data.flag){
+                    fav_button.textContent = 'Показати Favorites';
+                }
+                else {
+                    fav_button.textContent = 'Приховати Favorites';
+                }
+
+                fav_button.addEventListener('click', function (){
+                fetch('/api/is_favorite_private_change/',{
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({token: token}),
+                });
+                if(fav_button.textContent == 'Показати Favorites'){
+                    fav_button.textContent = 'Приховати Favorites';
+                }
+                else{
+                    fav_button.textContent = 'Показати Favorites';
+                }
+            });
+
+                // Handle account deletion
+                const deleteAccountButton = document.getElementById('delete-account-button');
+                deleteAccountButton.addEventListener('click', function () {
+                    document.getElementById('delete-form-dialog').style.display = 'block';
+
+                    fetch('/api/send-otp-delete/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email: data.email }),
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Не вдалося надіслати OTP код');
+                            }
+                            return response.json();
+                        })
+                        .then(otpResponse => {
+                            alert(otpResponse.message || 'OTP код надіслано на ваш email');
+                        })
+                        .catch(error => {
+                            console.error('Помилка:', error);
+                            alert('Сталася помилка при надсиланні OTP коду');
+                        });
+                });
+            })
+            .catch(error => {
+                console.error('Помилка:', error);
+                alert('Сталася помилка при отриманні даних користувача. Ви будете перенаправлені на сторінку входу.');
+                window.location.href = '/login/';
+            });
+
+        // Update name form
+        nameForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const newFirstname = firstnameField.value.trim();
+            const newLastname = lastnameField.value.trim();
+
+            if (!newFirstname || !newLastname) {
+                alert("Будь ласка, введіть ім'я та прізвище.");
+                return;
+            }
+
+            fetch('/api/update-name/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    firstname: newFirstname,
+                    lastname: newLastname
+                }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to update name');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Помилка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при оновленні даних.');
+                });
+        });
+
+        passwordForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                alert("Будь ласка, заповніть всі поля для зміни пароля.");
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert("Паролі не збігаються!");
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                alert("Новий пароль повинен містити хоча б 8 символів.");
+                return;
+            }
+
+            fetch('/api/change-password/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    confirm_password: confirmPassword
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        window.location.reload(); // Reload the page after successful update
+                    } else {
+                        alert('Помилка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при зміні пароля');
+                });
+        });
+
+        // Update bio form
+        bioForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const newBio = bioField.value;
+
+            if (!newBio) {
+                alert("Будь ласка, введіть нову біографію.");
+                return;
+            }
+
+            fetch('/api/change-bio/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    bio: newBio
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Помилка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при оновленні біографії');
+                });
+        });
+
+        // Update username form
+        usernameForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const newUsername = usernameField.value;
+
+            if (!newUsername) {
+                alert("Будь ласка, введіть нове ім'я користувача.");
+                return;
+            }
+
+            fetch('/api/change-username/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    username: newUsername
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Помилка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при оновленні імені користувача');
+                });
+        });
+
+        // Update avatar form
+        avatarForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(avatarForm);
+            formData.append('token', token);
+
+            fetch('/api/upload-avatar/', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.avatarUrl) {
+                        avatarImg.src = data.avatarUrl;
+                        alert('Аватар успішно оновлено!');
+                        window.location.reload();
+                    } else {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Сталася помилка при завантаженні аватара');
+                });
+        });
+
+        // Account deletion form
+        const deleteAccountForm = document.getElementById('delete-account-form');
+        deleteAccountForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const email = userData.email;
+            const password = document.getElementById('delete-password').value.trim();
+            const otp = document.getElementById('otp-code').value.trim();
+            const captchaResponse = grecaptcha.getResponse();
+
+            if (!captchaResponse) {
+                alert('Будь ласка, пройдіть капчу!');
+                return;
+            }
+
+            if (!email || !password || !otp || !captchaResponse) {
+                alert('Будь ласка, заповніть всі поля: email, OTP, пароль і підтвердьте капчу.');
+                return;
+            }
+
+            fetch('/api/delete-account/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    otp: otp,
+                    password: password,
+                    captcha_token: captchaResponse,
+                }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error('Помилка: ' + text);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(deleteResponse => {
+                    alert(deleteResponse.message);
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/login/';
+                })
+                .catch(error => {
+                    console.error('Помилка при видаленні акаунту:', error);
+                    alert(error.message || 'Сталася помилка при видаленні акаунту');
+                });
+        });
+        document.getElementById('change-email-button').addEventListener('click', function () {
+            document.getElementById('email-form').style.display = 'block';
+});
+document.getElementById('change-email-button').addEventListener('click', function () {
+    document.getElementById('email-form-dialog').style.display = 'block';  // Відкриваємо модальне вікно
+});
+
+
+
+document.getElementById('send-otp-button').addEventListener('click', function () {
+    const newEmail = document.getElementById('new-email').value.trim();
+    
+    if (!newEmail) {
+        alert("Будь ласка, введіть нову електронну пошту.");
+        return;
+    }
+
+    console.log('Sending OTP to:', newEmail);
+
+    fetch('/api/send-otp-email/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            token: token,
+            email: newEmail,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert('OTP код надіслано на нову електронну пошту');
+            document.getElementById('email-form-dialog').style.display = 'none';
+            document.getElementById('otp-form-dialog').style.display = 'block';
+        } else {
+            alert('Помилка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Помилка:', error);
+        alert('Сталася помилка при надсиланні OTP коду');
+    });
+});
+
+const changeEmailForm = document.getElementById('otp-form');
+changeEmailForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const newEmail = document.getElementById('new-email').value.trim();
+    const otpCode = document.getElementById('otp-code-email').value.trim();
+
+    if (!newEmail || !otpCode) {
+        alert('Будь ласка, заповніть всі поля.');
+        return;
+    }
+
+    // Відправляємо запит на зміну електронної пошти
+    fetch('/api/change-email/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            token: token,
+            email: newEmail,
+            otp: otpCode
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            window.location.reload(); // Перезавантажуємо сторінку після успішної зміни
+        } else {
+            alert('Помилка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Помилка:', error);
+        alert('Сталася помилка при зміні електронної пошти');
+    });
+});
+
+
+
+
+    } else {
+        console.log('Користувач не залогінений або не має токену');
+        window.location.href = '/login/';
+    }
+};
+
+    </script>          
+</head>
+<body>
+    <div class="edit-profile-container">
+        <h2>Редагувати профіль</h2>
+        <p id="status-message"></p>
+
+        <!-- User Profile Display -->
+        <div class="profile-display">
+            <div class="avatar-container">
+                <img id="avatar-img" src="" alt="Аватар" class="avatar-img">
+                <form id="change-avatar-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="avatar-file">Оновити аватар</label>
+                        <input type="file" id="avatar-file" name="avatar" accept="image/*" required>
+                    </div>
+                    <button type="submit">Завантажити аватар</button>
+                </form>
+                <!-- Form to edit first and last name -->
+            <form id="change-name-form" enctype="application/json">
+                <h3>Редагувати ім'я та прізвище</h3>
+                <div class="form-group">
+                    <label for="new-firstname">Ім'я</label>
+                    <input type="text" id="new-firstname" name="firstname" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-lastname">Прізвище</label>
+                    <input type="text" id="new-lastname" name="lastname" required>
+                </div>
+                <button type="submit">Зберегти зміни</button>
+            </form>
+            </div>
+            <p id="bio-display"></p> 
+        </div>
+
+        <hr>
+        
+        <div class="profile-display">
+            <form id="change-username-form" enctype="application/json">
+                <div class="form-group">
+                    <label for="new-username">Ім'я користувача</label>
+                    <input type="text" id="new-username" name="username" required>
+                </div>
+                <button type="submit">Зберегти зміни</button>
+            </form>
+
+            <form id="change-bio-form" enctype="application/json">
+                <div class="form-group">
+                    <label for="bio">Біографія</label>
+                    <textarea id="bio" name="bio"></textarea>
+                </div>
+                <button type="submit">Зберегти біографію</button>
+            </form>
+        </div>
+
+        <hr>
+
+        <div class="profile-display">
+            <h3>Змінити пароль</h3>
+
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Теперішній пароль</label>
+                    <input type="password" id="current-password" name="current_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Новий пароль</label>
+                    <input type="password" id="new-password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Підтвердження нового пароля</label>
+                    <input type="password" id="confirm-password" name="confirm_password" required>
+                </div>
+                <button type="submit">Змінити пароль</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="forms">
+    
+        <button id="delete-account-button">Видалити акаунт</button>
+
+        <div id="delete-form-dialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <form id="delete-account-form">
+                    <h3>Видалення акаунту</h3>
+                    <div class="form-group">
+                        <label for="delete-password">Пароль</label>
+                        <input type="password" id="delete-password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="otp-code">OTP код</label>
+                        <input type="text" id="otp-code" name="otp" required>
+                    </div>
+                    <div class="form-group">
+                        <div class="g-recaptcha" data-sitekey="6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd"></div>
+                    </div>
+                    <button type="submit">Підтвердити</button>
+                </form>
+                </form>
+            </div>
+        </div>
+
+        <!-- Кнопка для зміни електронної пошти -->
+        <button id="change-email-button">Змінити електронну пошту</button>
+
+        <!-- Модальне вікно для зміни електронної пошти -->
+        <div id="email-form-dialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <form id="email-form">
+                    <h3>Змінити електронну пошту</h3>
+                    <div class="form-group">
+                        <label for="new-email">Нова електронна пошта</label>
+                        <input type="email" id="new-email" name="email" required>
+                    </div>
+                    <button type="button" id="send-otp-button">Надіслати OTP код</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Модальне вікно для введення OTP коду -->
+        <div id="otp-form-dialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <form id="otp-form">
+                    <h3>Введіть OTP код</h3>
+                    <div class="form-group">
+                        <label for="otp-code-email">OTP код</label>
+                        <input type="text" id="otp-code-email" name="otp" placeholder="Введіть OTP код" required>
+                    </div>
+                    <button type="submit">Змінити електронну пошту</button>
+                </form>
+            </div>
+        </div>
+
+        <button id="toggle-favorites-visibility">Приховати Favorites</button>
+
+    </div>
+
+
+
+
+</body>
+
+</html>

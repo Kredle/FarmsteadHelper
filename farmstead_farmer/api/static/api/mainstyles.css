@@ -1,0 +1,330 @@
+/*
+box_color_hover має бути темнішим за box_color, бо багато всього буде дивно виглядати по іншому
+*/
+
+/*
+:root {
+    --background: #f0fff8;
+
+    --accent: #3b9173;
+    --accent_hover: #4ab58f;
+
+    --box_color: #ffffff;
+    --box_color_hover: #f4f4f4;  
+
+    --card_color: #f9f9f9;
+    --card_border: #f4f4f4;
+
+    --header_footer: #333333;
+    --header_footer_hover: #555555;
+
+    --side: #333333;
+    --side_hover: #444444;
+    --hamburger: #ffffff;
+    
+    --textcolor_light: #ffffff;
+    --textcolor_dark: #333333;
+
+    --shadow: 0 2px 5px #0000001a;
+    --shadow_hover: 0 4px 15px #00000033;
+}
+
+:root {
+    --background: #4adc82;
+
+    --accent: #3b4791;
+    --accent_hover: #7a7bd8;
+
+    --box_color: #752b2b;
+    --box_color_hover: #531f1f;
+
+    --card_color: #78b37c;
+    --card_border: #417044;
+
+    --header_footer: #b356ac;
+    --header_footer_hover: #d186cb;
+
+    --side: #845898;
+    --side_hover: #b381c9;
+    --hamburger: #865b30;
+    
+    --textcolor_light: #ffffff;
+    --textcolor_dark: #333333;
+
+    --shadow: 0 2px 5px #0000001a;
+    --shadow_hover: 0 4px 15px #00000033;
+}
+*/
+
+
+:root {
+    --background: #f0fff8;
+
+    --accent: #3b9173;
+    --accent_hover: #4ab58f;
+
+    --box_color: #ffffff;
+    --box_color_hover: #f4f4f4;  
+
+    --card_color: #f9f9f9;
+    --card_border: #f4f4f4;
+
+    --header_footer: #333333;
+    --header_footer_hover: #555555;
+
+    --side: #333333;
+    --side_hover: #444444;
+    --hamburger: #ffffff;
+    
+    --textcolor_light: #ffffff;
+    --textcolor_dark: #333333;
+
+    --shadow: 0 2px 5px #0000001a;
+    --shadow_hover: 0 4px 15px #00000033;
+}
+
+
+
+
+    /* ХЕДЕР */
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background-color: var(--header_footer);
+    box-shadow: var(--shadow);
+    position: fixed;
+    z-index: 1000; /* Забезпечує верхній шар */
+    box-shadow: var(--shadow); /* Тінь для краси */
+    top: 0;
+    left: 0;
+    width: 98%;
+}
+
+    /* лого */
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 60px;
+    margin-right: 10px;
+}
+
+.logo span {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--textcolor_light);
+}
+
+    /* навігація */
+
+nav {
+    display: flex;
+    gap: 20px;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--textcolor_light);
+    font-size: 16px;
+    padding: 5px 10px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+nav a:hover {
+    background-color: var(--header_footer_hover);
+    border-radius: 5px;
+}
+
+    /* профіль */
+
+.auth {
+    position: relative;
+}
+
+.auth img {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.user-avatar img {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    cursor: pointer;
+}
+
+.auth-menu {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: var(--card_color);
+    border: 1px solid var(--card_border);
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+}
+
+.auth-menu a {
+    display: block;
+    padding: 10px;
+    text-decoration: none;
+    color: var(--textcolor_dark);
+    font-size: 14px;
+    background-color: var(--box_color);
+}
+
+.auth-menu a:hover {
+    background-color: var(--box_color_hover);
+}
+
+.auth-menu span{
+    display: block;
+    padding: 10px;
+    text-decoration: none;
+    color: var(--textcolor_dark);
+    font-size: 16px;
+    background-color: var(--card_color);
+}
+
+.auth:hover .auth-menu {
+    display: block;
+}
+
+    /* бокове меню */
+
+.hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.hamburger div {
+    width: 25px;
+    height: 3px;
+    background-color: var(--hamburger);
+    margin: 4px 0;
+}
+
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -250px;
+    width: 250px;
+    height: 100%;
+    background-color: var(--side);
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+    z-index: 1000;
+    overflow-y: auto; /* Додає вертикальну прокрутку */
+    overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
+    scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
+    scrollbar-color: #555 #333; /* Колір скролбару */
+}
+
+.side-menu a {
+    text-decoration: none;
+    color: var(--textcolor_light);
+    font-size: 18px;
+    padding: 15px 20px;
+    transition: background-color 0.3s;
+}
+
+.side-menu a:hover {
+    background-color: var(--side_hover);
+}
+
+.side-menu-close {
+    text-align: right;
+    padding: 10px;
+}
+
+.side-menu-close button {
+    background: none;
+    border: none;
+    color: var(--textcolor_light);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.side-menu .auth-buttons {
+    margin-top: auto;
+    padding: 20px;
+}
+
+.side-menu .auth-buttons a {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border-radius: 5px;
+    margin-bottom: 10px;
+    text-decoration: none;
+}
+
+.side-menu .auth-buttons a:hover {
+    background-color: var(--accent_hover);
+}
+
+@media (max-width: 768px) {
+    nav,
+    .auth {
+        display: none;
+    }
+
+    .hamburger {
+        display: flex;
+        margin-left: auto;
+    }
+}
+
+    /* ФУТЕР */
+
+footer {
+    background-color: var(--header_footer);
+    color: var(--textcolor_light);
+    padding: 20px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.legal-links {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.legal-links a {
+    color: var(--textcolor_light);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.legal-links a:hover {
+    text-decoration: underline;
+}
+
+.legal-links span {
+    color: var(--textcolor_light);
+    font-size: 14px;
+}
+
+.copyright {
+    font-size: 14px;
+    color: #ccc;
+}

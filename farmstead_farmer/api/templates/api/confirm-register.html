@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Підтвердження реєстрації</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylesapi.css' %}">
+    
+</head>
+<body>
+    
+
+    
+    <!-- Хедер -->
+    <header>    
+    <div class="logo">
+        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+        <span>FarmsteadHelper</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-close">
+            <button id="close-menu">&times;</button>
+        </div>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+        <div class="auth-buttons" id="side-menu-auth">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+    </nav>
+    <div class="auth">
+        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+        <div class="auth-menu">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    
+    
+    <script>
+
+    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('authToken');
+        const authContainer = document.querySelector('.auth');
+        const sideMenuAuth = document.getElementById('side-menu-auth');
+    
+        if (token) {
+            fetch('/api/user-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                    authContainer.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
+                        <div class="auth-menu">
+                            <span>${data.username}</span>
+                            <a href="/profile/${data.username}">Профіль</a>
+                            <a href="/edit-profile/">Налаштування профілю</a>
+                            <a href="#" id="logout-btn">Вихід</a>
+                        </div>
+                    `;
+    
+                    sideMenuAuth.innerHTML = `
+                        <a href="/profile/${data.username}">Профіль</a>
+                        <a href="/edit-profile">Налаштування профілю</a>
+                        <a href="#" id="side-menu-logout">Вихід</a>
+                    `;
+    
+                    document.getElementById('logout-btn').addEventListener('click', () => {
+                        handleLogout();
+                    });
+    
+                    document.getElementById('side-menu-logout').addEventListener('click', () => {
+                        handleLogout();
+                    });
+                })
+                .catch(error => {
+                    console.error('Помилка при отриманні даних користувача:', error);
+                    resetAuthState();
+                });
+        } else {
+            resetAuthState();
+        }
+    
+        function handleLogout() {
+            fetch('/api/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token }),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/';
+                    } else {
+                        return response.json().then(err => {
+                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
+                        });
+                    }
+                })
+                .catch(error => console.error('Помилка при виході:', error));
+        }
+    
+        function resetAuthState() {
+            authContainer.innerHTML = `
+                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                <div class="auth-menu">
+                    <a href="/login">Вхід</a>
+                    <a href="/register">Реєстрація</a>
+                </div>
+            `;
+    
+            sideMenuAuth.innerHTML = `
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            `;
+        }
+    });
+    
+    const hamburger = document.getElementById('hamburger');
+    const sideMenu = document.getElementById('side-menu');
+    const closeMenu = document.getElementById('close-menu');
+    const nav = document.querySelector('nav');
+    const auth = document.querySelector('.auth');
+    
+    hamburger.addEventListener('click', () => {
+        sideMenu.style.right = '0';
+    });
+    
+    closeMenu.addEventListener('click', () => {
+        sideMenu.style.right = '-250px';
+    });
+    
+    function checkMenuVisibility() {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+        if (window.innerWidth < 900 || isMobileDevice) {
+            nav.style.display = 'none';
+            auth.style.display = 'none';
+            hamburger.style.display = 'flex';
+        } else {
+            nav.style.display = 'flex';
+            auth.style.display = 'block';
+            hamburger.style.display = 'none';
+        }
+    }
+    
+    checkMenuVisibility();
+    window.addEventListener('resize', checkMenuVisibility);
+    </script>
+    </header>
+    <div class="container">
+        <h1>Введіть OTP код</h1>
+        <p>На вашу електронну пошту було надіслано код підтвердження. Введіть його, щоб завершити реєстрацію.</p>
+        <form id="otp-form">
+            <input type="text" id="otp-code" placeholder="Введіть OTP код" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            <button type="submit" style="width: 100%; padding: 10px; background-color: #333; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">Підтвердити</button>
+            <p id="error-message" class="error-message"></p>
+        </form>
+        <a href="/homepage">Повернутися на головну</a>
+    </div>
+
+
+    <script>
+        document.getElementById('otp-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const otpCode = document.getElementById('otp-code').value;
+        const email = localStorage.getItem('email');
+        const lastname = localStorage.getItem('lastname');
+        const firstname = localStorage.getItem('firstname');
+        const username = localStorage.getItem('username');
+        const password = localStorage.getItem('password');
+        const repeatPassword = localStorage.getItem('repeat_password');  // Додаємо repeat_password
+        const errorMessage = document.getElementById('error-message');
+
+        if (!email) {
+            errorMessage.textContent = 'Email не знайдено. Переконайтеся, що ви зареєстровані.';
+            return;
+        }
+
+        try {
+            // Перевіряємо OTP код
+            const response = await fetch('/api/verify-otp/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ otp: otpCode, email: email }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Якщо OTP вірний, надсилаємо всі дані для реєстрації
+                const registrationResponse = await fetch('/api/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        lastname: lastname,
+                        firstname: firstname,
+                        username: username,
+                        password: password,
+                        repeat_password: repeatPassword  // Додаємо repeat_password
+                    }),
+                });
+
+                const registrationResult = await registrationResponse.json();
+                if (registrationResponse.ok) {
+                    alert('Реєстрацію завершено успішно!');
+                    window.location.href = '/login/';
+                } else {
+                    errorMessage.textContent = registrationResult.error || 'Помилка при завершенні реєстрації.';
+                }
+            } else {
+                errorMessage.textContent = result.error || 'Невірний OTP код.';
+            }
+        } catch (err) {
+            errorMessage.textContent = 'Помилка зв’язку з сервером.';
+            console.error(err);
+        }
+    });
+    </script>
+</body>
+</html>
