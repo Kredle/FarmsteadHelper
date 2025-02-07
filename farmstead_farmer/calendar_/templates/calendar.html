@@ -5,6 +5,7 @@
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <title>Календар</title>
 
     <!-- Add jQuery -->
@@ -464,7 +465,7 @@
             'Дозрівання': '#2962FF', // Яскравий синій  
             'Посів': '#4CAF50',  // Яскравий зелений (замість оранжевого)  
             'Зрілість': '#2E7D32', // Темно-зелений  
-            'Садіння рослини': '#8E24AA', // Глибокий фіолетовий  
+            'Садіння квітки': '#8E24AA', // Глибокий фіолетовий  
             'Удобрення': '#FF6D00', // Яскравий оранжевий  
             'Обрізка': '#212121', // Темний графітовий (майже чорний)  
         };
@@ -607,7 +608,7 @@
                 },
                 'рослини': () => {
                     if (data.start_date && data.end_date) {
-                        addEventIfUnique('Садіння рослини', data.start_date, data.end_date);
+                        addEventIfUnique('Садіння квітки', data.start_date, data.end_date);
                     }
                 }
             };
@@ -733,7 +734,7 @@
         <option value="">-- Виберіть --</option>
         <option value="дерева">Дерева</option>
         <option value="овочі">Овочі</option>
-        <option value="рослини">Рослини</option>
+        <option value="рослини">Квіти</option>
     </select>
     
     <div id="sorts-wrapper">
