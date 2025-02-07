@@ -480,24 +480,31 @@
                 document.getElementById("sorts-wrapper").style.display = 'none';
                 return;
             }
-    
+
             document.getElementById("sorts-wrapper").style.display = 'block';
-    
+
             const response = await fetch('/api/get_sorts/', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ category })
             });
-    
+
             const data = await response.json();
             const sortSelect = document.getElementById("sorts");
             sortSelect.innerHTML = "";
-    
+
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "--Виберіть Сорт--";
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            sortSelect.appendChild(defaultOption);
+
             if (data.error) {
                 alert(data.error);
                 return;
             }
-    
+
             data.forEach(sort => {
                 const option = document.createElement("option");
                 option.value = sort;
@@ -505,6 +512,7 @@
                 sortSelect.appendChild(option);
             });
         }
+
     
         async function fetchSortDetails() {
             const category = document.getElementById("category").value;
@@ -607,12 +615,12 @@
             function addEventIfUnique(title, from, to) {
                 const start = addYearIfMissing(from);
                 const end = addYearIfMissing(to);
-
+                
                 // Check if event already exists for this date and type
                 if (!eventTracker[start]) {
                     eventTracker[start] = {};
                 }
-
+                
                 if (!eventTracker[start][title]) {
                     // Add the event only if it's not already added for this date
                     events.push(createEvent(title, start, end));
