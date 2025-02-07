@@ -180,7 +180,70 @@
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
-
+    <div class="search-container">
+        <input type="text" id="catalog-search" placeholder="Пошук квітів, тварин, овочів...">
+        <div id="search-results" class="search-results"></div>
+    </div>
+    <style>
+        header {
+            position: relative; /* Додаємо для коректного позиціонування */
+            z-index: 100; /* Менше значення ніж у пошукових результатів */
+        }
+        
+        .search-container {
+            margin-top: 80px; /* Відступ від хедера */
+            z-index: 99; /* Значення нижче ніж у хедера */
+        }
+        /* Стилі для пошуку */
+        .search-container {
+            max-width: 600px;
+            margin: 20px auto;
+            position: relative;
+            padding: 0 15px;
+        }
+    
+        #catalog-search {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 25px;
+            outline: none;
+        }
+    
+        .search-results {
+            position: absolute;
+            width: calc(100% - 30px);
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+    
+        .search-result-item {
+            padding: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    
+        .search-result-item:hover {
+            background: #f5f5f5;
+        }
+    
+        .search-result-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+    </style>
     <div class="detail_container">
         <div class="detail_aboutanimal">
             <img id="animal-image" src="{{ animal.image }}" alt="{{ animal.common_name }}">
@@ -321,6 +384,65 @@
                     console.error('Помилка:', error);
                     alert('Сталася помилка при збереженні в обране.');
                 });
+            });
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('catalog-search');
+            const searchResults = document.getElementById('search-results');
+            searchInput.addEventListener('input', function(e) {
+                const query = this.value.trim();
+                searchResults.innerHTML = '';
+                
+                if (query.length < 2) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                // Виклик API для пошуку
+                fetch(`/api/search/?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.results.length > 0) {
+                            data.results.forEach(result => {
+                                const div = document.createElement('div');
+                                div.className = 'search-result-item';
+                                div.innerHTML = `
+                                    <img src="${result.image_url}" alt="${result.name}">
+                                    <div>
+                                        <strong>${result.name}</strong>
+                                        <div class="category-tag">${result.type}</div>
+                                    </div>
+                                `;
+                                div.addEventListener('click', () => {
+                                    window.location.href = result.url;
+                                });
+                                searchResults.appendChild(div);
+                            });
+                            searchResults.style.display = 'block';
+                        } else {
+                            searchResults.innerHTML = '<div class="search-result-item">Нічого не знайдено</div>';
+                            searchResults.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка при пошуку:', error);
+                        searchResults.innerHTML = '<div class="search-result-item">Помилка при пошуку</div>';
+                        searchResults.style.display = 'block';
+                    });
+            });
+            // Приховуємо результати при кліку поза пошуком
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+            // Обробка клавіші Enter
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const firstResult = searchResults.querySelector('.search-result-item');
+                    if (firstResult && !firstResult.textContent.includes('Нічого')) {
+                        window.location.href = firstResult.dataset.url;
+                    }
+                }
             });
         });
     </script>    
