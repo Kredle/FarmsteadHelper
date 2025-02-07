@@ -504,7 +504,8 @@ class UserProfileView(APIView):
             "avatarUrl": avatar_url,
             "lastActivity": user.last_activity,
             "dateJoined": user.date_joined,
-            "flag" : user.is_favorite_private
+            "flag" : user.is_favorite_private,
+            "id" : user.id
         }
 
         return Response(data, status=200)
