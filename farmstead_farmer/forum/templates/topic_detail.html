@@ -1208,7 +1208,8 @@ function getFormattedDate(date) {
 
 // Форматування часу у 24-годинний формат
 function getFormattedTime(date) {
-    const timeString = date.toLocaleTimeString();
+    
+    const timeString = date.toLocaleTimeString('en-GB');
     const amPmRegex = /(AM|PM)$/i;
     if (amPmRegex.test(timeString)) {
         const [time, modifier] = timeString.split(' ');
