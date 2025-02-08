@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Профіль користувача</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
 </head>
@@ -211,84 +212,29 @@
 
         <!-- Відображення обраних елементів -->
         <div class="favorites-section">
-
+            {% load my_filters %}
             {% if favorites %}
-                <div class="favorites-category">
-                    <h4>Обрані дерева</h4>
-                    <div class="favorites-cards">
-                        {% for item in favorites %}
-                            {% if item.category == 'Дерева' %}
-                                <div class="card" data-category="{{ item.category }}">
-                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
+            {% with categories="Дерева,Квіти,Обговорення,Овочі,Тварини"|split:',' %}
+                {% for category in categories %}
+                    {% with filtered_items=favorites|filter_by_category:category %}
+                        {% if filtered_items %}
+                            <div class="favorites-category">
+                                <h4>Обрані {{ category|lower }}</h4>
+                                <div class="favorites-cards">
+                                    {% for item in filtered_items %}
+                                        <div class="card" data-category="{{ item.category }}">
+                                            <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
+                                            <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
+                                            <a class="card-button" href="{{ item.url }}">Інформація</a>
+                                        </div>
+                                    {% endfor %}
                                 </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="favorites-category">
-                    <h4>Обрані квіти</h4>
-                    <div class="favorites-cards">
-                        {% for item in favorites %}
-                            {% if item.category == 'Квіти' %}
-                                <div class="card" data-category="{{ item.category }}">
-                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="favorites-category">
-                    <h4>Обрані обговорення</h4>
-                    <div class="favorites-cards">
-                        {% for item in favorites %}
-                            {% if item.category == 'Обговорення' %}
-                                <div class="card" data-category="{{ item.category }}">
-                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="favorites-category">
-                    <h4>Обрані овочі</h4>
-                    <div class="favorites-cards">
-                        {% for item in favorites %}
-                            {% if item.category == 'Овочі' %}
-                                <div class="card" data-category="{{ item.category }}">
-                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="favorites-category">
-                    <h4>Обрані тварини</h4>
-                    <div class="favorites-cards">
-                        {% for item in favorites %}
-                            {% if item.category == 'Тварини' %}
-                                <div class="card" data-category="{{ item.category }}">
-                                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:'Невідомий обʼєкт' }}">
-                                    <div class="card-title">{{ item.common_name|default:'Невідомий обʼєкт' }}</div>
-                                    <a class="card-button" href="{{ item.url }}">Інформація</a>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            {% else %}
-            {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
+            {% endwith %}
+        {% endif %}
         </div>
     </div>
 
