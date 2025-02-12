@@ -33,6 +33,7 @@ body {
     height: 40px;
     border-radius: 50%;
     margin-right: 15px;
+    object-fit: cover;
 }
 
 .discussion-title {

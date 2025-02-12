@@ -59,6 +59,7 @@ body {
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s;
+    object-fit: cover;
 }
 
 .category-button:hover img {
@@ -749,7 +750,6 @@ main {
 .detail_container {
     max-width: 1200px;
     margin: 20px auto;
-    margin-top: 7%;
     padding: 20px;
     background: var(--box_color);
     border-radius: 8px;
@@ -765,6 +765,8 @@ main {
     width: 100%;
     max-width: 400px;
     border-radius: 8px;
+    object-fit: cover;
+    max-height: 400px;
 }
 
 .detail_aboutanimal h1 {
@@ -823,6 +825,7 @@ main {
     width: 100%;
     max-width: 400px;
     border-radius: 8px;
+    object-fit: cover;
 }
 
 .abouttree h1 {
@@ -830,29 +833,29 @@ main {
     color: var(--textcolor_dark);
 }
 
-.fertilizer_table {
+.detail_table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
 }
 
-.fertilizer_table th,
-.fertilizer_table td {
+.detail_table th,
+.detail_table td {
     border: 1px solid var(--card_border);
     padding: 8px;
     text-align: left;
 }
 
-.fertilizer_table th {
+.detail_table th {
     background-color: var(--card_color);
     font-weight: bold;
 }
 
-.fertilizer_table tr:nth-child(even) {
+.detail_table tr:nth-child(even) {
     background-color: var(--box_color_hover);
 }
 
-.fertilizer_table td {
+.detail_table td {
     vertical-align: top;
 }
 
@@ -881,7 +884,6 @@ main {
 .card-container {
     padding: 50px 20px;
     text-align: center;
-    margin-top: 5%;
 }
 
 .card-container h2 {
@@ -943,3 +945,61 @@ main {
     flex-wrap: wrap;
 }
 
+
+
+
+    /* ПОШУК ПО КАТАЛОГУ*/
+
+.search-container {
+    margin-top: 80px; /* Відступ від хедера */
+    z-index: 99; /* Значення нижче ніж у хедера */
+}
+/* Стилі для пошуку */
+.search-container {
+    max-width: 600px;
+    margin: 20px auto;
+    position: relative;
+    padding: 0 15px;
+}
+
+#catalog-search {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: 2px solid var(--accent);
+    border-radius: 25px;
+    outline: none;
+}
+
+.search-results {
+    position: absolute;
+    width: calc(100% - 30px);
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--box_color);
+    border: 1px solid var(--card_border);
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    display: none;
+}
+
+.search-result-item {
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-result-item:hover {
+    background: var(--box_color_hover);
+}
+
+.search-result-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+}
