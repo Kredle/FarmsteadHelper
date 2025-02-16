@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from api.models import CustomUser
 from django.contrib import messages
-
+from django.urls import reverse
 def forum_main(request):
     topics = Topic.objects.all().values(
         'idTopic', 'Title', 'Content', 'Category', 'Author', 'Date', 'Likes', 'Comments'
@@ -204,6 +204,7 @@ def update_comment_reaction(request):
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 def get_comment(request, comment_id):
+    #print(f"Метод запиту: {request.method}")
     if request.method == 'POST':
         comment = Comment.objects.get(idComments = comment_id)
         return JsonResponse({
@@ -250,19 +251,33 @@ def get_user_reaction(request, topic_id):
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 def delete_topic(request, topic_id):
-    # Перевіряємо, чи це POST запит
     if request.method == 'POST':
         data = json.loads(request.body)
-        user = data.get('username')
+        requesting_user = data.get('username')  # Змінна перейменована, щоб уникнути конфлікту імен
         topic = get_object_or_404(Topic, idTopic=topic_id)
         
-        if topic.Author == user:  # Перевіряємо, чи це автор теми
+        if topic.Author == requesting_user:
+            # Видаляємо всі коментарі теми
             Comment.objects.filter(Topics_id=topic_id).delete()
-            topic.delete()  # Видаляємо тему
-            return redirect('forum_main')  # Перенаправляємо на список тем
-        else:
-            return redirect('forum_main')  # Якщо не автор, перенаправляємо на головну
-
+            
+            # Генеруємо повну URL-адресу теми
+            topic_path = reverse('topic_detail', args=[topic_id])
+            topic_url = request.build_absolute_uri(topic_path)
+            print(f"{topic_url}")
+            # Оновлюємо обране для всіх користувачів
+            all_users = CustomUser.objects.all()
+            for user in all_users:
+                original_count = len(user.favorites)
+                # Видаляємо всі входження цієї теми
+                user.favorites = [fav for fav in user.favorites if fav.get('link') != topic_url]
+                if len(user.favorites) != original_count:
+                    user.save()  # Зберігаємо тільки при змінах
+            
+            # Видаляємо саму тему
+            topic.delete()
+            return redirect('forum_main')
+        
+        return redirect('forum_main')
 def edit_topic_new(request, topic_id):
     context = {
         'topic_id': topic_id  # Передаємо topic_id у контекст

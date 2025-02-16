@@ -294,7 +294,13 @@
             const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
             const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
             console.log(createdDateInput); // Наприклад: 2025-01-13
-            const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
+            const hours = now.getHours().toString().padStart(2, '0'); 
+            const minutes = now.getMinutes().toString().padStart(2, '0'); 
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+
+            const createdTimeInput =  `${hours}:${minutes}:${seconds}` ;
+            console.log(createdTimeInput); 
+            //usernameInput.value = Author; 
             console.log(createdTimeInput); // Наприклад: 2025-01-13
             usernameInput.value = Author;
 
