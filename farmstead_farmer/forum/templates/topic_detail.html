@@ -704,11 +704,11 @@
             let replyToText = '';
             if (comment.ParentId) {
                 const parentAuthor = await FetchingComment(comment.ParentId);
-                replyToText = `<p class="reply-to">Відповідь на коментар <a href = "/profile/{{topic.Author}}">${parentAuthor}</a></p>`;
+                replyToText = `<p class="reply-to">Відповідь на коментар <a href = "/profile/${comment.Author}">${parentAuthor}</a></p>`;
             }
 
             commentDiv.innerHTML = `
-                <p>Автор: <a href = "/profile/{{topic.Author}}">${comment.Author}</a> | Дата: ${comment.Date} | Час: ${comment.Time}</p>
+                <p>Автор: <a href = "/profile/${comment.Author}">${comment.Author}</a> | Дата: ${comment.Date} | Час: ${comment.Time}</p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
                 <button class="comment-like-btn">👍 Like (<span id="comment-likes-count">${comment.Likes}</span>)</button>
