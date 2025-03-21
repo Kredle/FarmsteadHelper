@@ -19,10 +19,10 @@
 -- Table structure for table `interactive map`
 --
 
-DROP TABLE IF EXISTS `interactive map`;
+DROP TABLE IF EXISTS `interactive_map`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `interactive map` (
+CREATE TABLE `interactive_map` (
   `idInteractive` int NOT NULL AUTO_INCREMENT,
   `map` longtext,
   `api_customuser_id` bigint NOT NULL,
