@@ -14,6 +14,8 @@ class CustomUser(AbstractUser):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_username_update = models.DateTimeField(null=True, blank=True)
     is_favorite_private = models.BooleanField(default=False)
+    has_map = models.BooleanField(default=False)
+    is_map_private = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username

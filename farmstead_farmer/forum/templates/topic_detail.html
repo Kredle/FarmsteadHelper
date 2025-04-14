@@ -3,422 +3,66 @@
 <head>
     {% load static %}
     <meta charset="UTF-8">
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" href="{% static 'detailstyles.css' %}">
     <!--<script defer src="script.js"></script>-->
     <title>{{ topic.Title }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        header {
-            background-color: #0056b3;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-        .topic-info {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .topic-info p {
-            margin: 10px 0;
-        }
-        .topic-info strong {
-            color: #4CAF50;
-        }
-        .topic-stats {
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .topic-stats p {
-            margin: 0;
-            font-size: 1rem;
-        }
-        .topic-stats button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .topic-stats button:hover {
-            background-color: #45a049;
-        }
-        .topic-actions {
-            text-align: right;
-            margin-top: 20px;
-            position: relative;
-        }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 15px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        a:hover {
-            background-color: #218838;
-        }
-        /*.topic-actions {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center; 
-            width: 100%; 
-        }*/
 
-        .actions-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        .actions-menu {
-            position: absolute;
-            top: 0;
-            right: 30px; /* Adjust position to be beside the button */
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            display: none;
-        }
-
-        .actions-menu button {
-            width: 100%;
-            background: none;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            text-align: left;
-        }
-        .actions-menu button:hover {
-            background-color: #f1f1f1;
-        }
-        a {
-            text-decoration: none;
-            color: white;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        #comment {
-            background-color: #008CBA;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        #comment:hover {
-            background-color: #007bb5;
-        }
-        
-        .comments-section {
-            margin-top: 20px;
-        }
-        .comment {
-            background: #f1f1f1;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            transition: background-color 0.3s ease;
-        }
-        .comment textarea {
-            width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .comment button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .comment button:hover {
-            background-color: #45a049;
-        }
-
-        .actions-menu a {
-            padding: 10px;
-            text-decoration: none;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .actions-menu a:hover {
-            background-color: #f1f1f1;
-        }
-    </style>
 </head>
 <body>
-    <header>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
-            main {
-                margin-top: 100px; /* Відступ дорівнює висоті хедера */
-            }
-            header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 10px 20px;
-                background-color: #333;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: relative;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
-            }
-    
-            .logo {
-                display: flex;
-                align-items: center;
-            }
-    
-            .logo img {
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .logo span {
-                font-size: 20px;
-                font-weight: bold;
-                color: #fff;
-            }
-    
-            nav {
-                display: flex;
-                gap: 20px;
-            }
-    
-            nav a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 16px;
-                padding: 5px 10px;
-                transition: background-color 0.3s, color 0.3s;
-            }
-    
-            nav a:hover {
-                background-color: #444;
-                border-radius: 5px;
-            }
-    
-            .auth {
-                position: relative;
-            }
-    
-            .auth img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-    
-            .auth-menu {
-                display: none;
-                position: absolute;
-                top: 50px;
-                right: 0;
-                background-color: #fff;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-            }
-    
-            .auth-menu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: #333;
-                font-size: 14px;
-            }
-    
-            .auth-menu a:hover {
-                background-color: #f4f4f4;
-            }
-    
-            .auth:hover .auth-menu {
-                display: block;
-            }
-    
-            .hamburger {
-                display: none;
-                flex-direction: column;
-                cursor: pointer;
-            }
-    
-            .hamburger div {
-                width: 25px;
-                height: 3px;
-                background-color: #fff;
-                margin: 4px 0;
-            }
-    
-            .side-menu {
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100%;
-                background-color: #333;
-                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-                transition: right 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                padding-top: 20px;
-                z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
-            }
-    
-            .side-menu a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 18px;
-                padding: 15px 20px;
-                transition: background-color 0.3s;
-            }
-    
-            .side-menu a:hover {
-                background-color: #444;
-            }
-    
-            .side-menu-close {
-                text-align: right;
-                padding: 10px;
-            }
-    
-            .side-menu-close button {
-                background: none;
-                border: none;
-                color: #fff;
-                font-size: 20px;
-                cursor: pointer;
-            }
-    
-            .side-menu .auth-buttons {
-                margin-top: auto;
-                padding: 20px;
-            }
-    
-            .side-menu .auth-buttons a {
-                display: block;
-                text-align: center;
-                padding: 10px;
-                background-color: #444;
-                color: #fff;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                text-decoration: none;
-            }
-    
-            .side-menu .auth-buttons a:hover {
-                background-color: #555;
-            }
-    
-            @media (max-width: 768px) {
-                nav,
-                .auth {
-                    display: none;
-                }
-    
-                .hamburger {
-                    display: flex;
-                    margin-left: auto;
-                }
-            }
-        </style>
-    
-    <div class="logo">
-        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-        <span>FarmsteadHelper</span>
-    </div>
-    <div class="hamburger" id="hamburger">
-        <div></div>
-        <div></div>
-        <div></div>
-    </div>
-    <div class="side-menu" id="side-menu">
-        <div class="side-menu-close">
-            <button id="close-menu">&times;</button>
-        </div>
-        <a href="/">Головна</a>
-        <a href="/catalog">Каталог</a>
-        <a href="/forum">Форум</a>
-        <a href="/map">Інтерактивна мапа</a>
-        <a href="/calendar">Календар</a>
-        <div class="auth-buttons" id="side-menu-auth">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
-        </div>
-    </div>
-    <nav>
-        <a href="/">Головна</a>
-        <a href="/catalog">Каталог</a>
-        <a href="/forum">Форум</a>
-        <a href="/map">Інтерактивна мапа</a>
-        <a href="/calendar">Календар</a>
-    </nav>
-    <div class="auth">
-        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-        <div class="auth-menu">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
-        </div>
-    </div>
-    
-    
+    <header style="flex-direction: column; align-items: stretch;">
+        <div class="line">
+            <div class="logo">
+                <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+                <span>FarmsteadHelper</span>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <div class="side-menu" id="side-menu">
+                <div class="side-menu-close">
+                    <button id="close-menu">&times;</button>
+                </div>
+                <a href="/">Головна</a>
+                <a href="/catalog">Каталог</a>
+                <a href="/forum">Форум</a>
+                <a href="/map">Інтерактивна мапа</a>
+                <a href="/calendar">Календар</a>
+                <div class="auth-buttons" id="side-menu-auth">
+                    <a href="/login">Вхід</a>
+                    <a href="/register">Реєстрація</a>
+                </div>
+            </div>
+            <nav>
+                <a href="/">Головна</a>
+                <a href="/catalog">Каталог</a>
+                <a href="/forum">Форум</a>
+                <a href="/map">Інтерактивна мапа</a>
+                <a href="/calendar">Календар</a>
+            </nav>
+            <div class="auth">
+                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+                <div class="auth-menu">
+                    <a href="/login">Вхід</a>
+                    <a href="/register">Реєстрація</a>
+                </div>
+            </div>
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
         let user;
+        let Is_superuser = false;
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -437,6 +81,7 @@
                 })
                 .then(data => {
                     user = data.username;
+                    Is_superuser = data.is_superuser;
                     const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
                     authContainer.innerHTML = `
                         <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
@@ -447,17 +92,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -469,7 +115,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -490,7 +136,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -499,31 +145,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -534,57 +180,268 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
-    </header>
-    <header>
-        <h1 id = "title">{{ topic.Title }}</h1>
+        </div>
+        <div class="line">
+            <h1 id = "title">{{ topic.Title }}</h1>
+        </div>
     </header>
 
     <div class="topic-info">
-        <p><strong>Категорія:</strong> {{ topic.Category }}</p>
-        <p><strong>Автор:</strong><a href = "/profile/{{topic.Author}}" style => {{ topic.Author }}</a> | <strong>Дата:</strong> {{ topic.Date }}</p>
+        <p id="category" ><strong>Категорія:</strong> {{ topic.Category }}</p>
+        <p><strong>Автор:</strong>
+
+            {% if topic.Author == "Користувача видалено" %}
+                {{ topic.Author }}
+            {% else %}
+                <a href = "/profile/{{topic.Author}}" style => {{ topic.Author }}</a>
+            {% endif %}
+            | <strong>Дата:</strong> {{ topic.Date }}</p>
         <p>{{ topic.Content }}</p>
         <button id="comment">Відповісти</button>
-        <div class="topic-stats" data-topic-id="{{ topic.idTopic }}">
-            <button id="like-btn">👍 Like (<span id="likes-count">{{ topic.Likes }}</span>)</button>
-            <button id="dislike-btn">👎 Dislike (<span id="dislikes-count">{{ topic.Dislikes }}</span>)</button>
-            <button id="favorite-button" class="favorite-btn">Додати в обране</button>
-            <p><strong>Коментарі:</strong> {{ topic.Comments }}</p>
+        <div class="topic_buttons" style="display: flex;">
+            <div class="topic-stats" data-topic-id="{{ topic.idTopic }}">
+                <button id="like-btn">👍 Лайк (<span id="likes-count">{{ topic.Likes }}</span>)</button>
+                <button id="dislike-btn">👎 Дизлайк (<span id="dislikes-count">{{ topic.Dislikes }}</span>)</button>
+                <button id="favorite-button" class="favorite-btn">Додати в обране</button>
+                <p><strong>Коментарі:</strong> {{ topic.Comments }}</p>
+            </div>
+            <div class="topic-actions">
+                <button class="actions-btn">...</button>
+                <div class="actions-menu" style="display: none;">
+                     <!-- Кнопка скарги -->
+                     <button id="report-btn" class="btn btn-sm btn-danger"
+                     data-topic-id="{{ topic.id }}">
+                     <i class="fas fa-flag"></i> Поскаржитися
+                     </button>
+
+                     <!-- Модальне вікно -->
+                     <div id="report-modal" class="report-modal">
+                     <div class="report-modal-content">
+                     <h5>Поскаржитися на вміст</h5>
+
+                     <div class="mb-3">
+                         <label class="form-label">Причина:</label>
+                         <select id="report-reason" class="form-select">
+                             <option value="" disabled selected>Оберіть причину...</option>
+                             <option value="Спам">Спам або реклама</option>
+                             <option value="Образливий вміст">Образливий вміст</option>
+                             <option value="Недостовірна інформація">Недостовірна інформація</option>
+                             <option value="Цькування">Цькування</option>
+                             <option value="Інша причина">Інша причина</option>
+                         </select>
+                     </div>
+
+                     <div id="other-reason-container" class="mb-3" style="display: none;">
+                         <label class="form-label">Вкажіть деталі:</label>
+                         <textarea id="other-reason" class="form-control" rows="3"></textarea>
+                     </div>
+
+                     <div class="modal-actions">
+                         <button id="cancel-report" class="btn btn-secondary">Скасувати</button>
+                         <button id="submit-report" class="btn btn-danger">Надіслати</button>
+                     </div>
+                     </div>
+                     </div>
+
+                     <style>
+                     .report-modal {
+                     display: none;
+                     position: fixed;
+                     top: 0;
+                     left: 0;
+                     width: 100%;
+                     height: 100%;
+                     background: rgba(0,0,0,0.5);
+                     z-index: 1000;
+                     justify-content: center;
+                     align-items: center;
+                     }
+
+                     .report-modal-content {
+                     display: flex;
+                    align-content: space-around;
+                    flex-direction: column;
+                    flex-wrap: wrap;
+                    align-items: center;
+                     background: white;
+                     padding: 20px;
+                     border-radius: 8px;
+                     width: 100%;
+                     max-width: 500px;
+                     animation: modalFadeIn 0.3s;
+                     }
+
+                     @keyframes modalFadeIn {
+                     from { opacity: 0; transform: translateY(-20px); }
+                     to { opacity: 1; transform: translateY(0); }
+                     }
+
+                     .modal-actions {
+                     display: flex;
+                     justify-content: flex-end;
+                     gap: 10px;
+                     }
+                     </style>
+
+                     <script>
+                         document.addEventListener('DOMContentLoaded', function() {
+                             const reportBtn = document.getElementById('report-btn');
+                             const modal = document.getElementById('report-modal');
+                             const reasonSelect = document.getElementById('report-reason');
+                             const otherContainer = document.getElementById('other-reason-container');
+                             const otherReason = document.getElementById('other-reason');
+                             const submitBtn = document.getElementById('submit-report');
+                             const cancelBtn = document.getElementById('cancel-report');
+
+                             if (!reportBtn) return;
+
+                             // Відкриття модального вікна
+                             reportBtn.addEventListener('click', function() {
+                                 const token = localStorage.getItem("authToken");
+                                 if (!token) {
+                                     window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                                     return;
+                                 }
+
+                                 modal.style.display = 'flex';
+                             });
+
+                             // Закриття модального вікна
+                             function closeModal() {
+                                 modal.style.display = 'none';
+                                 reasonSelect.value = '';
+                                 otherContainer.style.display = 'none';
+                                 otherReason.value = '';
+                             }
+
+                             // Обробник вибору причини
+                             reasonSelect.addEventListener('change', function() {
+                                 otherContainer.style.display = this.value === 'Інша причина' ? 'block' : 'none';
+                             });
+
+                             // Скасування
+                             cancelBtn.addEventListener('click', closeModal);
+
+                             // Відправка форми
+                             submitBtn.addEventListener('click', async function() {
+                                 const token = localStorage.getItem("authToken");
+                                 let reason = reasonSelect.value;
+
+                                 if (!reason) {
+                                     alert('Будь ласка, оберіть причину скарги');
+                                     return;
+                                 }
+
+                                 if (reason === 'Інша причина') {
+                                     reason = 'Інша причина: ' + (otherReason.value || 'Деталі не вказано');
+                                 }
+
+                                 // Отримуємо ID теми з URL (формат /topic/<id>/)
+                                 const pathParts = window.location.pathname.split('/');
+                                 const topicId = "{{ topic.idTopic }}";
+
+                                 if (!topicId || isNaN(topicId)) {
+                                     alert('Не вдалося визначити ID теми');
+                                     return;
+                                 }
+
+                                 try {
+                                     const response = await fetch('/api/report/', {
+                                         method: 'POST',
+                                         headers: {
+                                             'Content-Type': 'application/json',
+                                             'Authorization': `Token ${token}`
+                                         },
+                                         body: JSON.stringify({
+                                             topic_id: parseInt(topicId),
+                                             reason: reason
+                                         })
+                                     });
+
+                                     const data = await response.json();
+
+                                     if (!response.ok) {
+                                         throw new Error(data.error || 'Не вдалося надіслати скаргу');
+                                     }
+
+                                     showAlert('Вашу скаргу успішно надіслано модераторам!');
+                                     closeModal();
+                                 } catch (error) {
+                                     console.error('Помилка при надсиланні скарги:', error);
+
+                                     if (error.message.includes('401')) {
+                                         localStorage.removeItem("authToken");
+                                         showAlert('Сесія закінчилася. Будь ласка, увійдіть знову.');
+                                         window.location.href = '/login/';
+                                     } else {
+                                         alert('Помилка: ' + (error.message || 'Не вдалося надіслати скаргу'));
+                                     }
+                                 }
+                             });
+                         });
+                         </script>
+
+                    <button id="edit-btn" style="display: none;">Редагувати тему</button>
+                    <button id="delete-btn" style="display: none;" onclick="location.href='/forum/delete_topic/{{ topic.idTopic }}'">Видалити тему</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="topic-actions">
-        <button class="actions-btn">...</button>
-        <div class="actions-menu" style="display: none;">
-            <button id="edit-btn" style="display: none;">Редагувати тему</button>
-            <button id="delete-btn" style="display: none;"><a href="/delete_topic/{{ topic.idTopic }}">Видалити тему</a></button>
-        </div>
+<div id="customAlert" style="display: none;">
+    <div id="customAlertBox">
+        <p id="customAlertMessage"></p>
+        <button onclick="closeAlert()">OK</button>
     </div>
+</div>
+
+
+
     <div class="comments-section" id="comments-section">
         <!-- Comments will be added here -->
     </div>
-    <a href="/forum/">Повернутись до списку тем</a>
+    <div class="back"><a class="link" href="/forum/">Повернутись до списку обговорень</a></div>
     <script>
-        //let user;
+        //!!! Change links to ones on site by using profile to upload photos
+        const categoryLinks = {
+            'Овочі': 'https://farmsteadhelper.pythonanywhere.com/static/main_page/vegetables.png',
+            'Дерева': 'https://farmsteadhelper.pythonanywhere.com/media/avatars/2/tree.jpg',
+            'Тварини': 'https://farmsteadhelper.pythonanywhere.com/media/avatars/2/animals_1eF6m4f.jpg',
+            'Квіти': 'https://farmsteadhelper.pythonanywhere.com/static/main_page/flowers.jpg'
+        };
         const token = localStorage.getItem('authToken');
         function Add_Favorites(){
             const favoriteButton = document.getElementById('favorite-button');
+            const token = localStorage.getItem('authToken');
+            // Ховаємо кнопку, якщо немає токена
+            if (!token) {
+                favoriteButton.style.display = 'none';
+                return;
+            }
             const topicName = document.getElementById('title').innerText;
+            const categoryElement = document.getElementById('category');
+            let topicCategory = 'Обговорення';
+
+            if (categoryElement) {
+                topicCategory = categoryElement.innerText.replace('Категорія:', '').trim();
+            }
+            const topicImage = categoryLinks[topicCategory] || null;
             const topicData = {
                 token: token,
                 name: topicName,
-                image_url: null,
+                image_url: topicImage,
                 link: window.location.href,
-                category: 'Обговорення'  // або будь-яка інша категорія
+                category: 'Обговорення'
             };
             if (!token) {
                 favoriteButton.textContent = 'Додати в обране';
                 return;
             }
-            
+
             fetch('/api/check_favorite/', {
                 method: 'POST',
                 headers: {
@@ -607,11 +464,11 @@
             // Обробник для кнопки "Додати в обране"
             favoriteButton.addEventListener('click', () => {
                 if (!token) {
-                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    showAlert('Будь ласка, увійдіть, щоб додати в обране.');
                     return;
                 }
-    
-    
+
+
                 // Запит на додавання/видалення з обраних
                 fetch('/api/toggle_favorite/', {
                     method: 'POST',
@@ -627,12 +484,12 @@
                     } else if (data.status === 'removed') {
                         favoriteButton.textContent = 'Додати в обране';
                     } else {
-                        alert('Сталася помилка при оновленні обраного.');
+                        showAlert('Сталася помилка при оновленні обраного.');
                     }
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при збереженні в обране.');
+                    showAlert('Сталася помилка при збереженні в обране.');
                 });
             });
         }
@@ -655,7 +512,7 @@
                     //console.log('User:', user); // Значення user буде доступне тут
                     return user;
                 } catch (error) {
-                    console.error('Error fetching user data:', error.message);
+                    console.error('Помилка стягування інформації про користувача:', error.message);
                 }
             }
         }
@@ -676,22 +533,16 @@
                     body: JSON.stringify({}),
                 });
 
-                // Перевіряємо, чи запит був успішним
                 if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Помилка сервера');
                 }
 
-                // Обробляємо JSON-відповідь
                 const data = await response.json();
-
-                // Перевіряємо статус відповіді
-                if (data.status === 'success') {
-                    return data.Author;
-                } else {
-                    throw new Error('Failed to fetch comment author');
-                }
+                return data.Author || "Коментар видалено";
             } catch (error) {
-                console.error('Error fetching comment:', error);
+                console.error('Помилка отримання коментаря:', error);
+                return "Коментар видалено";
             }
         };
         // Функція для створення елемента коментаря
@@ -701,30 +552,51 @@
             commentDiv.setAttribute('data-comment-id', comment.idComments);
             commentDiv.setAttribute('data-parent-id', comment.ParentId || 'null');
 
-            let replyToText = '';
-            if (comment.ParentId) {
-                const parentAuthor = await FetchingComment(comment.ParentId);
-                replyToText = `<p class="reply-to">Відповідь на коментар <a href = "/profile/{{topic.Author}}">${parentAuthor}</a></p>`;
-            }
+            // Додано перевірку на видалені коментарі
+            const authorLink = comment.Author === "Користувача видалено" || comment.Author === "Коментар видалено"
+                ? comment.Author
+                : `<a href="/profile/${comment.Author}">${comment.Author}</a>`;
+
+                let replyToText = '';
+                if (comment.ParentId) {
+                    try {
+                        const parentAuthor = await FetchingComment(comment.ParentId);
+                        const parentAuthorDisplay = parentAuthor === "Користувача видалено" ||
+                                                parentAuthor === "Коментар видалено" ||
+                                                !parentAuthor
+                            ? 'Коментар видалено'
+                            : `<a href="/profile/${parentAuthor}">${parentAuthor}</a>`;
+
+                        replyToText = `<p class="reply-to">Відповідь на коментар: ${parentAuthorDisplay}</p>`;
+                    } catch (error) {
+                        console.error('Помилка отримання батьківського коментаря:', error);
+                        replyToText = '<p class="reply-to">Відповідь на коментар: Коментар видалено</p>';
+                    }
+                }
+
+            const authorDisplay = comment.Author === "Користувача видалено"
+                ? 'Коментар видалено'
+                : (comment.Author
+                    ? `<a href="/profile/${comment.Author}">${comment.Author}</a>`
+                    : 'Коментар видалено');
 
             commentDiv.innerHTML = `
-                <p>Автор: <a href = "/profile/{{topic.Author}}">${comment.Author}</a> | Дата: ${comment.Date} | Час: ${comment.Time}</p>
+                <p>Автор: ${authorLink} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
-                <button class="comment-like-btn">👍 Like (<span id="comment-likes-count">${comment.Likes}</span>)</button>
-                <button class="comment-dislike-btn">👎 Dislike (<span id="comment-dislikes-count">${comment.Dislikes}</span>)</button>
-                <button class="comment-reply-btn">Відповісти</button>
-                <button class="edit-comment-btn" id="edit-comment-btn" style="display: none;">Редагувати коментар</button>
-                <button class="delete-comment-btn" id="delete-comment-btn" style="display: none;">Видалити коментар</button>
+                <div  class="topic_buttons" style="display: flex;">
+                    <button class="comment-like-btn">👍 Лайк (<span id="comment-likes-count">${comment.Likes}</span>)</button>
+                    <button class="comment-dislike-btn">👎 Дизлайк (<span id="comment-dislikes-count">${comment.Dislikes}</span>)</button>
+                    <button class="comment-reply-btn">Відповісти</button>
+                    <div class="topic-actions">
+                        <button class="actions-btn-comment">...</button>
+                        <div class="actions-menu-comment" style="display: none;">
+                            <button class="edit-comment-btn" id="edit-comment-btn" style="display: none; margin: 10px; width: auto;">Редагувати коментар</button>
+                            <button class="delete-comment-btn" id="delete-comment-btn" style="display: none; margin: 10px; width: auto;">Видалити коментар</button>
+                        </div>
+                    </div>
+                </div>
             `;
-
-            // Додаємо обробник кліку на кнопку "Відповісти"
-            /*const replyButton = commentDiv.querySelector('.comment-reply-btn');
-            replyButton.addEventListener('click', async (event) => {
-                event.stopPropagation(); // Зупиняємо вспливання події
-                const parentAuthor = comment.Author;
-                handleReplyButtonClick(comment.idComments, parentAuthor);
-            });*/
 
             return commentDiv;
         }
@@ -736,7 +608,7 @@
             const user = await fetchUserData(); // Отримуємо поточного користувача
 
             if (!user) {
-                alert('Ви не авторизовані. Будь ласка, увійдіть у систему.');
+                showAlert('Ви не авторизовані. Будь ласка, увійдіть у систему.');
                 return;
             }
 
@@ -768,13 +640,13 @@
                     const newComment = await createCommentElement(data);
                     document.getElementById('comments-section').appendChild(newComment);
                     if (parentId) {
-                        highlightComment(parentId); // Підсвічуємо батьківський коментар
+                        //highlightComment(parentId); // Підсвічуємо батьківський коментар
                     }
                     location.reload(); // Оновлюємо сторінку для відображення нового коментаря
                 }
             } catch (error) {
                 console.error('Помилка при створенні коментаря:', error);
-                alert('Помилка при створенні коментаря.');
+                showAlert('Помилка при створенні коментаря.');
             }
         }
 
@@ -788,29 +660,52 @@
                 }, 5000);
             }
         }
-        // Функція для прокрутки до батьківського коментаря та його підсвічування
-        function scrollToParentComment(commentDiv) {
-            const parentId = commentDiv.getAttribute('data-parent-id');
-            if (parentId && parentId !== 'null') {
-                const parentCommentDiv = document.querySelector(`.comment[data-comment-id="${parentId}"]`);
+        // Функція для прокрутки та підсвічування (залишається незмінною)
+        function scrollToParentComment(commentId) {
+            if (commentId && commentId !== 'null') {
+                const parentCommentDiv = document.querySelector(`.comment[data-comment-id="${commentId}"]`);
                 if (parentCommentDiv) {
                     parentCommentDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    highlightComment(parentId);
+                    highlightComment(commentId);
                 }
             }
         }
-        // Додаємо обробник подій для коментарів-відповідей
-        function initializeCommentClickHandlers() {
-            document.querySelectorAll('.comment').forEach(commentDiv => {
-                commentDiv.addEventListener('click', () => {
-                    scrollToParentComment(commentDiv);
-                });
+        // Функція для підсвічування коментаря
+
+        // Додаємо делегування подій на контейнер коментарів
+        function initializeReplyToLinks() {
+            document.getElementById('comments-section').addEventListener('click', function(event) {
+                // Перевіряємо, чи клікнули саме на елемент .reply-to
+                const replyToElement = event.target.closest('.reply-to');
+                if (!replyToElement) return;
+
+                event.preventDefault();
+
+                // Отримуємо батьківський коментар, де знаходиться посилання
+                const parentCommentDiv = replyToElement.closest('.comment');
+                if (!parentCommentDiv) return;
+
+                // Отримуємо ID батьківського коментаря з атрибута data-parent-id
+                const parentId = parentCommentDiv.getAttribute('data-parent-id');
+
+                if (parentId && parentId !== 'null') {
+                    scrollToParentComment(parentId);
+                }
             });
         }
         // Обробка кнопки "Відповісти" в коментарі
         function handleReplyButtonClick(parentCommentId, parentAuthor) {
-            const commentForm = createCommentForm(parentCommentId);
+            // Перевіряємо, чи вже є активна форма для цього коментаря
             const commentDiv = document.querySelector(`.comment[data-comment-id="${parentCommentId}"]`);
+            const existingForm = commentDiv.querySelector('#comment-form');
+
+            if (existingForm) {
+                // Якщо форма вже існує, то не створюємо навої
+                return;
+            }
+
+            // Створюємо нову форму тільки якщо її ще немає
+            const commentForm = createCommentForm(parentCommentId);
             commentDiv.appendChild(commentForm);
         }
 
@@ -854,7 +749,8 @@
                 });
             });
         }
-
+        // Викликаємо функцію ініціалізації при завантаженні сторінки
+        document.addEventListener('DOMContentLoaded', initializeReplyToLinks);
         // Викликаємо функцію ініціалізації при завантаженні сторінки
         document.addEventListener('DOMContentLoaded', initializeReplyButtons);
         document.addEventListener('DOMContentLoaded', Add_Favorites);
@@ -879,12 +775,14 @@
                         handleCommentInteractions(commentDiv, user, comment.Author);
                     }
                 } else {
-                    commentsSection.innerHTML = '<p>No comments found.</p>';
+                    commentsSection.innerHTML = '<p>Немає коментарів.</p>';
                 }
                 // Ініціалізуємо обробники кліків після завантаження коментарів
-                initializeCommentClickHandlers();
+                //initializeCommentClickHandlers();
+                // Після завантаження коментарів ініціалізуємо обробники знову
+                initializeReplyToLinks();
             } catch (error) {
-                console.error('Error fetching comments:', error);
+                console.error('Помилка стягування коментарів:', error);
             }
         };
         function deleteComment(user, commentId) {
@@ -900,15 +798,15 @@
             })
             .then(response => {
                 if (response.ok) {
-                    //alert('Тему успішно видалено!');
+                    //showAlert('Тему успішно видалено!');
                     window.location.href = '/forum/topic/{{topic.idTopic}}'; // Перенаправлення на список тем
                 } else {
-                    alert('Не вдалося видалити коментар.');
+                    showAlert('Не вдалося видалити коментар.');
                 }
             })
             .catch(error => {
                 console.error('Error deleting comment:', error);
-                alert('Помилка при видаленні коментаря: ' + error.message);
+                showAlert('Помилка при видаленні коментаря: ' + error.message);
             });
         };
         function createEditForm(commentContentElement) {
@@ -924,7 +822,7 @@
         function editComment(commentDiv, user, commentId) {
             const commentContentElement = commentDiv.querySelector('.comment-content');
             if (commentDiv.querySelector('.edit-comment-form')) {
-                alert('Редагування вже активне для цього коментаря.');
+                showAlert('Редагування вже активне для цього коментаря.');
                 return;
             }
             const editForm = createEditForm(commentContentElement)
@@ -949,22 +847,36 @@
                         commentContentElement.textContent = updatedContent;
                         editForm.remove();
                     } else {
-                        alert('Сталася помилка при збереженні коментаря.');
+                        showAlert('Сталася помилка при збереженні коментаря.');
                     }
                 } else {
-                    alert('Текст коментаря не може бути порожнім.');
+                    showAlert('Текст коментаря не може бути порожнім.');
                 }
             });
             editForm.querySelector('.cancel-comment-btn').addEventListener('click', () => {
                 editForm.remove();
             });
         };
-        function handleCommentInteractions(commentDiv, user, commentAuthor) { 
-            //console.log('User:', user);
-            //console.log('Comment Author:', commentAuthor);
-            const editButton = commentDiv.querySelector('.edit-comment-btn'); 
+        function handleCommentInteractions(commentDiv, user, commentAuthor) {
+            const editButton = commentDiv.querySelector('.edit-comment-btn');
             const deleteButton = commentDiv.querySelector('.delete-comment-btn');
             const commentId = commentDiv.getAttribute('data-comment-id');
+
+            document.querySelectorAll(".actions-btn-comment").forEach((btn) => {
+                if (!btn.hasAttribute('data-listener-attached')) {
+                    btn.addEventListener("click", () => {
+                        const actionsMenuCom = btn.closest('.topic-actions').querySelector('.actions-menu-comment');
+                        if (actionsMenuCom) {
+                            actionsMenuCom.style.display =
+                                actionsMenuCom.style.display === "none" || actionsMenuCom.style.display === ""
+                                ? "block"
+                                : "none";
+                        }
+                    });
+                    btn.setAttribute('data-listener-attached', 'true');
+                }
+            });
+
             commentDiv.querySelector('.comment-like-btn').addEventListener('click', () => {
                 event.stopPropagation();
                 updateCommentReaction(commentId, 'like')
@@ -974,31 +886,44 @@
                 updateCommentReaction(commentId, 'dislike')
             });
             commentDiv.querySelector('.comment-reply-btn').addEventListener('click', (event) => {
-                event.stopPropagation(); // Зупиняємо вспливання події
+                if (comment.Author === "Користувача видалено" || comment.Author === "Коментар видалено") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showAlert("Неможливо відповісти на видалений коментар");
+                    return;
+                }
+                event.stopPropagation();
                 handleReplyButtonClick(commentId, commentAuthor);
             });
-            if (user === commentAuthor) {
-                editButton.style.display = 'inline-block';
+
+            // Check if current user is the comment author or a superuser
+            if (user === commentAuthor || Is_superuser) {
+                editButton.style.display = user === commentAuthor ? 'inline-block' : 'none';
                 deleteButton.style.display = 'inline-block';
+
                 deleteButton.addEventListener('click', () => {
                     event.stopPropagation();
                     deleteComment(user, commentId);
                 });
-                editButton.addEventListener('click', () => {
-                    event.stopPropagation();
-                    editComment(commentDiv, user, commentId)
-                });
-            }
+
+                if (user === commentAuthor) {
+                    editButton.addEventListener('click', () => {
+                        event.stopPropagation();
+                        editComment(commentDiv, user, commentId)
+                    });
+                }
+
+        }
         };
         function updateCommentReaction(commentId, status) {
             const token = localStorage.getItem('authToken');
-            
+
             console.log(token)
             console.log(commentId)
             console.log(status)
 
             if (!token) {
-                alert('Ви не авторизовані. Будь ласка, увійдіть у систему.');
+                showAlert('Ви не авторизовані. Будь ласка, увійдіть у систему.');
                 return;
             }
 
@@ -1027,7 +952,7 @@
                 })
                 .catch(error => console.error('Помилка оновлення реакції:', error));
         }
-        
+
         loadComments(topicId);
         let user_id;
         let topicAuthor;
@@ -1049,6 +974,7 @@
                 })
                 .then(data => {
                     user = data.username;
+                    Is_superuser = data.is_superuser;
                     //user_id=data.id;
                     // Отримуємо дані про тему (наприклад, з HTML або API)
                     topicAuthor = "{{ topic.Author }}"; // Отримуємо автора теми з серверу (через шаблон)
@@ -1061,11 +987,17 @@
                         document.getElementById('delete-btn').addEventListener('click', () => {
                             deleteTopic(user);
                         });
-                        
+
                         document.getElementById('edit-btn').addEventListener('click', () => {
                             editTopic(user);
                         });
                     }
+                    if (Is_superuser){
+                         document.getElementById('delete-btn').style.display = 'inline-block';
+                         document.getElementById('delete-btn').addEventListener('click', () => {
+                             deleteTopic(user);
+                         });
+                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -1073,9 +1005,35 @@
         };
         function editTopic(user){
             const topicId = "{{ topic.idTopic }}"; // id теми
-            window.location.href = `/forum/edit-topic/${topicId}`; // Перенаправлення на тему 
+            const title = "{{ topic.Title }}"; // Отримуємо заголовок теми
+            const content = "{{ topic.Content }}"; // Отримуємо вміст теми
+            const category = "{{ topic.Category }}"; // Отримуємо категорію теми
+            //window.location.href = `/forum/edit-topic/${topicId}`; // Перенаправлення на тему
+            fetch(`/forum/edit-topic/${topicId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),  // Якщо використовуєте CSRF токен
+                },
+                body: JSON.stringify({
+                    title: title,
+                    content: content,
+                    category: category
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = `/forum/edit-topic/${topicId}`;
+                } else {
+                    alert('Не вдалося оновити обговорення.');
+                }
+            })
+            .catch(error => {
+                console.error('Помилка редагування обговорення:', error);
+                alert('Помилка при редагуванні обговорення: ' + error.message);
+            });
         }
-        
+
         function deleteTopic(user) {
             const topicId = "{{ topic.idTopic }}";  // id теми
 
@@ -1089,18 +1047,18 @@
             })
             .then(response => {
                 if (response.ok) {
-                    //alert('Тему успішно видалено!');
+                    //showAlert('Тему успішно видалено!');
                     window.location.href = '/forum/'; // Перенаправлення на список тем
                 } else {
-                    alert('Не вдалося видалити тему.');
+                    showAlert('Не вдалося видалити тему.');
                 }
             })
             .catch(error => {
                 console.error('Error deleting topic:', error);
-                alert('Помилка при видаленні теми: ' + error.message);
+                showAlert('Помилка при видаленні теми: ' + error.message);
             });
         }
-        
+
         const actionsBtn = document.querySelector('.actions-btn');
         const actionsMenu = document.querySelector('.actions-menu');
 
@@ -1113,7 +1071,7 @@
             }
         });
         if (!topicId) {
-            console.error('Topic ID is missing!');
+            console.error('Немає ID обговорення!');
         }
 
         const likeBtn = document.getElementById('like-btn');
@@ -1122,6 +1080,10 @@
         // Функція для обробки кнопки "Додати коментар" з теми
         function initializeCommentForm() {
             document.getElementById('comment').addEventListener('click', () => {
+                // Перевірка, чи форма вже існує
+                if (document.getElementById('comment-form')) {
+                    return; // Якщо форма вже є — нічого не робимо
+                }
                 const commentForm = createCommentForm();
                 const topicInfo = document.querySelector('.topic-info');
                 topicInfo.appendChild(commentForm);
@@ -1130,6 +1092,10 @@
 
 // Створення форми коментаря
 function createCommentForm(parentId = null) {
+    // Перевірка, чи форма вже існує
+    if (document.getElementById('comment-form')) {
+        return; // Якщо форма вже є — нічого не робимо
+    }
     const commentForm = document.createElement('div');
     commentForm.id = 'comment-form';
     commentForm.style.marginTop = '10px';
@@ -1144,7 +1110,7 @@ function createCommentForm(parentId = null) {
         event.stopPropagation();
         const content = commentForm.querySelector('#comment-content').value.trim();
         if (!content) {
-            alert('Поле коментаря не може бути порожнім.');
+            showAlert('Поле коментаря не може бути порожнім.');
             return;
         }
 
@@ -1157,10 +1123,10 @@ function createCommentForm(parentId = null) {
             location.reload(); // Оновлення сторінки
         } catch (error) {
             console.error('Помилка:', error);
-            alert('Сталася помилка при додаванні коментаря.');
+            showAlert('Сталася помилка при додаванні коментаря.');
         }
     });
-    
+
     // Обробка скасування додавання коментаря
     commentForm.querySelector('#cancel-comment').addEventListener('click', (event) => {
         event.stopPropagation();
@@ -1175,7 +1141,7 @@ function createCommentForm(parentId = null) {
 async function handleCommentSubmission() {
     const content = getCommentContent();
     if (!content) {
-        alert('Поле коментаря не може бути порожнім.');
+        showAlert('Поле коментаря не може бути порожнім.');
         return;
     }
 
@@ -1188,7 +1154,7 @@ async function handleCommentSubmission() {
         location.reload(); // Оновлення сторінки
     } catch (error) {
         console.error('Помилка:', error);
-        alert('Сталася помилка при додаванні коментаря.');
+        showAlert('Сталася помилка при додаванні коментаря.');
         document.getElementById('comment-form').remove();
     }
 }
@@ -1208,8 +1174,7 @@ function getFormattedDate(date) {
 
 // Форматування часу у 24-годинний формат
 function getFormattedTime(date) {
-    
-    const timeString = date.toLocaleTimeString('en-GB');
+    const timeString = date.toLocaleTimeString();
     const amPmRegex = /(AM|PM)$/i;
     if (amPmRegex.test(timeString)) {
         const [time, modifier] = timeString.split(' ');
@@ -1251,7 +1216,7 @@ initializeCommentForm();
 
     async function updateReaction(status) {
         if (!token) {
-            alert('You need to log in first.');
+            showAlert('Ви не авторизовані. Будь ласка, увійдіть у систему.');
             return;
         }
 
@@ -1265,7 +1230,7 @@ initializeCommentForm();
                 body: JSON.stringify({ token, status }),
             });
 
-            if (!response.ok) throw new Error('Failed to update reaction');
+            if (!response.ok) throw new Error('Не вдалось оновити реакцію');
 
             const data = await response.json();
             document.getElementById('likes-count').textContent = data.Likes;
@@ -1276,7 +1241,7 @@ initializeCommentForm();
             updateButtonStatus();
         } catch (error) {
             console.error(error);
-            alert('Error updating reaction.');
+            showAlert('Error updating reaction.');
         }
     }
 
@@ -1300,7 +1265,7 @@ initializeCommentForm();
                 body: JSON.stringify({ token }),
             });
 
-            if (!response.ok) throw new Error('Failed to fetch user reaction');
+            if (!response.ok) throw new Error('Помилка стягування інформації про користувача');
 
             const data = await response.json();
             currentStatus = data.status;
@@ -1329,7 +1294,7 @@ initializeCommentForm();
 });
 
 
-        
+
 
 
 
@@ -1348,5 +1313,16 @@ initializeCommentForm();
             return cookieValue;
         }
     </script>
+
+<script>
+    function showAlert(message) {
+        document.getElementById('customAlertMessage').textContent = message;
+        document.getElementById('customAlert').style.display = 'flex';
+    }
+
+    function closeAlert() {
+        document.getElementById('customAlert').style.display = 'none';
+    }
+</script>
 </body>
 </html>

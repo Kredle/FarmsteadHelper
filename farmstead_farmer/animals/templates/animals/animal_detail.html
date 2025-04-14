@@ -50,17 +50,17 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -88,17 +88,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -110,7 +111,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -131,7 +132,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -140,31 +141,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -175,7 +176,7 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
@@ -191,14 +192,15 @@
             width: inherit;
         }
     </style>
+<div class="page_container">
     <div class="detail_container">
         <div class="detail_aboutanimal">
-            <img id="animal-image" src="{{ animal.image }}" alt="{{ animal.common_name }}">
             <h1 id="animal-name">{{ animal.common_name|default:"Назва тварини" }}</h1>
+            <img id="animal-image" src="{{ animal.image }}" alt="{{ animal.common_name }}">
             <p id="animal-description">{{ animal.description|default:"Опис відсутній" }}</p>
             <button id="favorite-button" class="favorite-btn">Додати в обране</button>
         </div>
-        
+
         <div class="detail_section">
             <h2>Загальна інформація</h2>
             <div class="grid">
@@ -239,6 +241,14 @@
             </div>
         </div>
     </div>
+</div>
+
+<div id="customAlert" style="display: none;">
+    <div id="customAlertBox">
+        <p id="customAlertMessage"></p>
+        <button onclick="closeAlert()">OK</button>
+    </div>
+</div>
 
     <!-- Футер -->
     <footer>
@@ -258,12 +268,12 @@
             const favoriteButton = document.getElementById('favorite-button');
             const token = localStorage.getItem('authToken');
             const animalName = document.getElementById('animal-name').innerText;
-    
+
             if (!token) {
                 favoriteButton.style.display = 'none';
                 return;
             }
-    
+
             const animalData = {
                     token: token,
                     name: animalName,
@@ -271,7 +281,7 @@
                     link: window.location.href,
                     category: 'Тварини'  // або будь-яка інша категорія
                 };
-    
+
             // Запит на перевірку, чи в обраних
             fetch('/api/check_favorite/', {
                 method: 'POST',
@@ -292,14 +302,14 @@
                 console.error('Помилка:', error);
                 favoriteButton.style.backgroundColor = 'gray';
             });
-    
+
             // Обробник для кнопки "Додати в обране"
             favoriteButton.addEventListener('click', () => {
                 if (!token) {
-                    alert('Будь ласка, увійдіть, щоб додати в обране.');
+                    showAlert('Будь ласка, увійдіть, щоб додати в обране.');
                     return;
                 }
-    
+
                 // Дані для запиту на додавання в обране
                 const animalData = {
                     token: token,
@@ -308,7 +318,7 @@
                     link: window.location.href,
                     category: 'Тварини'  // або будь-яка інша категорія
                 };
-    
+
                 // Запит на додавання/видалення з обраних
                 fetch('/api/toggle_favorite/', {
                     method: 'POST',
@@ -324,12 +334,12 @@
                     } else if (data.status === 'removed') {
                         favoriteButton.style.backgroundColor = 'gray';
                     } else {
-                        alert('Сталася помилка при оновленні обраного.');
+                        showAlert('Сталася помилка при оновленні обраного.');
                     }
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при збереженні в обране.');
+                    showAlert('Сталася помилка при збереженні в обране.');
                 });
             });
         });
@@ -339,7 +349,7 @@
             searchInput.addEventListener('input', function(e) {
                 const query = this.value.trim();
                 searchResults.innerHTML = '';
-                
+
                 if (query.length < 2) {
                     searchResults.style.display = 'none';
                     return;
@@ -392,6 +402,16 @@
                 }
             });
         });
-    </script>    
+    </script>
+    <script>
+        function showAlert(message) {
+            document.getElementById('customAlertMessage').textContent = message;
+            document.getElementById('customAlert').style.display = 'flex';
+        }
+
+        function closeAlert() {
+            document.getElementById('customAlert').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

@@ -90,6 +90,7 @@
                     `;
     
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
@@ -255,9 +256,9 @@
         <div class="items">
             {% for animal in animals %}
                 <div class="card">
-                    <img src="{{ animal.image|default:'default-animal.jpg' }}" alt="{{ animal.common_name|default:'Невідома тварина' }}">
-                    <div class="card-title">{{ animal.common_name|default:"Невідома тварина" }}</div>
-                    <a class="card-button" href="{{ animal.id }}/">Інформація</a>
+                    <img src="{{ animal.Image|default:'default-animal.jpg' }}" alt="{{ animal.common_name|default:'Невідома тварина' }}">
+                    <div class="card-title">{{ animal.Name|default:"Невідома тварина" }}</div>
+                    <a class="card-button" href="{{ animal.idAni }}/">Інформація</a>
                 </div>
             {% endfor %}
         </div>

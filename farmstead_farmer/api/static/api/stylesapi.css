@@ -25,6 +25,8 @@ body {
     flex-wrap: wrap;
     gap: 20px;
     flex-direction: row;
+    margin-top: 150px;
+    margin-bottom: 50px;
 }
 
 .registration-form h2 {
@@ -199,7 +201,7 @@ body {
     padding: 10px 20px;
     font-size: 16px;
     color: var(--textcolor_light);
-    background-color: var(--header_footer);
+    background-color: var(--accent);
     text-decoration: none;
     border-radius: 5px;
     transition: background-color 0.3s;
@@ -334,7 +336,20 @@ form button:hover {
     border: 1px solid var(--box_color_hover);
     border-radius: 10px;
     box-shadow: var(--shadow);
+    margin-top: 80px;
 }
+
+
+.g-recaptcha > div {
+    display: inline-block;
+}
+
+.g-recaptcha {
+    display: flex;
+    justify-content: center;
+    margin: 0px 0;
+}
+
 
 .feedback_form label {
     font-weight: bold;
@@ -352,6 +367,7 @@ form button:hover {
 }
 
 .feedback_form textarea {
+    margin-bottom: 10px;
     resize: none;
 }
 
@@ -365,6 +381,15 @@ form button:hover {
 
 .feedback_form button:hover {
     background-color: var(--accent_hover);
+}
+
+input[type="file"]::-webkit-file-upload-button {
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
 }
 
 
@@ -386,4 +411,16 @@ form button:hover {
 }
 #loading-spinner img {
     max-width: 100px;  /* Задайте потрібний розмір спінера */
+}
+
+
+
+/**/
+
+main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
 }

@@ -1,10 +1,13 @@
     /* ТІЛО */
 
 body {
+    display: flex;
+    flex-direction: column;
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
     background-color: var(--background);
+    min-height: 100vh;
 }
 
 
@@ -18,35 +21,41 @@ body {
     max-width: 1200px;
 }
 
+@media (max-width: 700px) {
+    .container{
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
 .h3 {
-    text-align: center; 
-    font-size: 28px; 
-    font-family: 'Arial', sans-serif; 
-    color: var(--accent); 
-    margin: 20px 0; 
+    text-align: center;
+    font-size: 28px;
+    font-family: 'Arial', sans-serif;
+    color: var(--accent);
+    margin: 20px 0;
     padding: 10px;
     background-color: var(--card_color);
-    border-radius: 8px; 
+    border-radius: 8px;
     box-shadow: var(--shadow);
     text-transform: uppercase;
-    letter-spacing: 1px; 
+    letter-spacing: 1px;
 }
 
     /* категорії */
 
 .category-buttons {
     display: flex;
-    justify-content: center; 
-    gap: 20px; 
-    margin: 20px auto; 
-    margin-top: 7%; 
-    flex-wrap: wrap; 
+    justify-content: center;
+    gap: 20px;
+    margin: 20px auto;
+    flex-wrap: wrap;
 }
 
 .category-button {
     position: relative;
-    width: 300px; 
-    height: 300px; 
+    width: 300px;
+    height: 300px;
     overflow: hidden;
     border-radius: 10px;
     box-shadow: var(--shadow);
@@ -99,7 +108,7 @@ body {
 }
 
 #toggle-filter {
-    background-color: var(--accent); 
+    background-color: var(--accent);
     color: var(--textcolor_light);
     border: none;
     padding: 10px 15px;
@@ -110,7 +119,7 @@ body {
 }
 
 #toggle-filter:hover {
-    background-color: var(--accent_hover); 
+    background-color: var(--accent_hover);
 }
 
 #filter-options {
@@ -119,8 +128,8 @@ body {
 
 .filter-checkboxes {
     display: flex;
-    flex-direction: column; 
-    gap: 10px; 
+    flex-direction: column;
+    gap: 10px;
     margin-top: 10px;
 }
 
@@ -128,7 +137,7 @@ body {
     display: flex;
     align-items: center;
     cursor: pointer;
-    font-size: 14px; 
+    font-size: 14px;
 }
 
 .filter-checkboxes input {
@@ -136,18 +145,18 @@ body {
 }
 
 #apply-filters {
-    background-color: var(--accent); 
+    background-color: var(--accent);
     color: var(--textcolor_light);
     border: none;
     padding: 10px 15px;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
-    margin-top: 10px; 
+    margin-top: 10px;
 }
 
 #apply-filters:hover {
-    background-color: var(--accent_hover); 
+    background-color: var(--accent_hover);
 }
 
     /* каталог і карточки */
@@ -160,6 +169,8 @@ body {
 }
 
 .card {
+    display: flex;
+    flex-direction: column;
     background: var(--card_color);
     border: 1px solid var(--card_border);
     border-radius: 10px;
@@ -198,6 +209,7 @@ body {
     text-decoration: none;
     font-size: 16px;
     transition: background-color 0.3s;
+    margin-top: auto;
 }
 
 .card-button:hover {
@@ -207,23 +219,23 @@ body {
     /* загрузити більше */
 
 #load-more {
-    display: block; 
+    display: block;
     margin: 20px auto;
     padding: 10px 20px;
-    background-color: var(--accent); 
+    background-color: var(--accent);
     color: var(--textcolor_light);
-    border: none; 
-    border-radius: 5px; 
-    font-size: 16px; 
-    cursor: pointer; 
-    text-align: center; 
-    transition: background-color 0.3s; 
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s;
     height: 50px;
     align-self: flex-end;
 }
 
 #load-more:hover {
-    background-color: var(--accent_hover);  
+    background-color: var(--accent_hover);
 }
 
 
@@ -250,6 +262,13 @@ body {
     gap: 20px;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+@media (max-width: 400px) {
+    .project-logo{
+        width: 90% !important;
+        height: auto !important;
+    }
 }
 
 .about-project .project-logo {
@@ -341,7 +360,7 @@ body {
 }
 
 .recommendations .item a:hover {
-    background-color: var(--accent_hover); 
+    background-color: var(--accent_hover);
 }
 
     /* секція "переваги" */
@@ -390,7 +409,7 @@ body {
 }
 
 .advantages li:hover {
-    background-color: #b2eeba; 
+    background-color: #b2eeba;
     transform: translateY(-3px); /* Невеликий ефект підйому */
     transition: background-color 0.3s, transform 0.3s;
 }
@@ -398,6 +417,7 @@ body {
     /* секція FAQ */
 
 .faq {
+    width: -webkit-fill-available;
     background-color: var(--background);
     padding: 50px 20px;
     max-width: 1200px;
@@ -436,7 +456,7 @@ body {
 }
 
 .faq-question:hover {
-    background-color: var(--accent_hover); 
+    background-color: var(--accent_hover);
 }
 
 .faq-answer {
@@ -477,11 +497,24 @@ body {
 
     /* ФОРУМ */
 
+.line_bottom, .line_top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.line_bottom h1{
+    color: var(--textcolor_light);
+}
+
 .search-panel {
     display: flex;
     gap: 10px;
     align-items: center;
 }
+
+
 
 .search-panel input,
 .search-panel select {
@@ -511,6 +544,7 @@ body {
     padding: 10px 20px;
     border-radius: 25px;
     cursor: pointer;
+    margin-left: 15px;
 }
 
 #create-topic-btn:hover {
@@ -523,6 +557,7 @@ main {
     gap: 20px;
     padding: 20px;
     padding-top: 100px;
+    margin-top: 120px;
 }
 
 .categories,
@@ -588,16 +623,48 @@ main {
 
 @media (max-width: 768px) {
     header {
-        flex-direction: column;
+        /*flex-direction: column;*/
         gap: 10px;
     }
 
     .search-panel {
         flex-wrap: wrap;
+        margin-bottom: 15px;
     }
 
     main {
         padding: 10px;
+        margin-top: 210px;
+    }
+
+    @media (max-width: 700px) {
+        .line_bottom{
+            display: block;
+        }
+
+        main{
+            margin-top: 300px;
+        }
+
+        @media (max-width: 413px) {
+            main{
+                margin-top: 350px;
+            }
+        }
+    }
+}
+
+@media (max-width: 350px) {
+    .logo span{
+        display: none;
+    }
+
+    .logo span{
+        width: 50%;
+    }
+
+    .search-panel input{
+        width: 50%;
     }
 }
 
@@ -622,6 +689,30 @@ main {
 }
 
 /* Схований блок з чекбоксами */
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    font-size: 15px;
+    padding: 5px;
+    border: 2px solid var(--accent);
+    border-radius: 0.5em;
+}
+input[type="checkbox"]::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);;
+    transform: scale(0);
+    background-color: var(--accent);
+}
+input[type="checkbox"]:checked::before {
+    transform: scale(1);
+}
+
+
 .filter-options {
     display: none;
     position: absolute;
@@ -631,13 +722,15 @@ main {
     padding: 10px;
     box-shadow: var(--shadow);
     z-index: 1000;
+    width: 100px;
 }
 
 .filter-options label {
-    display: block; 
-    font-size: 16px; 
+    display: flex;
+    font-size: 16px;
     color: var(--textcolor_dark);
-    margin-bottom: 5px; 
+    margin-bottom: 5px;
+    align-items: center;
 }
 
 /* Показуємо блок, коли потрібно */
@@ -650,7 +743,7 @@ main {
 }
 
 .filter-options input[type="checkbox"] {
-    margin-right: 8px; 
+    margin-right: 8px;
 }
 
 .hidden {
@@ -681,12 +774,14 @@ main {
 
 .form-container {
     max-width: 500px;
+    width: -webkit-fill-available;
     margin: 0 auto;
-    margin-top: 100px;
+    margin-top: 120px;
     padding: 20px;
     border: 1px solid var(--card_border);
     border-radius: 8px;
     background-color: var(--card_color);
+    box-shadow: var(--shadow);
 }
 
 .form-container h2 {
@@ -826,6 +921,7 @@ main {
     max-width: 400px;
     border-radius: 8px;
     object-fit: cover;
+    max-height: 400px;
 }
 
 .abouttree h1 {
@@ -837,6 +933,12 @@ main {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+}
+
+@media (max-width: 650px) {
+    .detail_section{
+        overflow-x: scroll;
+    }
 }
 
 .detail_table th,
@@ -932,10 +1034,11 @@ main {
     text-decoration: none;
     font-size: 16px;
     transition: background-color 0.3s;
+    margin-top: auto;
 }
 
 .card-container .card-button:hover {
-    background-color: var(--accent_hover); 
+    background-color: var(--accent_hover);
 }
 
 .card-container .items {
@@ -943,6 +1046,11 @@ main {
     justify-content: center;
     gap: 20px;
     flex-wrap: wrap;
+}
+
+#sort-description, #animal-description, #plant-description {
+    margin: 20px 50px;
+    text-align: justify;
 }
 
 
@@ -957,13 +1065,14 @@ main {
 /* Стилі для пошуку */
 .search-container {
     max-width: 600px;
+    width: -webkit-fill-available;
     margin: 20px auto;
     position: relative;
     padding: 0 15px;
 }
 
 #catalog-search {
-    width: 100%;
+    width: 90%;
     padding: 12px 20px;
     font-size: 16px;
     border: 2px solid var(--accent);
@@ -1002,4 +1111,287 @@ main {
     height: 40px;
     object-fit: cover;
     border-radius: 4px;
+}
+
+
+
+
+    /* КАЛЕНДАР */
+
+
+
+.search_container {
+    max-width: 600px;
+    margin: 20px auto;
+    position: absolute;
+    padding: 0 15px;
+    top: 120px;
+    right: 10%;
+}
+
+@media (max-width: 768px) {
+    #calendar {
+        max-width: 100%;
+        padding: 0 10px;
+    }
+
+    .fc-year-view {
+        grid-template-columns: 1fr !important;
+    }
+
+    .fc-month-container {
+        margin-bottom: 15px;
+        padding: 5px;
+    }
+
+    .fc-header {
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .fc-day {
+        font-size: 10px !important;
+        min-height: 30px !important;
+        padding: 2px !important;
+    }
+
+    .event-stripe {
+        height: 3px !important;
+    }
+
+    .search_container {
+        max-width: 450px;
+        margin: 20px auto;
+        position: absolute;
+        padding: 0 15px;
+        top: 220px;
+        right: 10%;
+    }
+
+    /* Адаптація випадаючих списків */
+    #category, #sorts {
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    #sorts-wrapper {
+        margin-top: 40px;
+        width: 100%;
+    }
+
+    /* Легенда */
+    .legend-item {
+        display: flex;
+        margin-right: 15px;
+        margin-bottom: 8px;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Заголовок */
+    header {
+        padding: 8px 10px;
+    }
+
+    .logo img {
+        height: 40px;
+    }
+
+    .logo span {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Додаткова оптимізація для дрібних екранів */
+    .fc-day {
+        min-height: 25px !important;
+    }
+
+    .legend-item {
+        font-size: 12px;
+    }
+
+    #legend {
+        padding: 10px;
+        margin: 10px auto;
+    }
+}
+
+#calendar {
+    max-width: 1200px;
+    margin: 0 auto;
+    margin-bottom: 50px;
+    font-size: 12px;
+    overflow-x: auto;
+    width: -webkit-fill-available;
+}
+
+.event-filters{
+    display: flex;
+    justify-content: space-evenly;
+}
+
+#filter-button{
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 14px;
+}
+#filter-button:hover{
+    background-color: var(--accent_hover);
+}
+
+.fc-year-view {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.fc-month-container {
+    border: 1px solid var(--card_border);
+    padding: 10px;
+    background-color: var(--card_color);
+    box-shadow: var(--shadow);
+}
+
+.fc-month-container .fc-header {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.fc-month-container .fc-day {
+    min-height: 40px;
+    font-size: 12px !important; /* Важливо для консистентності */
+}
+
+.fc-month-container .fc-day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.fc-month-container .fc-day {
+    text-align: center;
+    padding: 5px;
+    border: 1px solid var(--box_color_hover);
+    background-color: var(--box_color);
+    position: relative;
+    min-height: 40px;
+}
+
+.event-stripe {
+    height: 4px;
+    width: 100%;
+    position: absolute;
+    left: 0;
+}
+
+#sorts-wrapper {
+    display: none;
+}
+
+/* Новий стиль для легенди */
+#legend {
+    margin: 20px auto;
+    max-width: 1200px;
+    padding: 15px;
+    background: var(--card_color);
+    border: 1px solid var(--card_border);
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 25px;
+    margin-bottom: 10px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border: 1px solid var(--card_border);
+}
+
+#category {
+    margin: 20px auto;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+#sorts{
+    margin-bottom: 20px;
+    width: 45%;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+label[for="category"], label[for="sorts"] {
+    margin-left: 50px;
+}
+
+.calendar_choice{
+    max-width: 1200px;
+    width: -webkit-fill-available;
+    background-color: var(--card_color);
+    border: 1px solid var(--card_border);
+    box-shadow: var(--shadow);
+    margin: 20px auto;
+    margin-top: 120px;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+
+    /* Сторінка карти */
+
+.container {
+    display: grid;
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 35px;
+    background-color: var(--box_color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.button-container {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.button {
+    display: inline-block;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.button:hover {
+    background-color: var(--accent_hover);
+}
+
+ul {
+    margin: 20px 0;
+    padding-left: 20px;
+}
+
+ul li {
+    margin-bottom: 10px;
 }

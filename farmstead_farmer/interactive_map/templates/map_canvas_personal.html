@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивна мапа</title>
+    <style>
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+        }
+        .toolbar {
+            width: 200px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-right: 2px solid #ccc;
+            overflow-y: auto;
+        }
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            height: 100vh;
+        }
+        canvas {
+            border: 1px solid black;
+            cursor: crosshair;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .top-toolbar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 220px;
+            right: 0;
+            background: #e0e0e0;
+            padding: 10px;
+            border-bottom: 2px solid #ccc;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .top-toolbar.visible {
+            display: flex;
+        }
+        label {
+            white-space: nowrap;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+        }
+        .modal.visible {
+            display: block;
+        }
+        .modal select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .modal button {
+            width: auto;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <h3>Інструменти</h3>
+    <button onclick="setTool('draw')">Малювання</button>
+    <button onclick="setTool('points')">Точки та лінії</button>
+    <button onclick="applyFigure()">Застосувати</button>
+    <button onclick="undo()" title="Ctrl+Z">↩️ Відмінити</button>
+    <button onclick="redo()" title="Ctrl+Shift+Z">↪️ Повторити</button>
+    <button onclick="handleSaveMap()">Зберегти</button>
+</div>
+
+<div class="top-toolbar" id="topToolbar">
+    <label>Текстура: </label>
+    <select id="textureSelect">
+        <option value="solid">Стандартна</option>
+        <option value="grass">Трава</option>
+        <option value="water">Вода</option>
+        <option value="dirt">Земля</option>
+    </select>
+
+    <label>Розмір пензля: </label>
+    <input type="range" id="brushSize" min="1" max="50" value="5">
+    <span id="brushSizeValue">5</span>
+</div>
+
+<div class="canvas-container">
+    <canvas id="mapCanvas"></canvas>
+</div>
+
+<div class="modal" id="fillModal">
+    <h3>Виберіть заповнення</h3>
+    <select id="fillTextureSelect">
+        <option value="none">Без заповнення</option>
+        <option value="solid">Стандартна</option>
+        <option value="grass">Трава</option>
+        <option value="water">Вода</option>
+        <option value="dirt">Земля</option>
+    </select>
+    <button onclick="applyFill()">Застосувати</button>
+    <button onclick="cancelFill()">Скасувати</button>
+</div>
+
+<script>
+    const mapData = "{{ map_data }}";  
+    let user = null;
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function fetchUserData() {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            try {
+                const response = await fetch('/api/user-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: token }),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
+                }
+                const data = await response.json();
+                user = data.id;
+                return user;
+            } catch (error) {
+                console.error('Error fetching user data:', error.message);
+            }
+        }
+    }
+
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth - 220;
+    canvas.height = window.innerHeight;
+
+    let tool = 'draw';
+    let currentPoints = [];
+    let allFigures = [];
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let currentTexture = '#000000';
+    let currentBrushSize = 5;
+    let history = [];
+    let historyIndex = 0;
+
+    const topToolbar = document.getElementById('topToolbar');
+    const fillModal = document.getElementById('fillModal');
+
+    function setTool(selectedTool) {
+        tool = selectedTool;
+        currentPoints = [];
+        topToolbar.classList.toggle('visible', tool === 'draw');
+    }
+
+    function createTexture(type) {
+        const canvasTexture = document.createElement('canvas');
+        const ctxTexture = canvasTexture.getContext('2d');
+        canvasTexture.width = 20;
+        canvasTexture.height = 20;
+
+        ctxTexture.fillStyle = '#ffffff';
+        ctxTexture.fillRect(0, 0, 20, 20);
+
+        switch (type) {
+            case 'grass':
+                ctxTexture.fillStyle = '#70c35d';
+                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.strokeStyle = '#509444';
+                ctxTexture.beginPath();
+                ctxTexture.moveTo(0, 10);
+                ctxTexture.lineTo(20, 10);
+                ctxTexture.moveTo(10, 0);
+                ctxTexture.lineTo(10, 20);
+                ctxTexture.stroke();
+                break;
+            case 'water':
+                ctxTexture.fillStyle = '#4d8be5';
+                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.strokeStyle = '#3a6db0';
+                ctxTexture.beginPath();
+                ctxTexture.arc(5, 5, 3, 0, Math.PI * 2);
+                ctxTexture.arc(15, 15, 3, 0, Math.PI * 2);
+                ctxTexture.stroke();
+                break;
+            case 'dirt':
+                ctxTexture.fillStyle = '#8b4513';
+                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.fillStyle = '#5a2d0a';
+                for (let i = 0; i < 10; i++) {
+                    ctxTexture.beginPath();
+                    ctxTexture.arc(Math.random() * 20, Math.random() * 20, 1, 0, Math.PI * 2);
+                    ctxTexture.fill();
+                }
+                break;
+            default:
+                ctxTexture.fillStyle = '#000000';
+                ctxTexture.fillRect(0, 0, 20, 20);
+        }
+
+        return ctx.createPattern(canvasTexture, 'repeat');
+    }
+
+    // Ініціалізація текстур
+    const textureSelect = document.getElementById('textureSelect');
+    textureSelect.addEventListener('change', function() {
+        const textureType = this.value;
+        if (textureType === 'solid') {
+            currentTexture = '#000000';
+        } else {
+            currentTexture = createTexture(textureType);
+        }
+    });
+    textureSelect.dispatchEvent(new Event('change'));
+
+    // Обробник розміру пензля
+    const brushSizeInput = document.getElementById('brushSize');
+    brushSizeInput.addEventListener('input', function() {
+        currentBrushSize = parseInt(this.value);
+        document.getElementById('brushSizeValue').textContent = this.value;
+    });
+
+    function saveState() {
+        history = history.slice(0, historyIndex + 1);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        history.push(imageData);
+        historyIndex = history.length - 1;
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            ctx.putImageData(history[historyIndex], 0, 0);
+        }
+    }
+
+    function redo() {
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+            ctx.putImageData(history[historyIndex], 0, 0);
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
+        } else if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+            e.preventDefault();
+            redo();
+        }
+    });
+
+    canvas.addEventListener("mousedown", (e) => {
+        if (tool === "draw") {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+            saveState();
+        } else if (tool === "points") {
+            currentPoints.push({ x: e.offsetX, y: e.offsetY });
+            redrawCanvas();
+        }
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+        if (!isDrawing || tool !== 'draw') return;
+
+        ctx.beginPath();
+        ctx.strokeStyle = currentTexture;
+        ctx.lineWidth = currentBrushSize;
+        ctx.lineCap = 'round';
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+
+    canvas.addEventListener("mouseup", () => {
+        isDrawing = false;
+        saveState();
+    });
+
+    canvas.addEventListener("mouseout", () => isDrawing = false);
+
+    function applyFigure() {
+        if (currentPoints.length > 1) {
+            allFigures.push({ points: [...currentPoints], fill: null });
+            currentFigureIndex = allFigures.length - 1;
+            currentPoints = [];
+            fillModal.classList.add('visible');
+        }
+    }
+
+    function drawCurrentFigure() {
+        if (currentPoints.length === 0) return;
+
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+
+        for (let point of currentPoints) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(currentPoints[0].x, currentPoints[0].y);
+        for (let i = 1; i < currentPoints.length; i++) {
+            ctx.lineTo(currentPoints[i].x, currentPoints[i].y);
+        }
+
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function drawAllFigures() {
+        for (let figure of allFigures) {
+            if (figure.fill) {
+                ctx.fillStyle = figure.fill;
+                ctx.beginPath();
+                ctx.moveTo(figure.points[0].x, figure.points[0].y);
+                for (let i = 1; i < figure.points.length; i++) {
+                    ctx.lineTo(figure.points[i].x, figure.points[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.strokeStyle = "blue";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(figure.points[0].x, figure.points[0].y);
+            for (let i = 1; i < figure.points.length; i++) {
+                ctx.lineTo(figure.points[i].x, figure.points[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+    }
+
+    function redrawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawAllFigures();
+        drawCurrentFigure();
+    }
+
+    function applyFill() {
+        const fillType = document.getElementById('fillTextureSelect').value;
+        if (fillType === 'none') {
+            allFigures[currentFigureIndex].fill = null;
+        } else {
+            allFigures[currentFigureIndex].fill = createTexture(fillType);
+        }
+        fillModal.classList.remove('visible');
+        saveState();
+        redrawCanvas();
+    }
+
+    function cancelFill() {
+        fillModal.classList.remove('visible');
+        redrawCanvas();
+    }
+
+    async function handleSaveMap() {
+        try {
+            await saveMap();
+            alert("Мапа збережена!");
+        } catch (error) {
+            console.error("Помилка при збереженні мапи:", error);
+            alert("Сталася помилка при збереженні мапи.");
+        }
+    }
+
+    async function checkMap() {
+        const user_id = await fetchUserData();
+        const response = await fetch(`/map/check-map/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Author: user_id,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`Статус помилки: ${response.status}`);
+        }
+        const first_map = await response.json();
+        return first_map.exists;
+    }
+
+    async function saveMap() {
+        const updatedMapData = canvas.toDataURL();
+        user = await fetchUserData();
+        const response = await fetch(`/map/save-interactive-map/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Content: updatedMapData,
+                Author: user,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Статус помилки: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Мапа збережена:", result);
+        return result;
+    }
+    // Декодуємо дані з Base64
+    function decodeBase64Image(base64) {
+        const img = new Image();
+        img.src = `${base64}`;
+        return img;
+    }
+    // Отримуємо дані мапи з сервера
+    if (mapData) {
+        const img = decodeBase64Image(mapData);
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            saveState(); // Зберігаємо початковий стан з завантаженою мапою
+        };
+    }
+</script>
+
+</body>
+</html>

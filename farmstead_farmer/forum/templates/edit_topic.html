@@ -5,254 +5,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <title>Редагувати тему</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .form-container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-        }
-        .form-container h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group select,
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        .form-group textarea {
-            height: 100px;
-            resize: none;
-        }
-        .error-message {
-            color: red;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .submit-btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            color: #fff;
-            background-color: #4CAF50;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .submit-btn:disabled {
-            background-color: #aaa;
-            cursor: not-allowed;
-        }
-    </style>
 </head>
 <body>
     <!-- Хедер -->
-    <header>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
-    
-            header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 10px 20px;
-                background-color: #333;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
-            }
-    
-            .logo {
-                display: flex;
-                align-items: center;
-            }
-    
-            .logo img {
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .logo span {
-                font-size: 20px;
-                font-weight: bold;
-                color: #fff;
-            }
-    
-            nav {
-                display: flex;
-                gap: 20px;
-            }
-    
-            nav a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 16px;
-                padding: 5px 10px;
-                transition: background-color 0.3s, color 0.3s;
-            }
-    
-            nav a:hover {
-                background-color: #444;
-                border-radius: 5px;
-            }
-    
-            .auth {
-                position: relative;
-            }
-    
-            .auth img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-    
-            .auth-menu {
-                display: none;
-                position: absolute;
-                top: 50px;
-                right: 0;
-                background-color: #fff;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-            }
-    
-            .auth-menu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: #333;
-                font-size: 14px;
-            }
-    
-            .auth-menu a:hover {
-                background-color: #f4f4f4;
-            }
-    
-            .auth:hover .auth-menu {
-                display: block;
-            }
-    
-            .hamburger {
-                display: none;
-                flex-direction: column;
-                cursor: pointer;
-            }
-    
-            .hamburger div {
-                width: 25px;
-                height: 3px;
-                background-color: #fff;
-                margin: 4px 0;
-            }
-    
-            .side-menu {
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100%;
-                background-color: #333;
-                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-                transition: right 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                padding-top: 20px;
-                z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
-            }
-    
-            .side-menu a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 18px;
-                padding: 15px 20px;
-                transition: background-color 0.3s;
-            }
-    
-            .side-menu a:hover {
-                background-color: #444;
-            }
-    
-            .side-menu-close {
-                text-align: right;
-                padding: 10px;
-            }
-    
-            .side-menu-close button {
-                background: none;
-                border: none;
-                color: #fff;
-                font-size: 20px;
-                cursor: pointer;
-            }
-    
-            .side-menu .auth-buttons {
-                margin-top: auto;
-                padding: 20px;
-            }
-    
-            .side-menu .auth-buttons a {
-                display: block;
-                text-align: center;
-                padding: 10px;
-                background-color: #444;
-                color: #fff;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                text-decoration: none;
-            }
-    
-            .side-menu .auth-buttons a:hover {
-                background-color: #555;
-            }
-    
-            @media (max-width: 768px) {
-                nav,
-                .auth {
-                    display: none;
-                }
-    
-                .hamburger {
-                    display: flex;
-                    margin-left: auto;
-                }
-            }
-        </style>
-    
+    <header>   
     <div class="logo">
         <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
@@ -331,6 +91,7 @@
                     `;
     
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
@@ -421,7 +182,7 @@
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
-
+<div class="page_container">
     <div class="form-container">
         <h2>Редагувати тему</h2>
         <form id="edit-form" method="POST" action="/forum/edit_topic/{{topic_id}}/">
@@ -430,22 +191,27 @@
                 <label for="category">Категорія:</label>
                 <select id="category" name="category" required>
                     <option value="">Оберіть категорію</option>
-                    <option value="trees">Дерева</option>
-                    <option value="vegetables">Овочі</option>
-                    <option value="flowers">Квіти</option>
-                    <option value="animals">Тварини</option>
+                    <option value="trees" {% if category == 'trees' or category == 'Дерева' %}selected="selected"{% endif %}>Дерева</option>
+                    <option value="vegetables" {% if category == 'vegetables' or category == 'Овочі' %}selected="selected"{% endif %}>Овочі</option>
+                    <option value="flowers" {% if category == 'flowers' or category == 'Квіти' %}selected="selected"{% endif %}>Квіти</option>
+                    <option value="animals" {% if category == 'animals' or category == 'Тварини' %}selected="selected"{% endif %}>Тварини</option>
                 </select>
+                <p id="category-error" class="error-message" style="display: none; color: red;">Оберіть категорію.</p>
                 <input type="hidden" id="category-text" name="category_text">
             </div>
             <div class="form-group">
                 <label for="title">Заголовок:</label>
-                <input type="text" id="title" name="title" placeholder="Введіть заголовок" required>
-                <p id="title-error" class="error-message" style="display: none;">Заголовок не повинен містити посилань.</p>
+                <input type="text" id="title" name="title" placeholder="Введіть заголовок" 
+                       value="{{ title }}" required>
+                <p id="title-error" class="error-message" style="display: none; color: red;">Заголовок не повинен містити посилань.</p>
+                <p id="title-error-null" class="error-message" style="display: none; color: red;">Заголовок не може бути пустим.</p>
+                <p id="title-error-length" class="error-message" style="display: none; color: red;">Заголовок не маже бути таким довгим</p>
             </div>
             <div class="form-group">
                 <label for="description">Опис:</label>
-                <textarea id="description" name="description" placeholder="Введіть опис" required></textarea>
-                <p id="description-error" class="error-message" style="display: none;">Опис не повинен містити посилань.</p>
+                <textarea id="description" name="description" placeholder="Введіть опис" required>{{ content }}</textarea>
+                <p id="description-error" class="error-message" style="display: none; color: red;">Опис не повинен містити посилань.</p>
+                <p id="description-error-null" class="error-message" style="display: none; color: red;">Опис не може бути пустим.</p>
             </div>
             <input type="hidden" id="created_date" name="created_date">
             <input type="hidden" id="created_time" name="created_time">
@@ -458,6 +224,7 @@
         </form>
     </div>
     <script>
+        
         const form = document.getElementById('edit-form');
         const titleInput = document.getElementById('title');
         const descriptionInput = document.getElementById('description');
@@ -466,12 +233,18 @@
         const submitBtn = document.getElementById('submit-btn');
         const submitLink = document.getElementById('submit-link');
 
+        const titleErrorNull = document.getElementById('title-error-null');
+        const titleErrorLength = document.getElementById('title-error-length');
+        const descriptionErrorNull = document.getElementById('description-error-null');
+        const categoryError = document.getElementById('category-error');
+
+
         const usernameInput = document.getElementById('username');
         const categorySelect = document.getElementById('category');
         let Author;
         let selectedCategory = null; // Змінна для збереження вибору
         const categoryTextInput = document.getElementById('category-text');
-
+        
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('authToken');
             const authContainer = document.querySelector('.auth');
@@ -495,51 +268,95 @@
                     })
                     .then(data => {
                         Author = data.username;
+                        document.getElementById('username').value = Author;
                     })
-                }
-                function containsLink(text) {
-            const linkRegex = /(https?:\/\/[^\s]+)/g;
-                return linkRegex.test(text);
+                    .catch(error => {
+                        console.error('Помилка при отриманні даних користувача:', error);
+                    });
             }
+            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+            if(selectedOption.text != "" && selectedOption.text != "Оберіть категорію")
+                categoryTextInput.value = selectedOption.text;
             categorySelect.addEventListener('change', (event) => {
                 const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-                categoryTextInput.value = selectedOption.text; // Зберігаємо текст вибраної опції
+                categoryTextInput.value = selectedOption.text;
             });
-            submitBtn.addEventListener('click', () => {
+            submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 let hasError = false;
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0'); // Додаємо 1, бо місяці індексуються з 0
-                const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
-                const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
-                console.log(createdDateInput); // Наприклад: 2025-01-13
-                const createdTimeInput = now.toLocaleTimeString(); // Приклад: 13:45:30
-                console.log(createdTimeInput); // Наприклад: 2025-01-13
-                usernameInput.value = Author;
-                //likesInput.value = likes;
-                //dislikesInput.value = dislikes;
-                //commentsInput.value = comme;
-                document.getElementById('created_date').value = createdDateInput;
-                document.getElementById('created_time').value = createdTimeInput;
+                if (titleInput.value.length >= 86) {
+                    titleErrorLength.style.display = 'block';
+                    hasError = true;
+                } else {
+                    titleErrorLength.style.display = 'none';
+                }
+                console.log(categoryTextInput.value);
+                if (!categoryTextInput.value || categoryTextInput.value === "Оберіть категорію") {
+                    categoryError.style.display = 'block';
+                    hasError = true;
+                } else {
+                    categoryError.style.display = 'none';
+                }
                 if (containsLink(titleInput.value)) {
                     titleError.style.display = 'block';
                     hasError = true;
                 } else {
                     titleError.style.display = 'none';
                 }
-
+                if (!titleInput.value) {
+                    titleErrorNull.style.display = 'block';
+                    hasError = true;
+                } else {
+                    titleErrorNull.style.display = 'none';
+                }
                 if (containsLink(descriptionInput.value)) {
                     descriptionError.style.display = 'block';
                     hasError = true;
                 } else {
                     descriptionError.style.display = 'none';
                 }
-
+                if (!descriptionInput.value) {
+                    descriptionErrorNull.style.display = 'block';
+                    hasError = true;
+                } else {
+                    descriptionErrorNull.style.display = 'none';
+                }
                 if (!hasError) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const createdDateInput = `${year}-${month}-${day}`;
+                    const hours = now.getHours().toString().padStart(2, '0'); 
+                    const minutes = now.getMinutes().toString().padStart(2, '0'); 
+                    const seconds = now.getSeconds().toString().padStart(2, '0');
+                    const createdTimeInput = `${hours}:${minutes}:${seconds}`;
+                    
+                    document.getElementById('created_date').value = createdDateInput;
+                    document.getElementById('created_time').value = createdTimeInput;
+                    
+                    // Відправляємо форму
                     document.getElementById('edit-form').submit();
                 }
             });
         })
+        function containsLink(text) {
+            const linkRegex = /(https?:\/\/[^\s]+)/g;
+            return linkRegex.test(text);
+        }
     </script>
+</div>
+    <footer>
+        <div class="legal-links">
+            <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+            <span>|</span>
+            <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+            <span>|</span>
+            <a href="/feedback/">Форма зворотного зв’язку</a>
+        </div>
+        <div class="copyright">
+            &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+        </div>
+    </footer>
 </body>
 </html>

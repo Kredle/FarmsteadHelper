@@ -7,6 +7,7 @@
     <title>Детальне обговорення</title>
     <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="stylesheet" href="{% static 'detailstyles.css' %}">
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
 </head>
 <body>
       
@@ -89,6 +90,7 @@
                     `;
     
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>

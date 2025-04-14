@@ -11,7 +11,7 @@
 </head>
 <body>
 
-    
+
     <!-- Хедер -->
     <header>
     <div class="logo">
@@ -51,17 +51,17 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -89,17 +89,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -111,7 +112,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -132,7 +133,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -141,31 +142,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -176,21 +177,16 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
 <body>
+<div class="page_container">
     <div class="profile-container">
         <h2>Профіль користувача {{ user.username }}</h2>
-        <h2>Профіль користувача {{ user.username }}</h2>
         <div class="profile-info">
-            <p><strong>Ім'я:</strong> {{ user.firstname }} {{ user.lastname }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Біо:</strong> {{ user.bio }}</p>
-            <p><strong>Дата реєстрації:</strong> {{ user.date_joined }}</p>
-            <p><strong>Останнє в мережі був/була о</strong> {{ user.last_activity}}</p>
             <div class="profile-avatar">
                 {% if user.get_avatar_url %}
                     <script>
@@ -201,7 +197,17 @@
                     <img src="{% static 'default-avatar.png' %}" alt="Аватар" class="avatar-img">
                 {% endif %}
             </div>
-            
+            {% if user.is_superuser %}
+                <p style="color:#9867C2;"><strong>Модератор</strong></p>
+            {% endif %}
+            <p><strong>Ім'я:</strong> {{ user.firstname }} {{ user.lastname }}</p>
+            {% if user.bio %}
+            <p><strong>Біо:</strong> {{ user.bio }}</p>
+            {% endif %}
+            <p><strong>Дата реєстрації:</strong> {{ user.date_joined }}</p>
+            <p><strong>Останнє в мережі був/була </strong> {{ user.last_activity}}</p>
+
+
         </div>
 
         {% if request.user.is_authenticated and request.user == user %}
@@ -209,7 +215,8 @@
                 <a href="/profile/edit/" class="button">Редагувати профіль</a>
             </div>
         {% endif %}
-
+         <!-- Відображення Карти -->
+        <div id="map-button-container"></div>
         <!-- Відображення обраних елементів -->
         <div class="favorites-section">
             {% load my_filters %}
@@ -261,7 +268,7 @@
             if (data.favorites && data.favorites.length > 0) {
                 updateFavorites(data.favorites);
             } else {
-                
+
             }
         })
         .catch(error => {
@@ -282,7 +289,7 @@
             if (data.favorites && data.favorites.length > 0) {
                 updateFavorites(data.favorites);
             } else {
-                
+
             }
         })
         .catch(error => {
@@ -371,4 +378,76 @@
 });
 
 </script>
+</div>
+<footer>
+    <div class="legal-links">
+        <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+        <span>|</span>
+        <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+        <span>|</span>
+        <a href="/feedback/">Форма зворотного зв’язку</a>
+    </div>
+    <div class="copyright">
+        &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+    </div>
+</footer>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const username = "{{ user.username }}";
+        const mapButtonContainer = document.getElementById('map-button-container');
+        const token = localStorage.getItem('authToken') || ''; // Беремо токен або пустий рядок
+
+        if (!username) {
+            console.error('Юзернейм не знайдено');
+            return;
+        }
+
+        fetch('/api/check-map/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                token: token
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Якщо HTTP статус не 200-299, пробуємо отримати помилку з JSON
+                return response.json().then(err => ({ error: err }));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                console.error('Помилка API:', data.error);
+                return;
+            }
+            // Відображаємо кнопку тільки якщо show_map === true
+            if (data.show_map) {
+                mapButtonContainer.innerHTML = `
+                    <div style="justify-content: center; display: flex;">
+                        <button onclick="location.href='/map/get-map/{{ user.id }}'" class="map-button">
+                            Інтерактивна мапа
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Додаткові дії при відсутності доступу
+                console.log('Користувач не має доступу до карти');
+            }
+        })
+        .catch(error => {
+            console.error('Помилка мережі:', error);
+            mapButtonContainer.innerHTML = `
+                <p class="error-message">Помилка завантаження інформації про карту</p>
+            `;
+        });
+    });
+</script>
+<script>
+    document.getElementById("current-year").textContent = new Date().getFullYear();
+</script>
+
 </html>

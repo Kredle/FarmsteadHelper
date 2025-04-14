@@ -2,35 +2,16 @@
 <html lang="en">
 <head>
     {% load static %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback Form</title>
+    <title>Форма зворотного зв'язку</title>
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylesapi.css' %}">
+    {% comment %} <style>
 
-        footer {
-            background-color: #4CAF50;
-            color: white;
-            text-align: center;
-            padding: 10px 20px;
-            margin-top: auto;
-        }
-        main {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+
         form {
             background-color: white;
             max-width: 500px;
@@ -81,198 +62,14 @@
         #loading-spinner img {
             max-width: 100px;  /* Задайте потрібний розмір спінера */
         }
-    </style>
+    </style> {% endcomment %}
 </head>
 <body>
 
 
-    
+
     <!-- Хедер -->
     <header>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
-    
-            header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 10px 20px;
-                background-color: #333;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
-            }
-    
-            .logo {
-                display: flex;
-                align-items: center;
-            }
-    
-            .logo img {
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .logo span {
-                font-size: 20px;
-                font-weight: bold;
-                color: #fff;
-            }
-    
-            nav {
-                display: flex;
-                gap: 20px;
-            }
-    
-            nav a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 16px;
-                padding: 5px 10px;
-                transition: background-color 0.3s, color 0.3s;
-            }
-    
-            nav a:hover {
-                background-color: #444;
-                border-radius: 5px;
-            }
-    
-            .auth {
-                position: relative;
-            }
-    
-            .auth img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-    
-            .auth-menu {
-                display: none;
-                position: absolute;
-                top: 50px;
-                right: 0;
-                background-color: #fff;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-            }
-    
-            .auth-menu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: #333;
-                font-size: 14px;
-            }
-    
-            .auth-menu a:hover {
-                background-color: #f4f4f4;
-            }
-    
-            .auth:hover .auth-menu {
-                display: block;
-            }
-    
-            .hamburger {
-                display: none;
-                flex-direction: column;
-                cursor: pointer;
-            }
-    
-            .hamburger div {
-                width: 25px;
-                height: 3px;
-                background-color: #fff;
-                margin: 4px 0;
-            }
-    
-            .side-menu {
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100%;
-                background-color: #333;
-                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-                transition: right 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                padding-top: 20px;
-                z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
-            }
-    
-            .side-menu a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 18px;
-                padding: 15px 20px;
-                transition: background-color 0.3s;
-            }
-    
-            .side-menu a:hover {
-                background-color: #444;
-            }
-    
-            .side-menu-close {
-                text-align: right;
-                padding: 10px;
-            }
-    
-            .side-menu-close button {
-                background: none;
-                border: none;
-                color: #fff;
-                font-size: 20px;
-                cursor: pointer;
-            }
-    
-            .side-menu .auth-buttons {
-                margin-top: auto;
-                padding: 20px;
-            }
-    
-            .side-menu .auth-buttons a {
-                display: block;
-                text-align: center;
-                padding: 10px;
-                background-color: #444;
-                color: #fff;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                text-decoration: none;
-            }
-    
-            .side-menu .auth-buttons a:hover {
-                background-color: #555;
-            }
-    
-            @media (max-width: 768px) {
-                nav,
-                .auth {
-                    display: none;
-                }
-    
-                .hamburger {
-                    display: flex;
-                    margin-left: auto;
-                }
-            }
-        </style>
-    
     <div class="logo">
         <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
@@ -310,17 +107,17 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -348,17 +145,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -370,7 +168,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -391,7 +189,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -400,31 +198,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -435,15 +233,15 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
     <main>
-        <form id="feedback-form" method="POST" enctype="multipart/form-data">
+        <form class="feedback_form" id="feedback-form" method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            
+
             <label for="name">Ваше ім'я:</label>
             <input type="text" id="name" name="name" placeholder="Введіть ваше ім'я" required>
 
@@ -452,6 +250,9 @@
 
             <label for="message">Ваше повідомлення:</label>
             <textarea id="message" name="message" rows="5" placeholder="Введіть ваше повідомлення" required></textarea>
+
+            <div class="g-recaptcha" data-sitekey="6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd" data-callback="enableSubmit"></div>
+            <p id="captcha-warning" style="color: red; display: none;">Будь ласка, пройдіть reCAPTCHA!</p>
 
             <label for="file">Прикріпити файл (необов'язково):</label>
             <input type="file" id="file" name="file">
@@ -464,111 +265,70 @@
             <img src="https://i.gifer.com/ZZ5H.gif" alt="loading">
         </div>
     </main>
-    <footer>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-        }
-
-        footer {
-            background-color: #333;
-            color: #fff;
-            padding: 20px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
-        .legal-links {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .legal-links a {
-            color: #fff;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .legal-links a:hover {
-            text-decoration: underline;
-        }
-
-        .legal-links span {
-            color: #fff;
-            font-size: 14px;
-        }
-
-        .copyright {
-            font-size: 14px;
-            color: #ccc;
-            margin-top: 20px;
-        }
-    </style>
-
-    <div class="legal-links">
-        <a href="https://drive.google.com/file/d/1kYJ7ulJFNFk_dDLPced_ToOEeX4Ocf4y/view?usp=sharing">Умови використання</a>
-        <span>|</span>
-        <a href="https://drive.google.com/file/d/1B56gHpLaAyReM2HP_MCrBmQKi1tTMROP/view?usp=sharing">Політика конфіденційності</a>
-        <span>|</span>
-        <a href="/feedback/">Форма зворотного зв’язку</a>
+    
+<div id="customAlert" style="display: none;">
+    <div id="customAlertBox">
+        <p id="customAlertMessage"></p>
+        <button onclick="closeAlert()">OK</button>
     </div>
-    <div class="copyright">
-        &copy; 2024 FarmsteadHelper. Усі права захищено.
-    </div>
-</footer>
+</div>
+
 
     <script>
+        function enableSubmit() {
+            document.getElementById("captcha-warning").style.display = "none";
+        }
+    
         document.getElementById("feedback-form").addEventListener("submit", function(event) {
-            event.preventDefault(); 
+        event.preventDefault();
 
-            // Показуємо анімацію завантаження
-            document.getElementById("loading-spinner").style.display = "block";
-            
-            const formData = new FormData(this);
+        const formData = new FormData(this);
+        const recaptchaToken = grecaptcha.getResponse();
 
-            // Деактивуємо кнопку для запобігання повторних натискань
-            const submitButton = document.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
+        if (!recaptchaToken) {
+            document.getElementById("captcha-warning").style.display = "block";
+            return;
+        }
 
-            fetch("{% url 'feedback' %}", {
-                method: "POST",
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Приховуємо анімацію після отримання відповіді
-                document.getElementById("loading-spinner").style.display = "none";
+        formData.append("recaptcha", recaptchaToken);
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
 
-                // Очищаємо форму
-                document.getElementById("feedback-form").reset(); 
+        document.getElementById("loading-spinner").style.display = "block";
 
-                // Логуємо дані, щоб побачити результат
-                console.log(data); 
-
-                // Показуємо повідомлення користувачу
-                alert(data.message); 
-            })
-            .catch(error => {
-                // Приховуємо анімацію при помилці
-                document.getElementById("loading-spinner").style.display = "none";
-                
-                console.error("Error:", error);
-                alert("Щось пішло не так!");
-            })
-            .finally(() => {
-                // Відновлюємо кнопку після завершення процесу
-                submitButton.disabled = false;
-            });
+        fetch("{% url 'feedback' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            showAlert(data.message);
+            document.getElementById("feedback-form").reset();
+            grecaptcha.reset();
+        })
+        .catch(error => {
+            showAlert("Сталася помилка при надсиланні форми.");
+            console.error(error);
+        })
+        .finally(() => {
+            document.getElementById("loading-spinner").style.display = "none";
+            submitButton.disabled = false;
         });
+    });
     </script>
+    
+<script>
+    function showAlert(message) {
+        document.getElementById('customAlertMessage').textContent = message;
+        document.getElementById('customAlert').style.display = 'flex';
+    }
+    
+    function closeAlert() {
+        document.getElementById('customAlert').style.display = 'none';
+    }
+</script>
 </body>
 </html>

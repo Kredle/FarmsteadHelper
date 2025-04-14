@@ -5,12 +5,13 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
     <title>Форма створення обговорення</title>
 </head>
 <body>
-    
+
     <!-- Хедер -->
     <header>
     <div class="logo">
@@ -50,12 +51,12 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
@@ -91,17 +92,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -113,7 +115,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -134,7 +136,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -143,31 +145,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -178,18 +180,19 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
+<div class="page_container">
     <div class="form-container">
         <h2>Створення обговорення</h2>
         <form id="discussion-form" method="POST" action="/forum/create/">
             {% csrf_token %}
             <div class="form-group">
-                <label for="category">Категорія:</label>
-                <select id="category" name="category" required>
+                <label for="category-forum">Категорія:</label>
+                <select id="category-forum" name="category-forum" required>
                     <option value="">Оберіть категорію</option>
                     <option value="trees">Дерева</option>
                     <option value="vegetables">Овочі</option>
@@ -204,6 +207,7 @@
                 <input type="text" id="title" name="title" placeholder="Введіть заголовок" required>
                 <p id="title-error" class="error-message" style="display: none;">Заголовок не повинен містити посилань.</p>
                 <p id="title-error-null" class="error-message" style="display: none; color: red;">Заголовок не може бути пустим.</p>
+                <p id="title-error-length" class="error-message" style="display: none; color: red;">Заголовок не маже бути таким довгим</p>
             </div>
             <div class="form-group">
                 <label for="description">Опис:</label>
@@ -228,13 +232,14 @@
         const descriptionInput = document.getElementById('description');
         const titleError = document.getElementById('title-error');
         const titleErrorNull = document.getElementById('title-error-null');
+        const titleErrorLength = document.getElementById('title-error-length');
         const descriptionError = document.getElementById('description-error');
         const descriptionErrorNull = document.getElementById('description-error-null');
         const submitBtn = document.getElementById('submit-btn');
         const submitLink = document.getElementById('submit-link');
         const categoryError = document.getElementById('category-error');
         const usernameInput = document.getElementById('username');
-        const categorySelect = document.getElementById('category');
+        const categorySelect = document.getElementById('category-forum');
         let Author;
         let selectedCategory = null; // Змінна для збереження вибору
         const likesInput = document.getElementById('likes');
@@ -294,11 +299,13 @@
             const day = String(now.getDate()).padStart(2, '0'); // Додаємо нулі для однозначних чисел
             const createdDateInput = `${year}-${month}-${day}`; // Формат YYYY-MM-DD
             console.log(createdDateInput); // Наприклад: 2025-01-13
-            const hours = now.getHours().toString().padStart(2, '0'); // Отримуємо години у форматі HH
-const minutes = now.getMinutes().toString().padStart(2, '0'); // Отримуємо хвилини у форматі MM
-const seconds = now.getSeconds().toString().padStart(2, '0'); // Отримуємо секунди у форматі SS
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
 
-const createdTimeInput = `${hours}:${minutes}:${seconds}`;
+            const createdTimeInput =  `${hours}:${minutes}:${seconds}` ;
+            console.log(createdTimeInput);
+            //usernameInput.value = Author;
             console.log(createdTimeInput); // Наприклад: 2025-01-13
             usernameInput.value = Author;
 
@@ -308,6 +315,12 @@ const createdTimeInput = `${hours}:${minutes}:${seconds}`;
             commentsInput.value = comme;
             document.getElementById('created_date').value = createdDateInput;
             document.getElementById('created_time').value = createdTimeInput;
+            if (titleInput.value.length >= 86) {
+                titleErrorLength.style.display = 'block';
+                hasError = true;
+            } else {
+                titleErrorLength.style.display = 'none';
+            }
             if (!categoryTextInput.value) {
                 categoryError.style.display = 'block';
                 hasError = true;
@@ -343,8 +356,25 @@ const createdTimeInput = `${hours}:${minutes}:${seconds}`;
             if (!hasError) {
                 document.getElementById('discussion-form').submit();
             }
-            
+
         });
+    </script>
+</div>
+    <footer>
+        <div class="legal-links">
+            <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+            <span>|</span>
+            <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+            <span>|</span>
+            <a href="/feedback/">Форма зворотного зв’язку</a>
+        </div>
+        <div class="copyright">
+            &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById("current-year").textContent = new Date().getFullYear();
     </script>
 </body>
 </html>

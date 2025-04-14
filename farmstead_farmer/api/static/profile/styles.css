@@ -1,10 +1,13 @@
 /* Загальні стилі */
 body {
+    display: flex;
+    flex-direction: column;
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
     background-color: var(--background);
     justify-content: center;
+    min-height: 100vh;
 }
 
 /* Контейнер профілю */
@@ -12,6 +15,7 @@ body {
     width: 80%;
     max-width: 1200px;
     margin: 40px auto;
+    margin-top: 110px;
     padding: 20px;
     background-color: var(--box_color);
     border-radius: 8px;
@@ -27,17 +31,16 @@ h2 {
 
 h3, h4 {
     color: var(--textcolor_dark);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    align-content: center;
+    justify-self: center;
 }
 
 /* Заголовки */
 h2 {
     text-align: center;
     font-size: 2rem;
-    color: #333;
-}
-
-h3, h4 {
     color: #333;
 }
 
@@ -65,6 +68,7 @@ h3, h4 {
     height: 150px;
     border-radius: 50%;
     object-fit: cover;
+    margin: 5px auto;
 }
 
 /* Стилі для секції обраних елементів */
@@ -90,6 +94,7 @@ h3, h4 {
     overflow: hidden;
     text-align: center;
     transition: transform 0.3s ease;
+    min-width: 150px;
 }
 
 .card:hover {
@@ -97,8 +102,9 @@ h3, h4 {
 }
 
 .card img {
-    width: 100%;
+    overflow: hidden;
     height: 200px;
+    width: 100%;
     object-fit: cover;
 }
 
@@ -157,6 +163,14 @@ textarea {
     border: 1px solid var(--card_border);
 }
 
+input[type="password"]{
+    width: 75%;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid var(--card_border);
+}
+
 textarea {
     height: 100px;
 }
@@ -165,9 +179,20 @@ input[type="file"] {
     font-size: 14px;
 }
 
+input[type="file"]::-webkit-file-upload-button {
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
 button[type="submit"] {
     background-color: var(--accent);
     color: var(--textcolor_light);
+    margin: 5px auto;
+    display: flex;
     padding: 10px 15px;
     border-radius: 5px;
     border: none;
@@ -195,48 +220,6 @@ p {
     border-radius: 10px;
     padding: 20px;
     box-shadow: var(--shadow);
-}
-
-.favorites-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: flex-start;
-}
-
-.card {
-    flex: 0 1 calc(25% - 20px); /* Картки займуть 25% простору */
-    background: var(--box_color);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    text-align: center;
-}
-
-.card img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-}
-
-.card-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin: 10px 0;
-}
-
-.card-button {
-    display: inline-block;
-    padding: 10px 15px;
-    background: var(--accent);
-    color: var(--textcolor_light);
-    text-decoration: none;
-    border-radius: 5px;
-    transition: background 0.3s;
-}
-
-.card-button:hover {
-    background: var(--accent_hover);
 }
 
 /* редагування профілю */
@@ -274,13 +257,17 @@ p {
     align-items: center;
 }
 
-#delete-account-button, #change-email-button, #toggle-favorites-visibility{
+#delete-account-button, #change-email-button, #toggle-favorites-visibility, .map-button, #toggle-map-visibility{
     background-color: var(--accent);
     color: var(--textcolor_light);
     padding: 10px 15px;
     text-decoration: none;
     border-radius: 5px;
     margin: 20px;
+    border: none;
+}
+.map-button:hover {
+    background-color: var(--accent_hover);
 }
 
 #delete-form-dialog button, #email-form-dialog button{
@@ -290,6 +277,7 @@ p {
     text-decoration: none;
     border-radius: 5px;
     margin-top: 20px;
+    border: none;
 }
 
 .modal{
@@ -313,9 +301,8 @@ p {
 
 .profile-container {
     max-width: 1200px;
-    margin: 0 auto;
     padding: 20px;
-    overflow: hidden; /* Забезпечує, щоб нічого не виходило за межі */
+    overflow: hidden;
 }
 
 .favorites-section {
@@ -331,44 +318,68 @@ p {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.favorites-cards {
+
+
+
+    /* Вікна-форми в зміні профілю */
+
+.modal {
+    top: 0;
+    left: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: flex-start;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
-.card {
-    flex: 0 1 calc(25% - 20px); /* Картки займуть 25% простору */
-    background: #fff;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.modal-content {
+    background: var(--box_color);
+    padding: 20px;
+    width: 400px;
+    border-radius: 8px;
     text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.3s ease-in-out;
+    justify-self: center;
+    z-index: 1000;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.card img {
-    max-width: 100%;
-    height: auto;
-    display: block;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
-.card-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin: 10px 0;
-}
-
-.card-button {
-    display: inline-block;
-    padding: 10px 15px;
-    background: #007bff;
-    color: #fff;
-    text-decoration: none;
+.close-modal {
+    margin-top: 10px;
+    background: #ccc;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
     border-radius: 5px;
-    transition: background 0.3s;
 }
 
-.card-button:hover {
-    background: #0056b3;
+.close-modal:hover {
+    background: #aaa;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 999;
+    background: #00000045;
+    backdrop-filter: blur(5px);
 }

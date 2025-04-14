@@ -14,16 +14,23 @@ class id_vegetable(models.Model):
         managed = False
         db_table = 'vegetables'
 
+class id_animal(models.Model):
+    id = models.AutoField(primary_key=True, db_column = 'idAni')
+
+    class Meta:
+        managed = False
+        db_table = 'animals_animal_main'
 
 class Animal(models.Model):
     sort_id = models.AutoField(primary_key=True, db_column = 'id')
     common_name = models.CharField(max_length=100, db_column="common_name")
     image_url = models.TextField(verbose_name="Зображення", null=True, blank=True, db_column = 'image')
+    animal = models.ForeignKey(id_animal, on_delete=models.CASCADE, db_column='id_anim')
     category = 'animals'
 
     class Meta:
         managed = False
-        db_table = 'animals'
+        db_table = 'animals_animal'
 
 class Plant(models.Model):
     sort_id = models.AutoField(primary_key=True, db_column = 'id')

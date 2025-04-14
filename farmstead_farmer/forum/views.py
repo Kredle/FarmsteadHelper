@@ -8,6 +8,13 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from api.models import CustomUser
 from django.contrib import messages
+from django.urls import reverse
+from rest_framework.decorators import throttle_classes
+from rest_framework.throttling import UserRateThrottle
+
+class ForumTrottling(UserRateThrottle):
+    rate = '100/minute'
+
 
 def forum_main(request):
     topics = Topic.objects.all().values(
@@ -15,6 +22,7 @@ def forum_main(request):
     )
     return render(request, 'forumpage.html', {'topics': topics})
 
+@throttle_classes([ForumTrottling])
 def get_topics(request):
     topics = Topic.objects.all()  # Отримуємо всі теми з бази даних
     topics_list = list(topics.values())  # Перетворюємо QuerySet в список словників
@@ -26,6 +34,7 @@ def discussion_detail(request):
 def new_discussion(request):
     return render(request, 'create_discussion.html')
 
+@throttle_classes([ForumTrottling])
 def create_discussion(request):
     if request.method == 'POST':
         category = request.POST.get('category_text')
@@ -53,6 +62,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+@throttle_classes([ForumTrottling])
 @csrf_exempt
 def update_topic_reaction(request, topic_id):
     #print(f"Метод запиту: {request.method}")
@@ -132,6 +142,7 @@ def update_topic_reaction(request, topic_id):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@throttle_classes([ForumTrottling])
 @csrf_exempt
 def update_comment_reaction(request):
     if request.method == 'POST':
@@ -204,6 +215,7 @@ def update_comment_reaction(request):
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 def get_comment(request, comment_id):
+    #print(f"Метод запиту: {request.method}")
     if request.method == 'POST':
         comment = Comment.objects.get(idComments = comment_id)
         return JsonResponse({
@@ -217,6 +229,8 @@ def get_comment(request, comment_id):
                 'Comments': 0
             }, status=201)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@throttle_classes([ForumTrottling])
 @csrf_exempt
 def get_user_reaction(request, topic_id):
     if request.method == 'POST':
@@ -249,26 +263,83 @@ def get_user_reaction(request, topic_id):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from django.urls import reverse
+from api.views import UserProfileView
+
+
+User = get_user_model()
+
+@throttle_classes([ForumTrottling])
 def delete_topic(request, topic_id):
-    # Перевіряємо, чи це POST запит
     if request.method == 'POST':
         data = json.loads(request.body)
-        user = data.get('username')
+        requesting_user = data.get('username')  # Змінна перейменована, щоб уникнути конфлікту імен
         topic = get_object_or_404(Topic, idTopic=topic_id)
         
-        if topic.Author == user:  # Перевіряємо, чи це автор теми
+        if (topic.Author == requesting_user) or User.is_superuser:
+            # Видаляємо всі коментарі теми
             Comment.objects.filter(Topics_id=topic_id).delete()
-            topic.delete()  # Видаляємо тему
-            return redirect('forum_main')  # Перенаправляємо на список тем
-        else:
-            return redirect('forum_main')  # Якщо не автор, перенаправляємо на головну
-
+            
+            # Генеруємо повну URL-адресу теми
+            topic_path = reverse('topic_detail', args=[topic_id])
+            topic_url = request.build_absolute_uri(topic_path)
+            print(f"{topic_url}")
+            # Оновлюємо обране для всіх користувачів
+            all_users = CustomUser.objects.all()
+            for user in all_users:
+                original_count = len(user.favorites)
+                # Видаляємо всі входження цієї теми
+                user.favorites = [fav for fav in user.favorites if fav.get('link') != topic_url]
+                if len(user.favorites) != original_count:
+                    user.save()  # Зберігаємо тільки при змінах
+            
+            # Видаляємо саму тему
+            topic.delete()
+            return redirect('forum_main')
+        
+        return redirect('forum_main')
 def edit_topic_new(request, topic_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Оновлення даних
+            title = data.get('title')
+            content = data.get('content')
+            category = data.get('category')
+            
+            # Збереження у базу
+            topic = get_object_or_404(Topic, idTopic=topic_id)
+            topic.Title = title
+            topic.Content = content
+            topic.Category = category
+            topic.save()
+            
+            return JsonResponse({'status': 'success', 'redirect_url': f'/topic/{topic_id}'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    # Обробка GET-запиту
+    topic = get_object_or_404(Topic, idTopic=topic_id)
     context = {
-        'topic_id': topic_id  # Передаємо topic_id у контекст
+        'topic_id': topic_id,
+        'title': topic.Title,
+        'content': topic.Content,
+        'category': topic.Category
     }
     return render(request, 'edit_topic.html', context)
+    
 
+@throttle_classes([ForumTrottling])
 def edit_topic(request, topic_id):
     if request.method == 'POST':
         user = request.POST.get('username')
@@ -285,6 +356,7 @@ def edit_topic(request, topic_id):
         else:
             return redirect('forum_main')  # Якщо не автор, перенаправляємо на головну
 
+@throttle_classes([ForumTrottling])
 @csrf_exempt
 def add_comment(request, topic_id):
     #print(request.method)
@@ -341,7 +413,7 @@ def add_comment(request, topic_id):
         except Exception as e:
             print(f"Помилка при додаванні коментаря: {e}")
             return JsonResponse({'error': 'Не вдалося додати коментар.'}, status=500)
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    return JsonResponse({'error': 'Неправильний метод запиту'}, status=400)
 
     
 def get_popular_topics(request):
@@ -354,6 +426,7 @@ def comments_list(request, topic_id):
     comments = Comment.objects.filter(Topics_id=topic_id).values('Author', 'Content', 'Likes', 'Dislikes', 'Comments', 'Date', 'Time', 'idComments','ParentId')
     return JsonResponse(list(comments), safe=False)
 
+@throttle_classes([ForumTrottling])
 @csrf_exempt
 def update_comment(request, comment_id):
     if request.method == 'POST':
@@ -381,6 +454,7 @@ def update_comment(request, comment_id):
     else:
         return JsonResponse({'error': 'Метод не дозволений.'}, status=405)
 
+@throttle_classes([ForumTrottling])
 @csrf_exempt
 def edit_comment(request, comment_id):
     if request.method == 'POST':
@@ -409,7 +483,8 @@ def edit_comment(request, comment_id):
             return JsonResponse({'error': 'Невірний формат запиту.'}, status=400)
     else:
         return JsonResponse({'error': 'Метод не дозволений.'}, status=405)
-    
+
+@throttle_classes([ForumTrottling])    
 def delete_comment(request, comment_id):
     # Перевіряємо, чи це POST запит
     if request.method == 'POST':
@@ -420,9 +495,9 @@ def delete_comment(request, comment_id):
         topic = get_object_or_404(Topic, idTopic =topic_id)
         topic.Comments = int(topic.Comments) -1
         topic.save()
-        if comment.Author == user:  # Перевіряємо, чи це автор теми
+        if (comment.Author == user) or User.is_superuser:  # Перевіряємо, чи це автор теми
             comment.delete()  # Видаляємо тему
             return redirect('forum_main')  # Перенаправляємо на список тем
         else:
             return redirect('forum_main')  # Якщо не автор, перенаправляємо на головну
-    return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)
+    return JsonResponse({'error': 'Метод не дозволений.'}, status=405)

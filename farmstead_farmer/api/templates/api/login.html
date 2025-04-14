@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вхід</title>
     {% load static %}  <!-- Завантажуємо тег статичних файлів -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link rel="stylesheet" type="text/css" href="{% static 'api/stylesapi.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
@@ -187,7 +188,7 @@
 
         <label for="password">Пароль</label>
         <input type="password" id="password" name="password" placeholder="Введіть ваш пароль" required>
-
+        <div class="g-recaptcha" data-sitekey="6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd" data-callback="enableSubmit"></div>
         <p class="error-message" id="error-message"></p>
 
         <button type="submit">Увійти</button>
@@ -200,4 +201,15 @@
 
     <script src="{% static 'api/loginscript.js' %}"></script>
 </body>
+<style>
+    .g-recaptcha > div {
+    display: inline-block;
+  }
+
+.g-recaptcha {
+    display: flex;
+    justify-content: center;
+    margin: 0px 0;
+  }
+</style>
 </html>

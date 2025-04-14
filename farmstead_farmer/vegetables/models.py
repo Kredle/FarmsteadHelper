@@ -14,6 +14,9 @@ class Vegetables(models.Model):
     Incompatibility = models.TextField(null=True, blank=True)
     Image = models.TextField(null=True, blank=True)
 
+    def __str__(self):
+        return self.Name if self.Name else f"Tree {self.idVeg}"
+
     class Meta:
         managed = False
         db_table = 'vegetables'
@@ -27,7 +30,10 @@ class SortsVeg(models.Model):
     Usage = models.TextField(null=True, blank=True)
     Image = models.TextField(null=True, blank=True)
     Discription = models.TextField(null=True, blank=True, db_column = 'Discription')
-    vegetables_idVeg = models.ForeignKey(Vegetables, on_delete=models.CASCADE, db_column='vegetables_idVeg')
+    vegetables_idVeg = models.ForeignKey(Vegetables, on_delete=models.CASCADE, related_name="sorts_veg", db_column='vegetables_idVeg')
+
+    def __str__(self):
+        return self.Name if self.Name else f"Sort {self.idSort}"
 
     class Meta:
         managed = False

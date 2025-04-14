@@ -5,4 +5,4 @@ class FeedbackForm(forms.Form):
     email = forms.EmailField(required=True, label="Ваша електронна пошта")
     message = forms.CharField(widget=forms.Textarea, required=True, label="Ваше повідомлення")
     file = forms.FileField(required=False, label="Прикріпити файл")
-
+    recaptcha = forms.CharField(widget=forms.HiddenInput(), required=True)

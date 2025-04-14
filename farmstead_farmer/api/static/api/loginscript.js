@@ -3,8 +3,10 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
-
     const errorMessage = document.getElementById('error-message');
+
+    // Отримуємо відповідь reCAPTCHA
+    const recaptchaResponse = grecaptcha.getResponse();
 
     // Перевірка на порожні поля
     if (!username || !password) {
@@ -12,17 +14,18 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         return;
     }
 
+    // Перевірка reCAPTCHA
+    if (!recaptchaResponse) {
+        errorMessage.textContent = 'Будь ласка, пройдіть reCAPTCHA';
+        return;
+    }
+
     // Створення об'єкта даних для логіну
     const data = {
         username: username,
         password: password,
+        recaptcha_token: recaptchaResponse // Додаємо токен reCAPTCHA
     };
-
-    // Конвертуємо об'єкт у JSON з подвійними лапками для ключів
-    const jsonData = JSON.stringify(data);
-
-    // Перевірка даних перед відправкою
-    console.log(jsonData);
 
     // Надсилання даних на сервер
     try {
@@ -31,22 +34,21 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: jsonData,
+            body: JSON.stringify(data),
         });
 
-        const result = await response.json();  // Очікуємо відповідь у форматі JSON
+        const result = await response.json();
 
         if (response.ok) {
-            // Якщо все добре, зберігаємо токен в localStorage
             localStorage.setItem('authToken', result.token);
-            // Перенаправлення на панель керування після успішного входу !!! тут поміняти на наступне
-            window.location.href = '/';  
+            window.location.href = '/';
         } else {
-            // Якщо сервер повертає помилку, показуємо її
             errorMessage.textContent = result.detail || 'Невірний логін або пароль.';
+            grecaptcha.reset(); 
         }
     } catch (err) {
         errorMessage.textContent = 'Помилка зв’язку з сервером.';
+        grecaptcha.reset();
         console.error(err);
     }
 });

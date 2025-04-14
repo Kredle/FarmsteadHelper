@@ -51,17 +51,17 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -89,17 +89,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -111,7 +112,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -132,7 +133,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -141,31 +142,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -176,7 +177,7 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
@@ -195,7 +196,7 @@
     <!-- Кнопки категорій -->
     <div class="category-buttons">
         <a href="/catalog/trees" class="category-button">
-            <img src="{% static 'main_page/tree.png' %}" alt="Дерева">
+            <img src="https://farmsteadhelper.pythonanywhere.com/media/avatars/2/tree.jpg" alt="Дерева">
             <div class="category-title">Дерева</div>
         </a>
         <a href="/catalog/flowers" class="category-button">
@@ -203,7 +204,7 @@
             <div class="category-title">Квіти</div>
         </a>
         <a href="/catalog/animals" class="category-button">
-            <img src="{% static 'main_page/animals.jpg' %}" alt="Тварини">
+            <img src="https://farmsteadhelper.pythonanywhere.com/media/avatars/2/animals_1eF6m4f.jpg" alt="Тварини">
             <div class="category-title">Тварини</div>
         </a>
         <a href="/catalog/vegetables" class="category-button">
@@ -219,10 +220,10 @@
             <div id="filter-options" style="display: none;">
                 <h3 class="h3">Фільтри</h3>
                 <div class="filter-checkboxes">
-                    <label><input type="checkbox" class="filter-checkbox" value="animals"> Тварини</label>
-                    <label><input type="checkbox" class="filter-checkbox" value="flowers"> Рослини</label>
-                    <label><input type="checkbox" class="filter-checkbox" value="vegetables"> Овочі</label>
-                    <label><input type="checkbox" class="filter-checkbox" value="trees"> Дерева</label>
+                    <label><input type="checkbox" class="filter-checkbox" value="animals" checked> Тварини</label>
+                    <label><input type="checkbox" class="filter-checkbox" value="flowers" checked> Квіти</label>
+                    <label><input type="checkbox" class="filter-checkbox" value="vegetables" checked> Овочі</label>
+                    <label><input type="checkbox" class="filter-checkbox" value="trees" checked> Дерева</label>
                 </div>
                 <button id="apply-filters">Застосувати</button>
             </div>
@@ -232,14 +233,14 @@
         <div class="catalog" id="catalog">
             {% for item in items %}
                 <div class="card" data-category="{{ item.category }}">
-                    <img src="{{ item.image_url|default:'default.jpg' }}" alt="{{ item.common_name|default:"Невідомий обʼєкт" }}">
+                    <img src="{{ item.image_url }}" alt="{{ item.common_name|default:"Невідомий обʼєкт" }}">
                     <div class="card-title">{{ item.common_name|default:"Невідомий обʼєкт" }}</div>
                     <a class="card-button" href="{{ item.url }}">Інформація</a>
                 </div>
             {% endfor %}
-        </div>        
+        </div>
         <button id="load-more">Далі</button>
-    </div> 
+    </div>
     <!-- Футер -->
     <footer>
         </style>
@@ -266,15 +267,15 @@
                 this.textContent = 'Показати фільтри';
             }
         });
-    
+
         document.getElementById('apply-filters').addEventListener('click', () => {
             const checkboxes = document.querySelectorAll('.filter-checkbox');
             const selectedCategories = Array.from(checkboxes)
                 .filter(checkbox => checkbox.checked)
                 .map(checkbox => checkbox.value);
-    
+
             const catalogItems = document.querySelectorAll('.catalog .card');
-    
+
             catalogItems.forEach(card => {
                 const category = card.getAttribute('data-category');
                 if (selectedCategories.length === 0 || selectedCategories.includes(category)) {
@@ -284,9 +285,65 @@
                 }
             });
         });
-        document.getElementById('load-more').addEventListener('click', function() {
-            location.reload();
-        });
+        document.getElementById('load-more').addEventListener('click', async () => {
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.textContent = 'Завантаження...';
+        loadingIndicator.style.textAlign = 'center';
+        loadingIndicator.style.padding = '20px';
+
+        const catalog = document.getElementById('catalog');
+        catalog.innerHTML = '';
+        catalog.appendChild(loadingIndicator);
+
+        try {
+            // Отримуємо вибрані категорії
+            const selectedCategories = Array.from(
+                document.querySelectorAll('.filter-checkbox:checked')
+            ).map(checkbox => checkbox.value);
+
+            // Виконуємо запит до API
+            const response = await fetch('/api/filter_catalog/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ categories: selectedCategories })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP помилка! Статус: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.items || !Array.isArray(data.items)) {
+                throw new Error('Невірний формат відповіді від сервера');
+            }
+
+            // Оновлюємо інтерфейс
+            catalog.innerHTML = data.items.length > 0
+                ? data.items.map(item => `
+                    <div class="card" data-category="${item.category}">
+                        <img src="${item.image_url}"
+                            alt="${item.common_name}"
+                            >
+                        <div class="card-title">${item.common_name}</div>
+                        <a class="card-button" href="${item.url}">Інформація</a>
+                    </div>
+                `).join('')
+                : '<p>Нічого не знайдено за обраними фільтрами</p>';
+
+        } catch (error) {
+            console.error('Помилка:', error);
+            catalog.innerHTML = `
+                <div class="error-message">
+                    <p>Сталася помилка при завантаженні даних</p>
+                    <button onclick="window.location.reload()">Спробувати ще раз</button>
+                </div>
+            `;
+        }
+    });
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('catalog-search');
             const searchResults = document.getElementById('search-results');
@@ -294,7 +351,7 @@
             searchInput.addEventListener('input', function(e) {
                 const query = this.value.trim();
                 searchResults.innerHTML = '';
-                
+
                 if (query.length < 2) {
                     searchResults.style.display = 'none';
                     return;
@@ -350,6 +407,83 @@
                 }
             });
         });
+        // Функція для отримання CSRF токена
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Обробник події для кнопки застосування фільтрів
+document.getElementById('apply-filters').addEventListener('click', async () => {
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.textContent = 'Завантаження...';
+    loadingIndicator.style.textAlign = 'center';
+    loadingIndicator.style.padding = '20px';
+
+    const catalog = document.getElementById('catalog');
+    catalog.innerHTML = '';
+    catalog.appendChild(loadingIndicator);
+
+    try {
+        // Отримуємо вибрані категорії
+        const selectedCategories = Array.from(
+            document.querySelectorAll('.filter-checkbox:checked')
+        ).map(checkbox => checkbox.value);
+
+        // Виконуємо запит до API
+        const response = await fetch('/api/filter_catalog/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ categories: selectedCategories })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP помилка! Статус: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.items || !Array.isArray(data.items)) {
+            throw new Error('Невірний формат відповіді від сервера');
+        }
+
+        // Оновлюємо інтерфейс
+        catalog.innerHTML = data.items.length > 0
+            ? data.items.map(item => `
+                <div class="card" data-category="${item.category}">
+                    <img src="${item.image_url}"
+                         alt="${item.common_name}"
+                         >
+                    <div class="card-title">${item.common_name}</div>
+                    <a class="card-button" href="${item.url}">Інформація</a>
+                </div>
+              `).join('')
+            : '<p>Нічого не знайдено за обраними фільтрами</p>';
+
+    } catch (error) {
+        console.error('Помилка:', error);
+        catalog.innerHTML = `
+            <div class="error-message">
+                <p>Сталася помилка при завантаженні даних</p>
+                <button onclick="window.location.reload()">Спробувати ще раз</button>
+            </div>
+        `;
+    }
+});
+
     </script>
 </body>
 </html>

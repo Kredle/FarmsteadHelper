@@ -11,12 +11,54 @@
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
     <script>
 
-        
+async function updateAuthorName(oldName, newName) {
+    try {
+        // Надсилаємо POST-запит на сервер
+        const response = await fetch('/update-author-name/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),  // Додаємо CSRF-токен (якщо використовується Django CSRF)
+            },
+            body: JSON.stringify({
+                oldName: oldName,
+                newName: newName,
+            }),
+        });
+
+        // Отримуємо відповідь від сервера
+        const result = await response.json();
+
+        // Перевіряємо статус відповіді
+        if (result.status === 'success') {
+            console.log('Ім\'я автора успішно оновлено:', result.message);
+        } else {
+            console.error('Помилка:', result.message);
+        }
+    } catch (error) {
+        console.error('Помилка під час виконання запиту:', error);
+    }
+}
+// Допоміжна функція для отримання CSRF-токена (якщо використовується Django CSRF)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 function onCaptchaSuccess() {
     const captchaResponse1 = grecaptcha.getResponse('second-recaptcha');
     if (captchaResponse1) {
         console.log('Капча пройдена успішно');
-        document.getElementById('send-otp-button').disabled = false; 
+        document.getElementById('send-otp-button').disabled = false;
     } else {
         console.log('Капча не пройдена');
     }
@@ -34,11 +76,11 @@ function onCaptchaSuccess() {
     const nameForm = document.getElementById('change-name-form');
     const firstnameField = document.getElementById('new-firstname');
     const lastnameField = document.getElementById('new-lastname');
+    const current_email = document.getElementById('current-email');
 
-    let userData = {};  
+    let userData = {};
 
     if (token) {
-        console.log('Завантаження даних користувача...');
 
         fetch('/api/user-data/', {
             method: 'POST',
@@ -54,7 +96,6 @@ function onCaptchaSuccess() {
                 return response.json();
             })
             .then(data => {
-                console.log("User data:", data);
                 userData = data;
 
                 let avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "/static/defaultlogo.png";
@@ -63,14 +104,22 @@ function onCaptchaSuccess() {
                 bioField.value = data.bio || "";
                 firstnameField.value = data.firstname || "";
                 lastnameField.value = data.lastname || "";
-
+                current_email.innerText = data.email || "";
                 const fav_button = document.getElementById('toggle-favorites-visibility');
+                const map_button = document.getElementById('toggle-map-visibility')
 
                 if(data.flag){
                     fav_button.textContent = 'Показати Favorites';
                 }
                 else {
                     fav_button.textContent = 'Приховати Favorites';
+                }
+
+                if(data.map_flag){
+                    map_button.textContent = 'Показати карту';
+                }
+                else {
+                    map_button.textContent = 'Приховати карту';
                 }
 
                 fav_button.addEventListener('click', function (){
@@ -88,11 +137,38 @@ function onCaptchaSuccess() {
                     fav_button.textContent = 'Показати Favorites';
                 }
             });
+                map_button.addEventListener('click', function (){
+                    fetch('/api/is_map_private_change/',{
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({token: token}),
+                    });
+                    if(map_button.textContent == 'Показати карту'){
+                        map_button.textContent = 'Приховати карту';
+                    }
+                    else{
+                        map_button.textContent = 'Показати карту';
+                    }
+                });
 
                 // Handle account deletion
                 const deleteAccountButton = document.getElementById('delete-account-button');
+
+                document.getElementById("delete-account-button").addEventListener("click", function () {
+                    document.getElementById("overlay").style.display = "block";
+                    document.getElementById("delete-form-dialog").style.display = "block";
+                });
+
+                document.getElementById("overlay").addEventListener("click", function () {
+                    document.getElementById("overlay").style.display = "none";
+                    document.getElementById("delete-form-dialog").style.display = "none";
+                });
+
                 deleteAccountButton.addEventListener('click', function () {
-                    document.getElementById('delete-form-dialog').style.display = 'block';
+
+                    {% comment %} document.getElementById('delete-form-dialog').style.display = 'block'; {% endcomment %}
 
                     fetch('/api/send-otp-delete/', {
                         method: 'POST',
@@ -108,17 +184,17 @@ function onCaptchaSuccess() {
                             return response.json();
                         })
                         .then(otpResponse => {
-                            alert(otpResponse.message || 'OTP код надіслано на ваш email');
+                            showAlert(otpResponse.message || 'OTP код надіслано на ваш email');
                         })
                         .catch(error => {
                             console.error('Помилка:', error);
-                            alert('Сталася помилка при надсиланні OTP коду');
+                            showAlert('Сталася помилка при надсиланні OTP коду');
                         });
                 });
             })
             .catch(error => {
                 console.error('Помилка:', error);
-                alert('Сталася помилка при отриманні даних користувача. Ви будете перенаправлені на сторінку входу.');
+                showAlert('Сталася помилка при отриманні даних користувача. Ви будете перенаправлені на сторінку входу.');
                 window.location.href = '/login/';
             });
 
@@ -129,10 +205,9 @@ function onCaptchaSuccess() {
             const newLastname = lastnameField.value.trim();
 
             if (!newFirstname || !newLastname) {
-                alert("Будь ласка, введіть ім'я та прізвище.");
+                showAlert("Будь ласка, введіть ім'я та прізвище.");
                 return;
             }
-
             fetch('/api/update-name/', {
                 method: 'POST',
                 headers: {
@@ -152,15 +227,15 @@ function onCaptchaSuccess() {
                 })
                 .then(data => {
                     if (data.message) {
-                        alert(data.message);
+                        showAlert(data.message);
                         window.location.reload();
                     } else {
-                        alert('Помилка: ' + data.error);
+                        showAlert('Помилка: ' + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при оновленні даних.');
+                    showAlert('Сталася помилка при оновленні даних.');
                 });
         });
 
@@ -171,17 +246,17 @@ function onCaptchaSuccess() {
             const confirmPassword = document.getElementById('confirm-password').value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                alert("Будь ласка, заповніть всі поля для зміни пароля.");
+                showAlert("Будь ласка, заповніть всі поля для зміни пароля.");
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                alert("Паролі не збігаються!");
+                showAlert("Паролі не збігаються!");
                 return;
             }
 
             if (newPassword.length < 8) {
-                alert("Новий пароль повинен містити хоча б 8 символів.");
+                showAlert("Новий пароль повинен містити хоча б 8 символів.");
                 return;
             }
 
@@ -200,15 +275,15 @@ function onCaptchaSuccess() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.message) {
-                        alert(data.message);
+                        showAlert(data.message);
                         window.location.reload(); // Reload the page after successful update
                     } else {
-                        alert('Помилка: ' + data.error);
+                        showAlert('Помилка: ' + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при зміні пароля');
+                    showAlert('Сталася помилка при зміні пароля');
                 });
         });
 
@@ -216,11 +291,6 @@ function onCaptchaSuccess() {
         bioForm.addEventListener('submit', function (event) {
             event.preventDefault();
             const newBio = bioField.value;
-
-            if (!newBio) {
-                alert("Будь ласка, введіть нову біографію.");
-                return;
-            }
 
             fetch('/api/change-bio/', {
                 method: 'POST',
@@ -235,15 +305,15 @@ function onCaptchaSuccess() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.message) {
-                        alert(data.message);
+                        showAlert(data.message);
                         window.location.reload();
                     } else {
-                        alert('Помилка: ' + data.error);
+                        showAlert('Помилка: ' + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при оновленні біографії');
+                    showAlert('Сталася помилка при оновленні біографії');
                 });
         });
 
@@ -253,10 +323,10 @@ function onCaptchaSuccess() {
             const newUsername = usernameField.value;
 
             if (!newUsername) {
-                alert("Будь ласка, введіть нове ім'я користувача.");
+                showAlert("Будь ласка, введіть нове ім'я користувача.");
                 return;
             }
-
+            updateAuthorName(userData.username,newUsername);
             fetch('/api/change-username/', {
                 method: 'POST',
                 headers: {
@@ -273,12 +343,12 @@ function onCaptchaSuccess() {
                         alert(data.message);
                         window.location.reload();
                     } else {
-                        alert('Помилка: ' + data.error);
+                        showAlert('Помилка: ' + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при оновленні імені користувача');
+                    showAlert('Сталася помилка при оновленні імені користувача');
                 });
         });
 
@@ -296,7 +366,7 @@ function onCaptchaSuccess() {
                 .then(data => {
                     if (data.avatarUrl) {
                         avatarImg.src = data.avatarUrl;
-                        alert('Аватар успішно оновлено!');
+                        showAlert('Аватар успішно оновлено!');
                         window.location.reload();
                     } else {
                         window.location.reload();
@@ -304,7 +374,7 @@ function onCaptchaSuccess() {
                 })
                 .catch(error => {
                     console.error('Помилка:', error);
-                    alert('Сталася помилка при завантаженні аватара');
+                    showAlert('Сталася помилка при завантаженні аватара');
                 });
         });
 
@@ -319,12 +389,12 @@ function onCaptchaSuccess() {
             const captchaResponse = grecaptcha.getResponse();
 
             if (!captchaResponse) {
-                alert('Будь ласка, пройдіть капчу!');
+                showAlert('Будь ласка, пройдіть капчу!');
                 return;
             }
 
             if (!email || !password || !otp || !captchaResponse) {
-                alert('Будь ласка, заповніть всі поля: email, OTP, пароль і підтвердьте капчу.');
+                showAlert('Будь ласка, заповніть всі поля: email, OTP, пароль і підтвердьте капчу.');
                 return;
             }
 
@@ -349,29 +419,37 @@ function onCaptchaSuccess() {
                     return response.json();
                 })
                 .then(deleteResponse => {
-                    alert(deleteResponse.message);
+                    showAlert(deleteResponse.message);
+                    updateAuthorName(userData.username,"Користувача видалено");
                     localStorage.removeItem('authToken');
                     window.location.href = '/login/';
                 })
                 .catch(error => {
                     console.error('Помилка при видаленні акаунту:', error);
-                    alert(error.message || 'Сталася помилка при видаленні акаунту');
+                    showAlert(error.message || 'Сталася помилка при видаленні акаунту');
                 });
         });
         document.getElementById('change-email-button').addEventListener('click', function () {
             document.getElementById('email-form').style.display = 'block';
 });
-document.getElementById('change-email-button').addEventListener('click', function () {
-    document.getElementById('email-form-dialog').style.display = 'block';  // Відкриваємо модальне вікно
+
+document.getElementById("change-email-button").addEventListener("click", function () {
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("email-form-dialog").style.display = "block";
+});
+
+document.getElementById("overlay").addEventListener("click", function () {
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("email-form-dialog").style.display = "none";
 });
 
 
 
 document.getElementById('send-otp-button').addEventListener('click', function () {
     const newEmail = document.getElementById('new-email').value.trim();
-    
+
     if (!newEmail) {
-        alert("Будь ласка, введіть нову електронну пошту.");
+        showAlert("Будь ласка, введіть нову електронну пошту.");
         return;
     }
 
@@ -390,16 +468,16 @@ document.getElementById('send-otp-button').addEventListener('click', function ()
     .then(response => response.json())
     .then(data => {
         if (data.message) {
-            alert('OTP код надіслано на нову електронну пошту');
+            showAlert('OTP код надіслано на нову електронну пошту');
             document.getElementById('email-form-dialog').style.display = 'none';
             document.getElementById('otp-form-dialog').style.display = 'block';
         } else {
-            alert('Помилка: ' + data.error);
+            showAlert('Помилка: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Помилка:', error);
-        alert('Сталася помилка при надсиланні OTP коду');
+        showAlert('Сталася помилка при надсиланні OTP коду');
     });
 });
 
@@ -411,7 +489,7 @@ changeEmailForm.addEventListener('submit', function (event) {
     const otpCode = document.getElementById('otp-code-email').value.trim();
 
     if (!newEmail || !otpCode) {
-        alert('Будь ласка, заповніть всі поля.');
+        showAlert('Будь ласка, заповніть всі поля.');
         return;
     }
 
@@ -430,15 +508,15 @@ changeEmailForm.addEventListener('submit', function (event) {
     .then(response => response.json())
     .then(data => {
         if (data.message) {
-            alert(data.message);
+            showAlert(data.message);
             window.location.reload(); // Перезавантажуємо сторінку після успішної зміни
         } else {
-            alert('Помилка: ' + data.error);
+            showAlert('Помилка: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Помилка:', error);
-        alert('Сталася помилка при зміні електронної пошти');
+        showAlert('Сталася помилка при зміні електронної пошти');
     });
 });
 
@@ -451,7 +529,7 @@ changeEmailForm.addEventListener('submit', function (event) {
     }
 };
 
-    </script>          
+    </script>
 </head>
 <body>
     <div class="edit-profile-container">
@@ -461,7 +539,7 @@ changeEmailForm.addEventListener('submit', function (event) {
         <!-- User Profile Display -->
         <div class="profile-display">
             <div class="avatar-container">
-                <img id="avatar-img" src="" alt="Аватар" class="avatar-img">
+                <img id="avatar-img" src="" alt="Аватар" class="avatar-img" style="display: grid;">
                 <form id="change-avatar-form" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="avatar-file">Оновити аватар</label>
@@ -483,11 +561,11 @@ changeEmailForm.addEventListener('submit', function (event) {
                 <button type="submit">Зберегти зміни</button>
             </form>
             </div>
-            <p id="bio-display"></p> 
+            <p id="bio-display"></p>
         </div>
 
         <hr>
-        
+
         <div class="profile-display">
             <form id="change-username-form" enctype="application/json">
                 <div class="form-group">
@@ -527,10 +605,16 @@ changeEmailForm.addEventListener('submit', function (event) {
                 <button type="submit">Змінити пароль</button>
             </form>
         </div>
+        <h3>Поточна пошта</h3>
+        <p id="current-email"></p>
     </div>
 
+    <div id="overlay" class="overlay" style="display: none;"></div>
+
     <div class="forms">
-    
+
+
+
         <button id="delete-account-button">Видалити акаунт</button>
 
         <div id="delete-form-dialog" class="modal" style="display: none;">
@@ -550,7 +634,6 @@ changeEmailForm.addEventListener('submit', function (event) {
                     </div>
                     <button type="submit">Підтвердити</button>
                 </form>
-                </form>
             </div>
         </div>
 
@@ -558,6 +641,7 @@ changeEmailForm.addEventListener('submit', function (event) {
         <button id="change-email-button">Змінити електронну пошту</button>
 
         <!-- Модальне вікно для зміни електронної пошти -->
+
         <div id="email-form-dialog" class="modal" style="display: none;">
             <div class="modal-content">
                 <form id="email-form">
@@ -586,11 +670,27 @@ changeEmailForm.addEventListener('submit', function (event) {
         </div>
 
         <button id="toggle-favorites-visibility">Приховати Favorites</button>
-
+        <button id="toggle-map-visibility">Приховати карту</button>
     </div>
 
 
 
+    <div id="customAlert" style="display: none;">
+        <div id="customAlertBox">
+            <p id="customAlertMessage"></p>
+            <button onclick="closeAlert()">OK</button>
+        </div>
+    </div>
+    <script>
+        function showAlert(message) {
+            document.getElementById('customAlertMessage').textContent = message;
+            document.getElementById('customAlert').style.display = 'flex';
+        }
+
+        function closeAlert() {
+            document.getElementById('customAlert').style.display = 'none';
+        }
+    </script>
 
 </body>
 

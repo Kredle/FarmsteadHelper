@@ -2,258 +2,18 @@
 <html lang="en">
 <head>
     {% load static %}
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
+    {% csrf_token %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Map Overview</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #007bff;
-        }
-
-        p {
-            margin: 10px 0;
-        }
-
-        ul {
-            margin: 20px 0;
-            padding-left: 20px;
-        }
-
-        ul li {
-            margin-bottom: 10px;
-        }
-
-        .button-container {
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        .button {
-            display: inline-block;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            background-color: #007bff;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-
-        .button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <title>Огляд інтерактивної мапи</title>
 </head>
 <body>
-    
 
-    
     <!-- Хедер -->
     <header>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-            }
-    
-            header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 10px 20px;
-                background-color: #333;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                z-index: 1000; /* Забезпечує верхній шар */
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тінь для краси */
-                top: 0;
-                left: 0;
-                width: 98%;
-            }
-    
-            .logo {
-                display: flex;
-                align-items: center;
-            }
-    
-            .logo img {
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .logo span {
-                font-size: 20px;
-                font-weight: bold;
-                color: #fff;
-            }
-    
-            nav {
-                display: flex;
-                gap: 20px;
-            }
-    
-            nav a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 16px;
-                padding: 5px 10px;
-                transition: background-color 0.3s, color 0.3s;
-            }
-    
-            nav a:hover {
-                background-color: #444;
-                border-radius: 5px;
-            }
-    
-            .auth {
-                position: relative;
-            }
-    
-            .auth img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-    
-            .auth-menu {
-                display: none;
-                position: absolute;
-                top: 50px;
-                right: 0;
-                background-color: #fff;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-            }
-    
-            .auth-menu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: #333;
-                font-size: 14px;
-            }
-    
-            .auth-menu a:hover {
-                background-color: #f4f4f4;
-            }
-    
-            .auth:hover .auth-menu {
-                display: block;
-            }
-    
-            .hamburger {
-                display: none;
-                flex-direction: column;
-                cursor: pointer;
-            }
-    
-            .hamburger div {
-                width: 25px;
-                height: 3px;
-                background-color: #fff;
-                margin: 4px 0;
-            }
-    
-            .side-menu {
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100%;
-                background-color: #333;
-                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-                transition: right 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                padding-top: 20px;
-                z-index: 1000;
-                overflow-y: auto; /* Додає вертикальну прокрутку */
-                overflow-x: hidden; /* Забороняє горизонтальну прокрутку */
-                scrollbar-width: thin; /* Тонкий скролбар для браузерів, які підтримують */
-                scrollbar-color: #555 #333; /* Колір скролбару */
-            }
-    
-            .side-menu a {
-                text-decoration: none;
-                color: #fff;
-                font-size: 18px;
-                padding: 15px 20px;
-                transition: background-color 0.3s;
-            }
-    
-            .side-menu a:hover {
-                background-color: #444;
-            }
-    
-            .side-menu-close {
-                text-align: right;
-                padding: 10px;
-            }
-    
-            .side-menu-close button {
-                background: none;
-                border: none;
-                color: #fff;
-                font-size: 20px;
-                cursor: pointer;
-            }
-    
-            .side-menu .auth-buttons {
-                margin-top: auto;
-                padding: 20px;
-            }
-    
-            .side-menu .auth-buttons a {
-                display: block;
-                text-align: center;
-                padding: 10px;
-                background-color: #444;
-                color: #fff;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                text-decoration: none;
-            }
-    
-            .side-menu .auth-buttons a:hover {
-                background-color: #555;
-            }
-    
-            @media (max-width: 768px) {
-                nav,
-                .auth {
-                    display: none;
-                }
-    
-                .hamburger {
-                    display: flex;
-                    margin-left: auto;
-                }
-            }
-        </style>
-    
     <div class="logo">
         <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
         <span>FarmsteadHelper</span>
@@ -291,17 +51,17 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -329,17 +89,17 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -351,7 +111,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -372,7 +132,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -381,31 +141,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -416,13 +176,13 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
     </script>
     </header>
-
-    <div class="container">
+<div class="page_container">
+    <div class="container" style="margin-top: 120px;">
         <h1>Відкрийте для себе інтерактивну мапу!</h1>
         <p>
             Інтерактивна карта — це потужний інструмент, який допоможе вам легко створити та візуалізувати макет вашого господарства.
@@ -435,15 +195,121 @@
             <li><strong>Планувальник будівель</strong>: додайте такі будівлі, як будинки, сараї та колодязі, з персоналізованими назвами та розмірами.</li>
             <li><strong>Місця для тварин</strong>: створюйте притулки для тварин, як-от курники чи будки для собак.</li>
             <li><strong>Овочеве садівництво</strong>: плануйте овочеві грядки з регульованою відстанню між рослинами.</li>
-            <li><strong>Кілька макетів</strong>: зберігайте та перемикайтеся між різними макетами для порівняння дизайнів.</li>
         </ul>
         <p>
             Незалежно від того, чи є ви досвідченим фермером, чи тільки починаєте, інтерактивна карта розроблена, щоб забезпечити інтуїтивно зрозумілу та детальну роботу.
             Ви матимете доступ до передових інструментів для ефективного планування та уникнення поширених помилок.
         </p>
         <div class="button-container">
-            <a href="/interactive-map" class="button">Розпочати роботу</a>
+            <a class="button" id="map-button">Розпочати роботу</a>
         </div>
     </div>
+</div>
+    <footer>
+        <div class="legal-links">
+            <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+            <span>|</span>
+            <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+            <span>|</span>
+            <a href="/feedback/">Форма зворотного зв’язку</a>
+        </div>
+        <div class="copyright">
+            &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById("current-year").textContent = new Date().getFullYear();
+    </script>
 </body>
+<script>
+window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            location.reload();
+        }
+    });
+    let user_id = null;
+    document.addEventListener("DOMContentLoaded", async function () {
+        const button = document.querySelector(".button");
+        const token = localStorage.getItem("authToken");
+        user_id = await fetchUserData();
+        let not_first_map = false;
+        if(user_id){
+            not_first_map = await checkMap(user_id);
+            if (not_first_map && button) {
+                button.textContent = "Продовжити роботу";
+            }
+        }
+        if (button) {
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                if (!token) {
+                    window.location.href = "/login/";
+                } else if(not_first_map === true){
+                    window.location.href = `/map/get-map/${user_id}/`;
+                }else if(not_first_map === false){
+                    window.location.href = "/map/interactive-map/";
+                }
+            });
+        }
+    });
+    async function fetchUserData() {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            try {
+                const response = await fetch('/api/user-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({ token: token }),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
+                }
+                const data = await response.json();
+                user = data.id;
+                return user;
+            } catch (error) {
+                console.error('Error fetching user data:', error.message);
+            }
+        }
+    }
+    async function checkMap(user_id) {
+        //const user_id = await fetchUserData();
+        //console.log(user_id);
+        const response = await fetch(`/map/check-map/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Author: user_id,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Статус помилки: ${response.status}`);
+        }
+        const first_map = await response.json();
+        return first_map.exists;
+    }
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
 </html>

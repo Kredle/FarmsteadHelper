@@ -10,7 +10,7 @@ box_color_hover має бути темнішим за box_color, бо багат
     --accent_hover: #4ab58f;
 
     --box_color: #ffffff;
-    --box_color_hover: #f4f4f4;  
+    --box_color_hover: #f4f4f4;
 
     --card_color: #f9f9f9;
     --card_border: #f4f4f4;
@@ -21,7 +21,7 @@ box_color_hover має бути темнішим за box_color, бо багат
     --side: #333333;
     --side_hover: #444444;
     --hamburger: #ffffff;
-    
+
     --textcolor_light: #ffffff;
     --textcolor_dark: #333333;
 
@@ -47,7 +47,7 @@ box_color_hover має бути темнішим за box_color, бо багат
     --side: #845898;
     --side_hover: #b381c9;
     --hamburger: #865b30;
-    
+
     --textcolor_light: #ffffff;
     --textcolor_dark: #333333;
 
@@ -64,7 +64,7 @@ box_color_hover має бути темнішим за box_color, бо багат
     --accent_hover: #4ab58f;
 
     --box_color: #ffffff;
-    --box_color_hover: #f4f4f4;  
+    --box_color_hover: #f4f4f4;
 
     --card_color: #f9f9f9;
     --card_border: #f4f4f4;
@@ -75,12 +75,64 @@ box_color_hover має бути темнішим за box_color, бо багат
     --side: #333333;
     --side_hover: #444444;
     --hamburger: #ffffff;
-    
+
     --textcolor_light: #ffffff;
     --textcolor_dark: #333333;
 
     --shadow: 0 2px 5px #0000001a;
     --shadow_hover: 0 4px 15px #00000033;
+}
+
+html {
+    min-height: -webkit-fill-available;
+}
+
+.page_container {
+    flex-grow: 1;
+}
+
+
+
+
+    /* АЛЕРТИ */
+
+#customAlert {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#customAlertBox {
+    display: flex;
+    background: var(--card_color);
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+    text-align: center;
+    flex-direction: column;
+}
+
+#customAlertBox button {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border-radius: 5px;
+    margin-top: 10px;
+    text-decoration: none;
+}
+
+#customAlertBox button:hover {
+    background-color: var(--accent_hover);
 }
 
 
@@ -96,8 +148,7 @@ header {
     background-color: var(--header_footer);
     box-shadow: var(--shadow);
     position: fixed;
-    z-index: 1000; /* Забезпечує верхній шар */
-    box-shadow: var(--shadow); /* Тінь для краси */
+    z-index: 1000;
     top: 0;
     left: 0;
     width: 98%;
@@ -148,8 +199,8 @@ nav a:hover {
 }
 
 .auth img {
-    width: 70px;
-    height: 70px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     cursor: pointer;
 }
@@ -159,6 +210,13 @@ nav a:hover {
     height: 50px !important;
     border-radius: 50% !important;
     cursor: pointer;
+}
+.user-avatar{
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    cursor: pointer;
+    margin: 20px auto;
 }
 
 .auth-menu {
@@ -205,6 +263,7 @@ nav a:hover {
     display: none;
     flex-direction: column;
     cursor: pointer;
+    margin-right: 25px;
 }
 
 .hamburger div {
@@ -261,6 +320,9 @@ nav a:hover {
 .side-menu .auth-buttons {
     margin-top: auto;
     padding: 20px;
+    flex-direction: column;
+    display: flex;
+;
 }
 
 .side-menu .auth-buttons a {
@@ -287,12 +349,15 @@ nav a:hover {
     .hamburger {
         display: flex;
         margin-left: auto;
+        margin-right: 25px;
     }
 }
 
     /* ФУТЕР */
 
 footer {
+    /* position: relative; */
+    margin-top: auto;
     background-color: var(--header_footer);
     color: var(--textcolor_light);
     padding: 20px 10px;
@@ -300,6 +365,7 @@ footer {
     display: flex;
     flex-direction: column;
     align-items: center;
+    height: 44px;
 }
 
 .legal-links {

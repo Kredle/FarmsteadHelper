@@ -1,9 +1,11 @@
 from django.urls import path
-from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar, UpdateNameView, DeleteAccountView, SendOTPEmailView, ChangeEmailView, SendOTPDeleteView, toggle_favorite, check_favorite, check_profile, is_favorite_private_change
+from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar, UpdateNameView, DeleteAccountView, SendOTPEmailView, ChangeEmailView, SendOTPDeleteView, toggle_favorite, check_favorite, check_profile, is_favorite_private_change, SendOTPModerationView, VerifyOTPModerationView, ReportView, is_map_private_change, check_map
+
 from django.conf.urls.static import static
 from django.conf import settings
-
+from .views import update_author_name
 urlpatterns = [
+    path('update-author-name/', update_author_name, name='update_author_name'),
     path('register/', register_view, name='register'),
     path('login/', login_view, name='login'),  
     path('api/register/', RegisterView.as_view(), name='register_api'), 
@@ -35,6 +37,12 @@ urlpatterns = [
     path('api/send-otp-delete/', SendOTPDeleteView.as_view(), name='send_otp_delete'),
     path('api/toggle_favorite/', toggle_favorite, name='toggle_favorite'),
     path('api/check_favorite/', check_favorite, name='check_favorite'),
+    path('api/check-map/', check_map, name='check_map'),
     path('api/check_profile/', check_profile, name='check_profile'),
     path('api/is_favorite_private_change/', is_favorite_private_change, name='is_favorite_private_change'),
+    path('api/is_map_private_change/', is_map_private_change, name='is_favorite_private_change'),
+    path('api/set_moderation/', SendOTPModerationView.as_view(), name = 'send_otp_moderation'),
+    path('api/verify_moderation/', VerifyOTPModerationView.as_view(), name = 'verify_otp_moderation'),
+    path('api/report/', ReportView.as_view(), name='report-topic'),
+    path('report/', ReportView.as_view(), name='report-topic'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

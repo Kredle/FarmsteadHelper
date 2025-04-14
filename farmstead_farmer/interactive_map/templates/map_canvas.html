@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивна мапа</title>
+    <style>
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow-x: hidden;
+            overflow-y: hidden;
+        }
+        button{
+            background-color: #3b9173;
+            color: #ffffff;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px;
+            border: none;
+        }
+        button:hover{
+            background-color: #4ab58f;
+        }
+        .toolbar {
+            position: absolute;
+            width: -webkit-fill-available;
+            padding: 10px;
+            background: #cbddd4;
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            height: fit-content;
+            z-index: 100;
+            gap: 15px;
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            height: -webkit-fill-available;
+        }
+        canvas {
+            background: #f0fff8;
+            cursor: crosshair;
+            height: -webkit-fill-available;
+            width: -webkit-fill-available;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .top-toolbar {
+            display: none;
+            position: fixed;
+            top: 100px;
+            right: 0;
+            background: #cbddd4;
+            padding: 10px;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .top-toolbar.visible {
+            display: flex;
+        }
+        label {
+            white-space: nowrap;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            width: 35%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+        }
+        .modal.visible {
+            display: block;
+        }
+        .apply-button{
+            display: none;
+            width: 100px;
+            position: absolute;
+            top: 100px;
+            right: 5%;
+            z-index: 1000;
+        }
+        .apply-button.visible {
+            display: flex;
+        }
+        .modal select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .modal button {
+            width: auto;
+            margin: 5px;
+        }
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            pointer-events: none;
+            display: none;
+            font-size: 14px;
+            z-index: 9999;
+            white-space: nowrap;
+        }
+        .modal input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .toolbar.hidden {
+            display: none;
+        }
+        .canvas-container.full-width {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        #customAlert {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #customAlertBox {
+            background: #f9f9f9;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            text-align: center;
+            z-index: 1001;
+        }
+        #customAlertBox button {
+            display: block;
+            text-align: center;
+            padding: 10px;
+            background-color: #3b9173;
+            color: #ffffff;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-decoration: none;
+        }
+        #customAlertBox button:hover {
+            background-color: #4ab58f;
+        }
+    </style>
+</head>
+<div id="flowerTooltip" class="tooltip"></div>
+<body>
+<div class="toolbar" id = "mainToolbar">
+    <h3>Інструменти</h3>
+    <button onclick="setTool('draw')" title="Малювати">✎</button>
+    <button onclick="setTool('points')" title="Точки і лінії">☉ ‧ ‧ ‧ •</button>
+    <button onclick="setTool('flower')" title="Квітка">✿</button>
+    <button onclick="setTool('tree')" title="Дерево">↟</button>
+    <button onclick="setTool('vegetable')" title="Овоч">⸙</button>
+    <button onclick="setTool('building')" title="">🏠︎</button>
+    <button onclick="undo()" title="Ctrl+Z">↺</button>
+    <button onclick="redo()" title="Ctrl+Shift+Z">↻</button>
+    <button onclick="handleSaveMap()" title="Зберегти">🖫</button>
+</div>
+
+<div class="modal" id="buildingModal">
+    <h3>Введіть назву будівлі</h3>
+    <input type="text" id="buildingNameInput" placeholder="Назва будівлі..." required>
+    <button onclick="confirmBuilding()">Додати</button>
+    <button onclick="cancelBuilding()">Скасувати</button>
+</div>
+
+<div id="treeModal" class="modal">
+  <h2>Додати дерево</h2>
+  <input type="text" id="treeSearch" placeholder="🔍 Пошук дерева..." oninput="filterTrees()">
+  <label for="treeTypeSelect">Оберіть дерево:</label>
+  <select id="treeTypeSelect" onchange="onTreeTypeChange()"></select>
+
+  <label for="treeSortSelect">Оберіть сорт:</label>
+  <select id="treeSortSelect"></select>
+
+  <div class="modal-buttons">
+    <button onclick="confirmTree()">Додати</button>
+    <button onclick="cancelTree()">Скасувати</button>
+  </div>
+</div>
+
+<div id="vegetableModal" class="modal">
+    <h2>Додати Овоч</h2>
+    <input type="text" id="vegetableSearch" placeholder="🔍 Пошук овоча..." oninput="filterVegetables()">
+    <label for="vegetableTypeSelect">Оберіть Овоч:</label>
+    <select id="vegetableTypeSelect" onchange="onVegetableTypeChange()"></select>
+
+    <label for="vegetableSortSelect">Оберіть сорт:</label>
+    <select id="vegetableSortSelect"></select>
+
+    <div class="modal-buttons">
+      <button onclick="confirmVegetable()">Додати</button>
+      <button onclick="cancelVegetable()">Скасувати</button>
+    </div>
+  </div>
+
+<div class="apply-button" id="applyButton">
+    <button onclick="applyFigure()" title="Підтвердити">✔</button>
+</div>
+
+<div class="top-toolbar" id="topToolbar">
+    <label>Текстура: </label>
+    <select id="textureSelect">
+        <option value="solid">Стандартна</option>
+        <option value="grass">Трава</option>
+        <option value="water">Вода</option>
+        <option value="dirt">Земля</option>
+    </select>
+
+    <label>Розмір пензля: </label>
+    <input type="range" id="brushSize" min="1" max="50" value="5">
+    <span id="brushSizeValue">5</span>
+</div>
+
+<div class="canvas-container">
+    <canvas id="mapCanvas"></canvas>
+</div>
+
+<div class="modal" id="fillModal">
+    <h3>Виберіть заповнення</h3>
+    <select id="fillTextureSelect">
+        <option value="none">Без заповнення</option>
+        <option value="solid">Стандартна</option>
+        <option value="grass">Трава</option>
+        <option value="water">Вода</option>
+        <option value="dirt">Земля</option>
+    </select>
+    <button onclick="applyFill()">Застосувати</button>
+    <button onclick="cancelFill()">Скасувати</button>
+</div>
+
+<div class="modal" id="flowerModal">
+    <h3>Виберіть квітку</h3>
+    <input type="text" id="flowerSearch" placeholder="🔍 Пошук квітки..." oninput="filterFlowers()">
+    <select id="flowerTypeSelect"></select>
+    <button onclick="confirmFlower()">Додати</button>
+    <button onclick="cancelFlower()">Скасувати</button>
+</div>
+<div class="help-icon" id="help-icon">?</div>
+
+<div class="help-popup" id="help-popup">
+    <div class="help-content">
+        <span class="close-help" id="close-help">&times;</span>
+        <h3>Довідка</h3>
+        <p><strong>Shift:</strong> підписує всі дерева, будівлі, овочі, квіти.</p>
+        <p><strong>Курсор:</strong> При наведені на об'єкт показує назву цього об'єкта.</p>
+    </div>
+</div>
+<style>
+    .help-icon {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 40px;
+        height: 40px;
+        background-color: #2c3e50;
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 40px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        transition: background-color 0.3s;
+    }
+    .help-icon:hover {
+        background-color: #34495e;
+    }
+
+    .help-popup {
+        display: none;
+        position: fixed;
+        bottom: 70px;
+        left: 20px;
+        width: 300px;
+        background-color: #fdfdfd;
+        border: 1px solid #ccc;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1001;
+    }
+
+    .help-popup .help-content {
+        font-size: 14px;
+        color: #333;
+    }
+
+    .close-help {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #888;
+        cursor: pointer;
+    }
+    .close-help:hover {
+        color: #000;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const helpIcon = document.getElementById('help-icon');
+        const helpPopup = document.getElementById('help-popup');
+        const closeHelp = document.getElementById('close-help');
+
+        helpIcon.addEventListener('click', () => {
+            helpPopup.style.display = 'block';
+        });
+
+        closeHelp.addEventListener('click', () => {
+            helpPopup.style.display = 'none';
+        });
+
+        // Якщо натиснути поза вікном — сховати
+        window.addEventListener('click', (e) => {
+            if (!helpPopup.contains(e.target) && e.target !== helpIcon) {
+                helpPopup.style.display = 'none';
+            }
+        });
+    });
+</script>
+<div id="customAlert" style="display: none;">
+    <div id="customAlertBox">
+        <p id="customAlertMessage"></p>
+        <button onclick="closeAlert()">OK</button>
+    </div>
+</div>
+<script>
+    let canDraw = true;
+    let first_map = true;
+    let user = null;
+    let user_id = null;
+    let owner_id = "{{owner_id}}"
+    let loadedBackgroundImage = null;
+    const mapData = "{{ map_data|escapejs }}";
+    const token = localStorage.getItem("authToken");
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        if (mapData && mapData !== 'None') {
+            try {
+                const parsedData = JSON.parse(mapData);
+                // Завантажуємо фон (якщо він є)
+                if (parsedData.canvasImage) {
+                    const img = new Image();
+                    img.onload = function() {
+                        loadedBackgroundImage = img;
+                        redrawCanvas();
+                        saveState();
+                    };
+                    img.src = parsedData.canvasImage;
+                }
+
+                // Відновлюємо квітки
+                if (parsedData.flowers) {
+                    flowersOnCanvas = parsedData.flowers;
+                }
+
+                // Відновлюємо будівлі
+                if (parsedData.buildings) {
+                    buildingsOnCanvas = parsedData.buildings;
+                }
+
+                // Відновлюємо дерева
+                if (parsedData.trees) {
+                    treesOnCanvas = parsedData.trees;
+                }
+
+                // Відновлюємо овочі
+                if (parsedData.vegetables) {
+                    vegetablesOnCanvas = parsedData.vegetables;
+                }
+
+                // Відновлюємо фігури
+                if (parsedData.figures) {
+                    allFigures = parsedData.figures;
+                    // Відновлюємо текстури для фігур
+                    allFigures.forEach(figure => {
+                        if (figure.fillType) {
+                            figure.fill = createTexture(figure.fillType);
+                        }
+                    });
+                }
+
+                redrawCanvas();
+                saveState();
+            } catch (e) {
+                console.error("Помилка при парсингу даних карти:", e);
+                // Якщо дані не в JSON форматі (стара версія), завантажуємо просто зображення
+                const img = new Image();
+                img.onload = function() {
+                    loadedBackgroundImage = img;
+                    redrawCanvas();
+                    saveState();
+                };
+                img.src = mapData;
+            }
+        }
+        user_id = await fetchUserData();
+        if(user_id){
+            const not_first_map = await checkMap(user_id);
+            if(not_first_map === true){
+                first_map=false;
+                //showAlert("У вас вже є карта. Нову карту збережено не буде.")
+            }
+        }
+
+        if(owner_id =="") owner_id = user_id;
+        if(!token || owner_id != user_id){
+            canDraw = false;
+            document.getElementById('mainToolbar').classList.add('hidden');
+
+            const infoBanner = document.createElement('div');
+            infoBanner.innerText = "Перегляд мапи. Редагування недоступне.";
+            infoBanner.style.position = 'absolute';
+            infoBanner.style.top = '10px';
+            infoBanner.style.left = '50%';
+            infoBanner.style.transform = 'translateX(-50%)';
+            infoBanner.style.zIndex = '1000';
+            infoBanner.style.background = '#fff';
+            infoBanner.style.padding = '10px 20px';
+            infoBanner.style.border = '1px solid #ccc';
+            infoBanner.style.borderRadius = '8px';
+            infoBanner.style.fontSize = '18px';
+            infoBanner.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+            infoBanner.style.pointerEvents = 'none';
+
+            document.body.appendChild(infoBanner);
+            //document.getElementById('canvasContainer').classList.add('full-width');
+            const oldImage = new Image();
+            oldImage.src = canvas.toDataURL();
+
+            const prevWidth = canvas.width;
+            const prevHeight = canvas.height;
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            //ctx.clearRect(0, 0, canvas.width, canvas.height);
+            oldImage.onload = () => {
+                ctx.drawImage(oldImage, 0, 0, prevWidth, prevHeight);
+            };
+            //canvas.width = window.innerWidth; // Розширюємо canvas на весь екран
+
+        }
+        //console.log(user_id);
+    });
+
+    /*if (!token) {
+        window.location.href = "/login/";
+    }*/
+
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (window.innerWidth < 900 || isMobileDevice){
+        showAlert('Інтерактивна карта для телефону в розробці')
+        window.location.href = "/";
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function fetchUserData() {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            try {
+                const response = await fetch('/api/user-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: token }),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
+                }
+                const data = await response.json();
+                user = data.id;
+                return user;
+            } catch (error) {
+                console.error('Error fetching user data:', error.message);
+            }
+        }
+    }
+
+    let tool = 'draw';
+    let currentPoints = [];
+    let allFigures = [];
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let currentTexture = '#000000';
+    let currentBrushSize = 5;
+    let history = [];
+    let historyIndex = 0;
+    const topToolbar = document.getElementById('topToolbar');
+    const applyButton = document.getElementById('applyButton');
+    const fillModal = document.getElementById('fillModal');
+    let isShiftPressed = false;
+
+    function setTool(selectedTool) {
+        tool = selectedTool;
+        currentPoints = [];
+        topToolbar.classList.toggle('visible', tool === 'draw');
+        applyButton.classList.toggle('visible', tool === 'points');
+    }
+
+    function createTexture(type) {
+        const canvasTexture = document.createElement('canvas');
+        const ctxTexture = canvasTexture.getContext('2d');
+        canvasTexture.width = 20;
+        canvasTexture.height = 20;
+
+        ctxTexture.fillStyle = '#ffffff';
+        ctxTexture.fillRect(0, 0, 20, 20);
+
+        switch (type) {
+            case 'grass':
+                ctxTexture.fillStyle = '#70c35d';
+                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.strokeStyle = '#509444';
+                ctxTexture.beginPath();
+                ctxTexture.moveTo(0, 10);
+                ctxTexture.lineTo(20, 10);
+                ctxTexture.moveTo(10, 0);
+                ctxTexture.lineTo(10, 20);
+                ctxTexture.stroke();
+                break;
+            case 'water':
+                ctxTexture.fillStyle = '#4d8be5';
+                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.strokeStyle = '#3a6db0';
+                ctxTexture.beginPath();
+                ctxTexture.arc(5, 5, 3, 0, Math.PI * 2);
+                ctxTexture.arc(15, 15, 3, 0, Math.PI * 2);
+                ctxTexture.stroke();
+                break;
+            case 'dirt':
+                ctxTexture.fillStyle = '#8b4513';
+                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.fillStyle = '#5a2d0a';
+                for (let i = 0; i < 10; i++) {
+                    ctxTexture.beginPath();
+                    ctxTexture.arc(Math.random() * 20, Math.random() * 20, 1, 0, Math.PI * 2);
+                    ctxTexture.fill();
+                }
+                break;
+            default:
+                ctxTexture.fillStyle = '#000000';
+                ctxTexture.fillRect(0, 0, 20, 20);
+        }
+
+        return ctx.createPattern(canvasTexture, 'repeat');
+    }
+
+    // Ініціалізація текстур
+    const textureSelect = document.getElementById('textureSelect');
+    textureSelect.addEventListener('change', function() {
+        const textureType = this.value;
+        if (textureType === 'solid') {
+            currentTexture = '#000000';
+        } else {
+            currentTexture = createTexture(textureType);
+        }
+    });
+    textureSelect.dispatchEvent(new Event('change'));
+
+    // Обробник розміру пензля
+    const brushSizeInput = document.getElementById('brushSize');
+    brushSizeInput.addEventListener('input', function() {
+        currentBrushSize = parseInt(this.value);
+        document.getElementById('brushSizeValue').textContent = this.value;
+    });
+
+    function saveState() {
+        history = history.slice(0, historyIndex + 1);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        history.push(imageData);
+        historyIndex = history.length - 1;
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            ctx.putImageData(history[historyIndex], 0, 0);
+        }
+    }
+
+    function redo() {
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+            ctx.putImageData(history[historyIndex], 0, 0);
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
+        } else if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+            e.preventDefault();
+            redo();
+        } else if (e.key === 'Shift' && !isShiftPressed) { // Перевіряємо, що Shift ще не був натиснутий
+            isShiftPressed = true;
+            redrawCanvasWithLabels();
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift' && isShiftPressed) { // Перевіряємо, що Shift був натиснутий
+            isShiftPressed = false;
+            redrawCanvas();
+        }
+    });
+
+    canvas.addEventListener("mousedown", (e) => {
+        if (!canDraw) return;
+        if (tool === "draw") {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+            saveState();
+        } else if (tool === "points") {
+            currentPoints.push({ x: e.offsetX, y: e.offsetY });
+            redrawCanvas();
+        }
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+        if (!canDraw) return;
+        if (!isDrawing || tool !== 'draw') return;
+
+        ctx.beginPath();
+        ctx.strokeStyle = currentTexture;
+        ctx.lineWidth = currentBrushSize;
+        ctx.lineCap = 'round';
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+
+    canvas.addEventListener("mouseup", () => {
+        if (!canDraw) return;
+        isDrawing = false;
+        saveState();
+    });
+
+    canvas.addEventListener("mouseout", () => isDrawing = false);
+
+    function applyFigure() {
+        if (currentPoints.length > 1) {
+            allFigures.push({ points: [...currentPoints], fill: null });
+            currentFigureIndex = allFigures.length - 1;
+            currentPoints = [];
+            fillModal.classList.add('visible');
+        }
+    }
+
+    function drawCurrentFigure() {
+        if (currentPoints.length === 0) return;
+
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+
+        for (let point of currentPoints) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(currentPoints[0].x, currentPoints[0].y);
+        for (let i = 1; i < currentPoints.length; i++) {
+            ctx.lineTo(currentPoints[i].x, currentPoints[i].y);
+        }
+
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function drawAllFigures() {
+        for (let figure of allFigures) {
+            if (figure.fill) {
+                ctx.fillStyle = figure.fill;
+                ctx.beginPath();
+                ctx.moveTo(figure.points[0].x, figure.points[0].y);
+                for (let i = 1; i < figure.points.length; i++) {
+                    ctx.lineTo(figure.points[i].x, figure.points[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.strokeStyle = "transparent";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(figure.points[0].x, figure.points[0].y);
+            for (let i = 1; i < figure.points.length; i++) {
+                ctx.lineTo(figure.points[i].x, figure.points[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+    }
+
+    function redrawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        /*if (loadedBackgroundImage) {
+            // Малюємо фон з масштабуванням
+            ctx.drawImage(
+                loadedBackgroundImage,
+                0, 0,
+                loadedBackgroundImage.width, loadedBackgroundImage.height,
+                0, 0,
+                canvas.width, canvas.height
+            );
+        }*/
+        drawAllFigures();
+        drawCurrentFigure();
+        drawAllFlowers();
+        drawAllBuildings();
+        drawAllTrees();
+        drawAllVegetables();
+    }
+
+    function redrawCanvasWithLabels() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        /*if (loadedBackgroundImage) {
+            ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
+        }*/
+        drawAllFigures();
+        drawCurrentFigure();
+        drawAllFlowersWithLabels();
+        drawAllBuildingsWithLabels();
+        drawAllTreesWithLabels();
+        drawAllVegetablesWithLabels();
+    }
+
+    function applyFill() {
+        const fillType = document.getElementById('fillTextureSelect').value;
+        if (fillType === 'none') {
+            allFigures[currentFigureIndex].fill = null;
+            allFigures[currentFigureIndex].fillType = null;
+        } else {
+            allFigures[currentFigureIndex].fill = createTexture(fillType);
+            allFigures[currentFigureIndex].fillType = fillType;
+        }
+        fillModal.classList.remove('visible');
+        saveState();
+        redrawCanvas();
+    }
+
+    function cancelFill() {
+        fillModal.classList.remove('visible');
+        redrawCanvas();
+    }
+
+    async function handleSaveMap() {
+        const user_id = await fetchUserData();
+        try {
+            if(first_map === true){
+                await saveMap();
+                showAlert("Мапа збережена!");
+            }
+            else{
+                await updateMap();
+                saveState();
+                showAlert("Мапа збережена!");
+            }
+        } catch (error) {
+            console.error("Помилка при збереженні мапи:", error);
+            showAlert("Сталася помилка при збереженні мапи.");
+        }
+    }
+
+    async function checkMap(user_id) {
+        const response = await fetch(`/map/check-map/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Author: user_id,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Статус помилки: ${response.status}`);
+        }
+        const first_map = await response.json();
+        return first_map.exists;
+    }
+
+    async function saveMap() {
+        const user_id = await fetchUserData();
+        // Збираємо всі дані для збереження
+        const mapData = {
+            canvasImage: canvas.toDataURL(),
+            flowers: flowersOnCanvas,
+            buildings: buildingsOnCanvas,
+            trees: treesOnCanvas,
+            vegetables: vegetablesOnCanvas,
+            figures: allFigures
+        };
+
+        const response = await fetch(`/map/save-interactive-map/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Content: mapData, // Серіалізуємо всі дані в JSON
+                Author: user_id,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Статус помилки: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Мапа збережена:", result);
+        return result;
+    }
+
+    async function updateMap() {
+        // Збираємо всі дані для оновлення
+        const mapData = {
+            canvasImage: canvas.toDataURL(),
+            flowers: flowersOnCanvas,
+            buildings: buildingsOnCanvas,
+            trees: treesOnCanvas,
+            vegetables: vegetablesOnCanvas,
+            figures: allFigures
+        };
+
+        const user_id = await fetchUserData();
+
+        const response = await fetch(`/map/update-interactive-map/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Content: mapData, // Серіалізуємо всі дані в JSON
+                Author: user_id,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Статус помилки: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Мапа оновлена:", result);
+        return result;
+    }
+
+
+    // Квітки
+    let flowerImage = new Image();
+    let allFlowers = [];
+    let flowersOnCanvas = [];
+    let pendingFlowerPosition = null;
+    const tooltip = document.getElementById("flowerTooltip");
+    const flowerModal = document.getElementById("flowerModal");
+    const flowerTypeSelect = document.getElementById("flowerTypeSelect");
+
+    const flowerImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/3/d059944f4fa40714.png";
+    flowerImage.src = flowerImageURL;
+
+    function drawFlowerImage(x, y, name) {
+        if (!flowerImage.complete || flowerImage.naturalWidth === 0) {
+            console.error("⚠️ Зображення квітки ще не завантажено або пошкоджене!");
+            return;
+        }
+        const size = 50;
+        ctx.drawImage(flowerImage, x - size / 2, y - size / 2, size, size);
+        flowersOnCanvas.push({ x, y, size, name });
+        console.log(`🌸 Квітка "${name}" додана в (${x}, ${y})`);
+    }
+
+    function drawAllFlowers() {
+        flowersOnCanvas.forEach(flower => {
+            ctx.drawImage(flowerImage, flower.x - flower.size/2, flower.y - flower.size/2, flower.size, flower.size);
+        });
+    }
+
+    function drawAllFlowersWithLabels() {
+        flowersOnCanvas.forEach(flower => {
+            ctx.drawImage(flowerImage, flower.x - flower.size/2, flower.y - flower.size/2, flower.size, flower.size);
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText(flower.name, flower.x, flower.y - flower.size/2 - 5);
+        });
+    }
+
+    canvas.addEventListener("click", (e) => {
+        if (!canDraw) return;
+        if (tool === "flower") {
+            loadFlowerOptions();
+            pendingFlowerPosition = { x: e.offsetX, y: e.offsetY };
+            flowerModal.classList.add("visible");
+        } else if (tool === "building") {
+            pendingBuildingPosition = { x: e.offsetX, y: e.offsetY };
+            showBuildingModal();
+        } else if (tool === "tree") {
+            loadTreeOptions();
+            pendingTreePosition = { x: e.offsetX, y: e.offsetY };
+            treeModal.classList.add("visible");
+        } else if (tool === "vegetable") {
+            loadVegetableOptions();
+            pendingVegetablePosition = { x: e.offsetX, y: e.offsetY };
+            vegetableModal.classList.add("visible");
+        }
+    });
+
+    function confirmFlower() {
+        const selectedFlower = flowerTypeSelect.value.trim();
+
+        if (!selectedFlower) {
+            showAlert("❌ Будь ласка, виберіть сорт квітки перед додаванням!");
+            return;
+        }
+
+        if (pendingFlowerPosition) {
+            const selectedFlowerName = flowerTypeSelect.value;
+            drawFlowerImage(pendingFlowerPosition.x, pendingFlowerPosition.y, selectedFlowerName);
+            pendingFlowerPosition = null;
+        }
+
+        flowerModal.classList.remove("visible");
+    }
+
+    function cancelFlower() {
+        flowerModal.classList.remove("visible");
+        pendingFlowerPosition = null;
+    }
+
+    async function loadFlowerOptions() {
+        try {
+            const response = await fetch("/api/get_sorts/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRFToken': getCookie('csrftoken'),
+                 },
+                body: JSON.stringify({ category: "рослини" })
+            });
+
+            if (!response.ok) throw new Error(`Помилка при запиті: ${response.status}`);
+
+            const data = await response.json();
+            console.log("🌿 Отримані квіти:", data);
+
+            allFlowers = data;
+            updateFlowerList(data);
+
+        } catch (error) {
+            console.error("❌ Помилка API:", error);
+        }
+    }
+
+    function updateFlowerList(flowers) {
+        const flowerSelect = document.getElementById("flowerTypeSelect");
+        flowerSelect.innerHTML = "";
+
+        flowers.forEach(flowerName => {
+            const option = document.createElement("option");
+            option.value = flowerName;
+            option.textContent = flowerName;
+            flowerSelect.appendChild(option);
+        });
+    }
+
+    function filterFlowers() {
+        const searchValue = document.getElementById("flowerSearch").value.toLowerCase();
+        const filteredFlowers = allFlowers.filter(flower => flower.toLowerCase().includes(searchValue));
+        updateFlowerList(filteredFlowers);
+    }
+
+    // === ОВОЧІ ===
+    let vegetableImage = new Image();
+    let allVegetables = [];
+    let vegetablesOnCanvas = [];
+    let pendingVegatablePosition = null;
+
+    const vegetableModal = document.getElementById("vegetableModal");
+    const vegetableTypeSelect = document.getElementById("vegetableTypeSelect");
+    const vegetableSortSelect = document.getElementById("vegetableSortSelect");
+
+    const vegetableImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%BE%D0%B2%D0%BE%D1%87.png";
+    vegetableImage.src = vegetableImageURL;
+
+    // Відкриваємо модалку при кліку на canvas
+    canvas.addEventListener("click", (e) => {
+        if (!canDraw) return;
+        if (tool === "vegetable") {
+            pendingVegetablePosition = { x: e.offsetX, y: e.offsetY };
+            loadVegetableOptions();
+            vegetableModal.classList.add("visible");
+        }
+    });
+
+    // Завантаження овочів та їх сортів
+    async function loadVegetableOptions() {
+        try {
+            const response = await fetch("/map/get_vegetable_sorts/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ category: "овочі" })
+            });
+
+            if (!response.ok) throw new Error(`Помилка при запиті: ${response.status}`);
+
+            const data = await response.json();
+            console.log(" Отримані овочі:", data);
+
+            allVegetables = data;
+            updateVegetableTypeSelect(allVegetables,1);
+
+        } catch (error) {
+            console.error("❌ Помилка при завантаженні овочів:", error);
+        }
+    }
+
+    // Оновлення списку дерев
+    function updateVegetableTypeSelect(matchedVegetables=[], saveSorts=0) {
+        vegetableTypeSelect.innerHTML = ""; // Очищаємо список дерев
+        //console.log(matchedTrees)
+        if (!matchedVegetables || !Array.isArray(matchedVegetables) || matchedVegetables.length === 0) {
+            console.log("Немає овочів для відображення");
+            return;
+        }
+        matchedVegetables.forEach(vegetable => {
+            const option = document.createElement("option");
+            option.value = vegetable.idVeg;  // Використовуємо id дерева як значення
+            option.textContent = vegetable.Name;  // Назва дерева як текст
+            vegetableTypeSelect.appendChild(option);
+        });
+
+        // Якщо знайдено дерево, вибираємо перше дерево зі списку
+        if (matchedVegetables.length > 0) {
+            vegetableTypeSelect.value = matchedVegetables[0].idVeg;
+            if(saveSorts === 1) onVegetableTypeChange();  // Оновлюємо сорти для цього дерева
+        }
+    }
+    let matchedVegetables = [];
+    let matchedVegetableSorts = [];
+    function filterVegetables() {
+        const searchValue = document.getElementById("vegetableSearch").value.toLowerCase();
+        matchedVegetables = [];
+        matchedVegetableSorts = [];
+        // Якщо пошуковий запит порожній, показуємо всі дерева
+        if (!searchValue.trim()) {
+            // Показуємо всі дерева
+            matchedVegetables = [...allVegetables];
+            updateVegetableTypeSelect(matchedVegetables); // Оновлюємо список дерев
+            return;
+        }
+        // Проходимо по кожному дереву і фільтруємо сорти
+        for (const vegetable of allVegetables) {
+            const vegetableNameMatch = vegetable.Name.toLowerCase().includes(searchValue);
+            const matchingSorts = vegetable.sortsVeg.filter(sort =>
+                sort.Name.toLowerCase().includes(searchValue)
+            );
+
+            if (vegetableNameMatch || matchingSorts.length > 0) {
+                // Додаємо дерево до списку, якщо є збіг по назві або сортах
+                matchedVegetables.push({ ...vegetable });
+            }
+
+            if (matchingSorts.length > 0) {
+                matchedVegetableSorts.push(...matchingSorts);
+            }
+        }
+        console.log("vegetables with name: ",matchedVegetables)
+
+        // Оновлюємо список сортів
+        vegetableSortSelect.innerHTML = "";
+        if (matchedVegetableSorts.length > 0) {
+            matchedVegetableSorts.forEach(sort => {
+                const option = document.createElement("option");
+                option.value = sort.idSort;
+                option.textContent = sort.Name;
+                vegetableSortSelect.appendChild(option);
+            });
+
+            // Автоматично вибираємо перший сорт у списку
+            if (matchedVegetableSorts.length > 0) {
+                vegetableSortSelect.value = matchedVegetableSorts[0].idSort;
+            }
+
+            // Знаходимо дерево, яке містить цей сорт
+            const vegetableWithSort = allVegetables.find(vegetable =>
+                vegetable.sortsVeg.some(sort => sort.idSort === matchedVegetableSorts[0].idSort)
+            );
+            matchedVegetableSorts.push(vegetableWithSort);
+            // Оновлюємо список дерев
+            vegetableTypeSelect.innerHTML = "";
+            if (vegetableWithSort) {
+                const option = document.createElement("option");
+                option.value = vegetableWithSort.idVeg;
+                option.textContent = vegetableWithSort.Name;
+                vegetableTypeSelect.appendChild(option);
+                vegetableTypeSelect.value = vegetableWithSort.idVeg;
+            }
+        } else if (matchedVegetables.length > 0) {
+            // Якщо немає збігів у сортах, але є дерева
+            const selectedVegetable = matchedVegetables[0];
+            vegetableTypeSelect.value = selectedVegetable.idVeg;
+            updateVegetableTypeSelect(matchedVegetables);
+            onVegetableTypeChange(); // Оновлюємо сорти для цього дерева
+        }
+    }
+
+    // Коли обирається сорт
+    vegetableSortSelect.addEventListener("change", function() {
+        const selectedSortId = vegetableSortSelect.value;
+        const selectedSort = matchedVegetableSorts.find(sort => sort.idSort == selectedSortId);
+
+        if (selectedSort) {
+            // Знайдемо всі дерева, що містять цей сорт
+            const vegetablesWithSort = allVegetables.filter(vegetable =>
+                vegetable.sortsVeg.some(sort => sort.idSort === selectedSort.idSort)
+            );
+            // Оновимо список дерев
+            updateVegetableTypeSelect(vegetablesWithSort);
+        }
+    });
+    // Оновлення списку сорту в залежності від вибраного дерева
+    function onVegetableTypeChange() {
+        const selectedVegetableId = vegetableTypeSelect.value;  // Отримуємо id вибраного дерева
+        const selectedVegetable = allVegetables.find(vegetable => vegetable.idVeg == selectedVegetableId);  // Знаходимо дерево по id
+        //console.log("selectedVegetable: ", selectedVegetable)
+        const vegetableSortSelect = document.getElementById("vegetableSortSelect");
+        vegetableSortSelect.innerHTML = ""; // Очищаємо селект сорту
+        if (!selectedVegetable || !selectedVegetable.sortsVeg || !Array.isArray(selectedVegetable.sortsVeg)) {
+            console.log("Немає сортів для цього овоча");
+            return;
+        }
+        if (selectedVegetable && selectedVegetable.sortsVeg) {  // Перевіряємо, чи є сорти для дерева
+            selectedVegetable.sortsVeg.forEach(sort => {
+                const option = document.createElement("option");
+                option.value = sort.idSort;  // Значення сорту (id)
+                option.textContent = sort.Name;  // Назва сорту
+                vegetableSortSelect.appendChild(option);  // Додаємо опцію до селекту
+            });
+        } else {
+            console.log("Немає сортів для цього овоча.");
+        }
+    }
+    // Підтвердження вибору овоча
+    function confirmVegetable() {
+        document.getElementById("vegetableSearch").value = "";
+        const selectedVegetableId = vegetableTypeSelect.value;
+        const selectedSortVegId = vegetableSortSelect.value;
+
+        if (!selectedVegetableId || !selectedSortVegId) {
+            showAlert("❌ Будь ласка, оберіть овоч та сорт.");
+            return;
+        }
+
+        // Знаходимо вибраний овоч і сорт
+        const selectedVegetable = allVegetables.find(vegetable => vegetable.idVeg == selectedVegetableId);
+        const selectedSortVeg = selectedVegetable.sortsVeg.find(sortVeg => sortVeg.idSort == selectedSortVegId);
+
+        if (pendingVegetablePosition) {
+            drawVegetableImage(
+                pendingVegetablePosition.x,
+                pendingVegetablePosition.y,
+                selectedVegetable.Name,
+                selectedSortVeg.Name,
+                selectedVegetable.idVeg,
+                selectedSortVeg.idSort
+            );
+            pendingVegetablePosition = null;
+        }
+
+        vegetableModal.classList.remove("visible");
+    }
+
+    // Скасування вибору овоча
+    function cancelVegetable() {
+        vegetableModal.classList.remove("visible");
+        pendingVegetablePosition = null;
+    }
+
+    // Малювання овоча
+    function drawVegetableImage(x, y, vegetableName, sortVegName, vegetableId, sortVegId) {
+        if (!vegetableImage.complete || vegetableImage.naturalWidth === 0) {
+            console.error("⚠️ Зображення овоча ще не завантажено або пошкоджене!");
+            return;
+        }
+        const size = 50;
+        ctx.drawImage(vegetableImage, x - size / 2, y - size / 2, size, size);
+        vegetablesOnCanvas.push({
+            x,
+            y,
+            size,
+            vegetableName,
+            sortVegName,
+            vegetableId,
+            sortVegId
+        });
+        console.log(`овоч "${vegetableName}" (${sortVegName}) додано в (${x}, ${y})`);
+    }
+
+    // Малювання всіх овочів на canvas
+    function drawAllVegetables() {
+        vegetablesOnCanvas.forEach(vegetable => {
+            ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
+        });
+    }
+
+    // Малювання овоча із написами
+    function drawAllVegetablesWithLabels() {
+        vegetablesOnCanvas.forEach(vegetable => {
+            ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${vegetable.vegetableName} (${vegetable.sortVegName})`, vegetable.x, vegetable.y - vegetable.size / 2 - 5);
+        });
+    }
+    // === ДЕРЕВА ===
+    let treeImage = new Image();
+    let allTrees = []; // [{ name: "Яблуня", sorts: ["Айдаред", "Гала"] }, ...]
+    let treesOnCanvas = [];
+    let pendingTreePosition = null;
+
+    const treeModal = document.getElementById("treeModal");
+    const treeTypeSelect = document.getElementById("treeTypeSelect");
+    const treeSortSelect = document.getElementById("treeSortSelect");
+
+    const treeImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%94%D0%B5%D1%80%D0%B5%D0%B2%D0%BE.png";
+    treeImage.src = treeImageURL;
+
+    function getTreeImageByType(treeName) {
+        const lowerName = treeName.toLowerCase();
+
+        // Визначаємо зображення за ключовими словами в назві
+        if (lowerName.includes('яблуня')) {
+            return 'https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%AF%D0%B1%D0%BB%D1%83%D0%BD%D1%8F.png'; // Посилання для всіх яблунь
+        }
+        else if (lowerName.includes('груша')) {
+            return 'https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%93%D1%80%D1%83%D1%88%D0%B0.png'; // Посилання для всіх груш
+        }
+        else if (lowerName.includes('слива')) {
+            return 'https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%A1%D0%BB%D0%B8%D0%B2%D0%B0.png'; // Посилання для всіх слив
+        }
+        else {
+            return treeImageURL; // Стандартне фото для інших дерев
+        }
+    }
+    // Відкриваємо модалку при кліку на canvas
+    canvas.addEventListener("click", (e) => {
+        if (!canDraw) return;
+        if (tool === "tree") {
+            pendingTreePosition = { x: e.offsetX, y: e.offsetY };
+            loadTreeOptions();
+            treeModal.classList.add("visible");
+        }
+    });
+
+    // Завантаження дерев та їх сортів
+    async function loadTreeOptions() {
+        try {
+            const response = await fetch("/map/get_tree_sorts/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ category: "дерева" })
+            });
+
+            if (!response.ok) throw new Error(`Помилка при запиті: ${response.status}`);
+
+            const data = await response.json();
+            //console.log("🌳 Отримані дерева:", data);
+
+            allTrees = data; // Очікується формат [{ name: "Яблуня", sorts: ["Айдаред", "Гала"] }, ...]
+            updateTreeTypeSelect(allTrees, 1);
+
+        } catch (error) {
+            console.error("❌ Помилка при завантаженні дерев:", error);
+        }
+    }
+
+    // Оновлення списку дерев
+    function updateTreeTypeSelect(matchedTrees=[], saveSorts=0) {
+        treeTypeSelect.innerHTML = ""; // Очищаємо список дерев
+        //console.log(matchedTrees)
+        if (!matchedTrees || !Array.isArray(matchedTrees) || matchedTrees.length === 0) {
+            console.log("Немає дерев для відображення");
+            return;
+        }
+        matchedTrees.forEach(tree => {
+            const option = document.createElement("option");
+            option.value = tree.id;  // Використовуємо id дерева як значення
+            option.textContent = tree.name;  // Назва дерева як текст
+            treeTypeSelect.appendChild(option);
+        });
+
+        // Якщо знайдено дерево, вибираємо перше дерево зі списку
+        if (matchedTrees.length > 0) {
+            treeTypeSelect.value = matchedTrees[0].id;
+            if( saveSorts === 1 ) onTreeTypeChange();  // Оновлюємо сорти для цього дерева
+        }
+    }
+    let matchedTrees = [];
+    let matchedTreeSorts = [];
+    function filterTrees() {
+        const searchValue = document.getElementById("treeSearch").value.toLowerCase();
+        matchedTrees = [];
+        matchedTreeSorts = [];
+        // Якщо пошуковий запит порожній, показуємо всі дерева
+        if (!searchValue.trim()) {
+            // Показуємо всі дерева
+            matchedTrees = [...allTrees];
+            updateTreeTypeSelect(matchedTrees); // Оновлюємо список дерев
+            return;
+        }
+        // Проходимо по кожному дереву і фільтруємо сорти
+        for (const tree of allTrees) {
+            const treeNameMatch = tree.name.toLowerCase().includes(searchValue);
+            const matchingSorts = tree.sorts.filter(sort =>
+                sort.sort.toLowerCase().includes(searchValue)
+            );
+
+            if (treeNameMatch || matchingSorts.length > 0) {
+                // Додаємо дерево до списку, якщо є збіг по назві або сортах
+                matchedTrees.push({ ...tree });
+            }
+
+            if (matchingSorts.length > 0) {
+                matchedTreeSorts.push(...matchingSorts);
+            }
+        }
+
+
+        // Оновлюємо список сортів
+        treeSortSelect.innerHTML = "";
+        if (matchedTreeSorts.length > 0) {
+            matchedTreeSorts.forEach(sort => {
+                const option = document.createElement("option");
+                option.value = sort.id;
+                option.textContent = sort.sort;
+                treeSortSelect.appendChild(option);
+            });
+
+            // Автоматично вибираємо перший сорт у списку
+            if (matchedTreeSorts.length > 0) {
+                treeSortSelect.value = matchedTreeSorts[0].id;
+            }
+
+            // Знаходимо дерево, яке містить цей сорт
+            const treeWithSort = allTrees.find(tree =>
+                tree.sorts.some(sort => sort.id === matchedTreeSorts[0].id)
+            );
+            matchedTreeSorts.push(treeWithSort);
+            // Оновлюємо список дерев
+            treeTypeSelect.innerHTML = "";
+            if (treeWithSort) {
+                const option = document.createElement("option");
+                option.value = treeWithSort.id;
+                option.textContent = treeWithSort.name;
+                treeTypeSelect.appendChild(option);
+                treeTypeSelect.value = treeWithSort.id;
+            }
+        } else if (matchedTrees.length > 0) {
+            // Якщо немає збігів у сортах, але є дерева
+            const selectedTree = matchedTrees[0];
+            treeTypeSelect.value = selectedTree.id;
+            updateTreeTypeSelect(matchedTrees);
+            onTreeTypeChange(); // Оновлюємо сорти для цього дерева
+        }
+    }
+
+    // Коли обирається сорт
+    treeSortSelect.addEventListener("change", function() {
+        const selectedSortId = treeSortSelect.value;
+        const selectedSort = matchedTreeSorts.find(sort => sort.id == selectedSortId);
+
+        if (selectedSort) {
+            // Знайдемо всі дерева, що містять цей сорт
+            const treesWithSort = allTrees.filter(tree =>
+                tree.sorts.some(sort => sort.id === selectedSort.id)
+            );
+            // Оновимо список дерев
+            updateTreeTypeSelect(treesWithSort);
+        }
+    });
+    // Оновлення списку сорту в залежності від вибраного дерева
+    function onTreeTypeChange() {
+        const selectedTreeId = treeTypeSelect.value;  // Отримуємо id вибраного дерева
+        const selectedTree = allTrees.find(tree => tree.id == selectedTreeId);  // Знаходимо дерево по id
+        const treeSortSelect = document.getElementById("treeSortSelect");
+        treeSortSelect.innerHTML = ""; // Очищаємо селект сорту
+        if (!selectedTree || !selectedTree.sorts || !Array.isArray(selectedTree.sorts)) {
+            console.log("Немає сортів для цього дерева");
+            return;
+        }
+        if (selectedTree && selectedTree.sorts) {  // Перевіряємо, чи є сорти для дерева
+            selectedTree.sorts.forEach(sort => {
+                const option = document.createElement("option");
+                option.value = sort.id;  // Значення сорту (id)
+                option.textContent = sort.sort;  // Назва сорту
+                treeSortSelect.appendChild(option);  // Додаємо опцію до селекту
+            });
+        } else {
+            console.log("Немає сортів для цього дерева.");
+        }
+    }
+
+    // Підтвердження вибору дерева
+    function confirmTree() {
+        document.getElementById("treeSearch").value = "";
+        const selectedTreeId = treeTypeSelect.value;
+        const selectedSortId = treeSortSelect.value;
+
+        if (!selectedTreeId || !selectedSortId) {
+            showAlert("❌ Будь ласка, оберіть дерево та сорт.");
+            return;
+        }
+
+        // Знаходимо вибране дерево і сорт
+        const selectedTree = allTrees.find(tree => tree.id == selectedTreeId);
+        if (!selectedTree) {
+            alert("❌ Не знайдено обране дерево. Спробуйте ще раз.");
+            return;
+        }
+        const selectedSort = selectedTree.sorts.find(sort => sort.id == selectedSortId);
+        if (!selectedSort) {
+            alert("❌ Не знайдено обраний сорт. Спробуйте ще раз.");
+            return;
+        }
+
+        if (pendingTreePosition) {
+            drawTreeImage(
+                pendingTreePosition.x,
+                pendingTreePosition.y,
+                selectedTree.name,
+                selectedSort.sort,
+                selectedTree.id,
+                selectedSort.id
+            );
+            pendingTreePosition = null;
+        }
+
+        treeModal.classList.remove("visible");
+    }
+
+    // Скасування вибору дерева
+    function cancelTree() {
+        treeModal.classList.remove("visible");
+        pendingTreePosition = null;
+    }
+
+    // Малювання дерева
+    function drawTreeImage(x, y, treeName, sortName, treeId, sortId) {
+        const treeImageToDraw = new Image();
+        treeImageToDraw.src = getTreeImageByType(treeName);
+
+        treeImageToDraw.onload = function() {
+            const size = 50;
+            ctx.drawImage(treeImageToDraw, x - size / 2, y - size / 2, size, size);
+            treesOnCanvas.push({
+                x,
+                y,
+                size,
+                treeName,
+                sortName,
+                treeId,
+                sortId,
+                imageUrl: treeImageToDraw.src // Зберігаємо URL для подальшого використання
+            });
+            //console.log(`🌳 Дерево "${treeName}" (${sortName}) додано в (${x}, ${y})`);
+        };
+
+        treeImageToDraw.onerror = function() {
+            console.error("⚠️ Помилка завантаження зображення дерева!");
+            // Використовуємо стандартне зображення у разі помилки
+            const size = 50;
+            ctx.drawImage(treeImage, x - size / 2, y - size / 2, size, size);
+            treesOnCanvas.push({
+                x,
+                y,
+                size,
+                treeName,
+                sortName,
+                treeId,
+                sortId,
+                imageUrl: treeImageURL
+            });
+        };
+    }
+
+    // Малювання всіх дерев на canvas
+    function drawAllTrees() {
+        treesOnCanvas.forEach(tree => {
+            const img = new Image();
+            img.src = tree.imageUrl || treeImageURL;
+            img.onload = function() {
+                ctx.drawImage(img, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
+            };
+            img.onerror = function() {
+                ctx.drawImage(treeImage, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
+            };
+        });
+    }
+    // Малювання всіх дерев з написами
+    function drawAllTreesWithLabels() {
+        treesOnCanvas.forEach(tree => {
+            const img = new Image();
+            img.src = tree.imageUrl || treeImageURL;
+            img.onload = function() {
+                ctx.drawImage(img, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
+                ctx.font = '12px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${tree.treeName} (${tree.sortName})`, tree.x, tree.y - tree.size / 2 - 5);
+            };
+            img.onerror = function() {
+                ctx.drawImage(treeImage, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
+                ctx.font = '12px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${tree.treeName} (${tree.sortName})`, tree.x, tree.y - tree.size / 2 - 5);
+            };
+        });
+    }
+
+    // Будівлі
+    let buildingImage = new Image();
+    let buildingsOnCanvas = [];
+    let pendingBuildingPosition = null;
+    const buildingModal = document.getElementById("buildingModal");
+    const buildingImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/2/Untitled161_20250407161917_sZ0jeM4.webp";
+    buildingImage.src = buildingImageURL;
+
+    function drawBuildingImage(x, y, name) {
+        if (!buildingImage.complete || buildingImage.naturalWidth === 0) {
+            console.error("⚠️ Зображення будівлі ще не завантажено або пошкоджене!");
+            return;
+        }
+        const size = 60;
+        ctx.drawImage(buildingImage, x - size / 2, y - size / 2, size, size);
+        buildingsOnCanvas.push({ x, y, size, name });
+        console.log(`🏠 Будівля "${name}" додана в (${x}, ${y})`);
+    }
+
+    function drawAllBuildings() {
+        buildingsOnCanvas.forEach(building => {
+            ctx.drawImage(buildingImage, building.x - building.size/2, building.y - building.size/2, building.size, building.size);
+        });
+    }
+
+    function drawAllBuildingsWithLabels() {
+        buildingsOnCanvas.forEach(building => {
+            ctx.drawImage(buildingImage, building.x - building.size/2, building.y - building.size/2, building.size, building.size);
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText(building.name, building.x, building.y - building.size/2 - 5);
+        });
+    }
+
+    function showBuildingModal() {
+        buildingModal.classList.add("visible");
+        document.getElementById("buildingNameInput").value = "";
+        document.getElementById("buildingNameInput").focus();
+    }
+
+    function confirmBuilding() {
+        const buildingName = document.getElementById("buildingNameInput").value.trim();
+
+        if (!buildingName) {
+            showAlert("❌ Будь ласка, введіть назву будівлі!");
+            return;
+        }
+
+        if (pendingBuildingPosition) {
+            drawBuildingImage(pendingBuildingPosition.x, pendingBuildingPosition.y, buildingName);
+            pendingBuildingPosition = null;
+        }
+
+        buildingModal.classList.remove("visible");
+    }
+
+    function cancelBuilding() {
+        buildingModal.classList.remove("visible");
+        pendingBuildingPosition = null;
+    }
+
+    // Перевірка наведення на об'єкти
+    function checkHoverObjects(event) {
+        const mouseX = event.offsetX;
+        const mouseY = event.offsetY;
+        let found = false;
+
+        // Перевіряємо квітки
+        for (let flower of flowersOnCanvas) {
+            const distance = Math.sqrt((mouseX - flower.x) ** 2 + (mouseY - flower.y) ** 2);
+            if (distance < flower.size / 2) {
+                tooltip.textContent = flower.name;
+                tooltip.style.display = "block";
+                positionTooltip(mouseX, mouseY);
+                found = true;
+                break;
+            }
+        }
+
+        // Якщо не знайшли квітку, перевіряємо будівлі
+        if (!found) {
+            for (let building of buildingsOnCanvas) {
+                const distance = Math.sqrt((mouseX - building.x) ** 2 + (mouseY - building.y) ** 2);
+                if (distance < building.size / 2) {
+                    tooltip.textContent = building.name;
+                    tooltip.style.display = "block";
+                    positionTooltip(mouseX, mouseY);
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            for (let tree of treesOnCanvas) {
+                const distance = Math.sqrt((mouseX - tree.x) ** 2 + (mouseY - tree.y) ** 2);
+                if (distance < tree.size / 2) {
+                    tooltip.textContent = `${tree.treeName} (${tree.sortName})`; // Показуємо назву і сорт
+                    tooltip.style.display = "block";
+                    positionTooltip(mouseX, mouseY);
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            for (let vegetable of vegetablesOnCanvas) {
+                const distance = Math.sqrt((mouseX - vegetable.x) ** 2 + (mouseY - vegetable.y) ** 2);
+                if (distance < vegetable.size / 2) {
+                    tooltip.textContent = `${vegetable.vegetableName} (${vegetable.sortVegName})`; // Показуємо назву і сорт
+                    tooltip.style.display = "block";
+                    positionTooltip(mouseX, mouseY);
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            tooltip.style.display = "none";
+        }
+    }
+
+    function positionTooltip(mouseX, mouseY) {
+        const tooltipWidth = tooltip.offsetWidth;
+        const tooltipHeight = tooltip.offsetHeight;
+
+        let tooltipLeft = mouseX + 10;
+        let tooltipTop = mouseY + 10;
+
+        if (tooltipLeft + tooltipWidth > canvas.width) {
+            tooltipLeft = mouseX - tooltipWidth - 10;
+        }
+        if (tooltipTop + tooltipHeight > canvas.height) {
+            tooltipTop = mouseY - tooltipHeight - 10;
+        }
+
+        tooltip.style.left = `${tooltipLeft}px`;
+        tooltip.style.top = `${tooltipTop}px`;
+    }
+
+    canvas.addEventListener("mousemove", checkHoverObjects);
+</script>
+<script>
+    function showAlert(message) {
+        document.getElementById('customAlertMessage').textContent = message;
+        document.getElementById('customAlert').style.display = 'flex';
+    }
+
+    function closeAlert() {
+        document.getElementById('customAlert').style.display = 'none';
+    }
+</script>
+</body>
+</html>

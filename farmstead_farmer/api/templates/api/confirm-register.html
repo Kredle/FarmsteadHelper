@@ -11,9 +11,6 @@
     
 </head>
 <body>
-    
-
-    
     <!-- Хедер -->
     <header>    
     <div class="logo">
@@ -54,7 +51,13 @@
         </div>
     </div>
     
-    
+<div id="customAlert" style="display: none;">
+    <div id="customAlertBox">
+        <p id="customAlertMessage"></p>
+        <button onclick="closeAlert()">OK</button>
+    </div>
+</div>
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
@@ -93,6 +96,7 @@
                     `;
     
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
@@ -187,11 +191,11 @@
         <h1>Введіть OTP код</h1>
         <p>На вашу електронну пошту було надіслано код підтвердження. Введіть його, щоб завершити реєстрацію.</p>
         <form id="otp-form">
-            <input type="text" id="otp-code" placeholder="Введіть OTP код" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px;">
-            <button type="submit" style="width: 100%; padding: 10px; background-color: #333; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">Підтвердити</button>
+            <input type="text" id="otp-code" placeholder="Введіть OTP код" required>
+            <button type="submit">Підтвердити</button>
             <p id="error-message" class="error-message"></p>
         </form>
-        <a href="/homepage">Повернутися на головну</a>
+        <a href="/">Повернутися на головну</a>
     </div>
 
 
@@ -244,7 +248,7 @@
 
                 const registrationResult = await registrationResponse.json();
                 if (registrationResponse.ok) {
-                    alert('Реєстрацію завершено успішно!');
+                    showAlert('Реєстрацію завершено успішно!');
                     window.location.href = '/login/';
                 } else {
                     errorMessage.textContent = registrationResult.error || 'Помилка при завершенні реєстрації.';
@@ -257,6 +261,16 @@
             console.error(err);
         }
     });
+    </script>
+    <script>
+        function showAlert(message) {
+            document.getElementById('customAlertMessage').textContent = message;
+            document.getElementById('customAlert').style.display = 'flex';
+        }
+        
+        function closeAlert() {
+            document.getElementById('customAlert').style.display = 'none';
+        }
     </script>
 </body>
 </html>

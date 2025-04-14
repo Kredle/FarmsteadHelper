@@ -8,12 +8,12 @@
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
-    
+
 </head>
 <body>
 
 
-    
+
     <!-- Хедер -->
     <header>
     <div class="logo">
@@ -53,17 +53,17 @@
             <a href="/register">Реєстрація</a>
         </div>
     </div>
-    
-    
+
+
     <script>
 
     var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
+
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         const authContainer = document.querySelector('.auth');
         const sideMenuAuth = document.getElementById('side-menu-auth');
-    
+
         if (token) {
             fetch('/api/user-data/', {
                 method: 'POST',
@@ -91,17 +91,18 @@
                             <a href="#" id="logout-btn">Вихід</a>
                         </div>
                     `;
-    
+
                     sideMenuAuth.innerHTML = `
+                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
                         <a href="/profile/${data.username}">Профіль</a>
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                     `;
-    
+
                     document.getElementById('logout-btn').addEventListener('click', () => {
                         handleLogout();
                     });
-    
+
                     document.getElementById('side-menu-logout').addEventListener('click', () => {
                         handleLogout();
                     });
@@ -113,7 +114,7 @@
         } else {
             resetAuthState();
         }
-    
+
         function handleLogout() {
             fetch('/api/logout/', {
                 method: 'POST',
@@ -134,7 +135,7 @@
                 })
                 .catch(error => console.error('Помилка при виході:', error));
         }
-    
+
         function resetAuthState() {
             authContainer.innerHTML = `
                 <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
@@ -143,31 +144,31 @@
                     <a href="/register">Реєстрація</a>
                 </div>
             `;
-    
+
             sideMenuAuth.innerHTML = `
                 <a href="/login">Вхід</a>
                 <a href="/register">Реєстрація</a>
             `;
         }
     });
-    
+
     const hamburger = document.getElementById('hamburger');
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
     const auth = document.querySelector('.auth');
-    
+
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';
     });
-    
+
     closeMenu.addEventListener('click', () => {
         sideMenu.style.right = '-250px';
     });
-    
+
     function checkMenuVisibility() {
         const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
         if (window.innerWidth < 900 || isMobileDevice) {
             nav.style.display = 'none';
             auth.style.display = 'none';
@@ -178,7 +179,7 @@
             hamburger.style.display = 'none';
         }
     }
-    
+
     checkMenuVisibility();
     window.addEventListener('resize', checkMenuVisibility);
 
@@ -188,7 +189,7 @@
             searchInput.addEventListener('input', function(e) {
                 const query = this.value.trim();
                 searchResults.innerHTML = '';
-                
+
                 if (query.length < 2) {
                     searchResults.style.display = 'none';
                     return;
@@ -268,16 +269,21 @@
 
     <!-- Футер -->
     <footer>
-        <div class="legal-links">
-            <a href="https://drive.google.com/file/d/1kYJ7ulJFNFk_dDLPced_ToOEeX4Ocf4y/view?usp=sharing">Умови використання</a>
-            <span>|</span>
-            <a href="https://drive.google.com/file/d/1B56gHpLaAyReM2HP_MCrBmQKi1tTMROP/view?usp=sharing">Політика конфіденційності</a>
-            <span>|</span>
-            <a href="/feedback/">Форма зворотного зв’язку</a>
-        </div>
-        <div class="copyright">
-            &copy; 2024 FarmsteadHelper. Усі права захищено.
-        </div>
-    </footer>
+    <div class="legal-links">
+        <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+        <span>|</span>
+        <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+        <span>|</span>
+        <a href="/feedback/">Форма зворотного зв’язку</a>
+    </div>
+    <div class="copyright">
+        &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+    </div>
+</footer>
+
+<script>
+    document.getElementById("current-year").textContent = new Date().getFullYear();
+</script>
+
 </body>
 </html>

@@ -21,13 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-us7f2m(wghhp7%l-0&0l_l56#pa3!=9ijs!ph*aqj-gr+36_#h'
-
+ReCapcha_secret_key = '6Lct-rEqAAAAAIzeO0FW9UMFwbuveyCzBgavSTwj'
+ReCapcha_private_key = '6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd'
+IPinfo_token = '85dd0376e9af66'
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', "farmsteadhelper.pythonanywhere.com"]
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  
+    "http://localhost:3000",
+    "https://farmsteadhelper.pythonanywhere.com/"
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -36,7 +39,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'api/static',  
+    BASE_DIR / 'api/static',
 ]
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -50,7 +53,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'algowizzards.farmsteadhelper@gmail.com'
-EMAIL_HOST_PASSWORD = 'gmmt omxn kpcf fict' 
+EMAIL_HOST_PASSWORD = 'gmmt omxn kpcf fict'
 DEFAULT_FROM_EMAIL = 'algowizzards.feedback@gmail.com'
 
 
@@ -115,7 +118,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         #'rest_framework.permissions.IsAuthenticated',
     ],
-    
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '50000/day',
+        'anon': '50000/hour',
+    }
 }
 
 
@@ -132,11 +142,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'api.middleware.APIWhitelistMiddleware',
+    'api.middleware.GeoBlockMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",  # Додайте потрібні домени
     "http://localhost:8000",
+    "https://farmsteadhelper.pythonanywhere.com/",
 ]
 
 ROOT_URLCONF = 'farmstead_farmer.urls'
@@ -169,10 +182,10 @@ WSGI_APPLICATION = 'farmstead_farmer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'animals_db',
-        'USER': 'root',
+        'NAME': 'farmsteadhelper$default',
+        'USER': 'farmsteadhelper',
         'PASSWORD': 'yourpass_13',
-        'HOST': 'localhost',
+        'HOST': 'farmsteadhelper.mysql.pythonanywhere-services.com',
         'PORT': '3306',
     },
 }
@@ -223,8 +236,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 APP_DIRS=True
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend', 
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
-LOGIN_URL = '/login/' 
-LOGIN_REDIRECT_URL = '/' 
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'

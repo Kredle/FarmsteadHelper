@@ -1,9 +1,14 @@
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 from .models import Sort_tree, Sort_veg, Plants, Veg, Tree, Cutting, Planting, Fertilizer, Fertilizer_veg
 import json
 from django.shortcuts import render
+from rest_framework.throttling import UserRateThrottle
 
+class GetSortsAndDetailsTrottle(UserRateThrottle):
+    rate = '30/minute'
+
+@throttle_classes([GetSortsAndDetailsTrottle])
 @api_view(['POST'])
 def get_sorts(request):
     try:
@@ -30,6 +35,7 @@ def get_sorts(request):
 def calendar(request):
     return render(request, 'calendar.html')
 
+@throttle_classes([GetSortsAndDetailsTrottle])
 @api_view(['POST'])
 def get_sort_details(request):
     try:
@@ -79,8 +85,7 @@ def get_sort_details(request):
                     f"Fertilizer_date_To2_{i}": fertilizer.Fertilizer_date_To2
                 })
 
-        
-
+    
         
         elif category == "овочі":
             sort = Sort_veg.objects.filter(Name=sort_name).first()

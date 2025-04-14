@@ -23,11 +23,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-us7f2m(wghhp7%l-0&0l_l56#pa3!=9ijs!ph*aqj-gr+36_#h'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1' , 'farmsteadhelper.pythonanywhere.com']
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  
+    "http://localhost:3000",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -36,7 +36,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'api/static',  
+    BASE_DIR / 'api/static',
 ]
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -50,7 +50,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'algowizzards.feedback@gmail.com'
-EMAIL_HOST_PASSWORD = 'pxez grlq jfnk yuaw' 
+EMAIL_HOST_PASSWORD = 'pxez grlq jfnk yuaw'
 DEFAULT_FROM_EMAIL = 'algowizzards.feedback@gmail.com'
 
 
@@ -76,7 +76,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'api',
-    'feedback',
     'corsheaders',
     'animals',
     'trees',
@@ -153,10 +152,10 @@ WSGI_APPLICATION = 'farmstead_farmer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'animals_db',
-        'USER': 'root',
+        'NAME': 'farmsteadhelper$default',
+        'USER': 'farmsteadhelper',
         'PASSWORD': 'yourpass_13',
-        'HOST': 'localhost',
+        'HOST': 'farmsteadhelper.mysql.pythonanywhere-services.com',
         'PORT': '3306',
     },
 }
