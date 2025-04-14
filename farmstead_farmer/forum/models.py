@@ -34,6 +34,9 @@ class Comment(models.Model):
     Likes_list =models.JSONField(default=list, blank=True)
     Dislikes_list = models.JSONField(default=list, blank=True)
     ParentId = models.IntegerField(db_column='ParentId')
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('topic_detail', kwargs={'pk': self.Topics_id}) + f'#comment-{self.idComments}'
     class Meta:
         managed = False
         db_table = 'comments'
