@@ -378,7 +378,7 @@
                                          showAlert('Сесія закінчилася. Будь ласка, увійдіть знову.');
                                          window.location.href = '/login/';
                                      } else {
-                                         alert('Помилка: ' + (error.message || 'Не вдалося надіслати скаргу'));
+                                        showAlert('Помилка: ' + (error.message || 'Не вдалося надіслати скаргу'));
                                      }
                                  }
                              });
@@ -391,6 +391,146 @@
             </div>
         </div>
     </div>
+
+<!-- Модальне вікно для скарг -->
+<div id="commentReportModal" class="report-modal">
+    <div class="report-modal-content">
+        <h5>Поскаржитися на коментар</h5>
+        <div class="mb-3">
+            <label class="form-label">Причина:</label>
+            <select id="commentReportReason" class="form-select">
+                <option value="" disabled selected>Оберіть причину...</option>
+                <option value="Спам">Спам</option>
+                <option value="Образливий вміст">Образливий вміст</option>
+                <option value="Дискримінація">Дискримінація</option>
+                <option value="Інше">Інша причина</option>
+            </select>
+        </div>
+        <div id="commentCustomReason" class="mb-3" style="display: none;">
+            <label class="form-label">Деталі:</label>
+            <textarea id="commentReportDetails" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button id="commentReportCancel" class="btn btn-secondary">Скасувати</button>
+            <button id="commentReportSubmit" class="btn btn-danger">Надіслати</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.report-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+    animation: modalSlide 0.3s ease-out;
+}
+
+@keyframes modalSlide {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.comment-highlight {
+    animation: highlight 2s ease-out;
+    border-left: 4px solid #ffd700;
+}
+
+@keyframes highlight {
+    0% { background-color: rgba(255, 215, 0, 0.3); }
+    100% { background-color: transparent; }
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let currentCommentId = null;
+    
+    // Обробник для кнопок скарг
+    document.body.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.report-comment-btn');
+        if (btn) {
+            if (!localStorage.getItem('authToken')) {
+                window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+                return;
+            }
+            currentCommentId = btn.dataset.commentId;
+            document.getElementById('commentReportModal').style.display = 'flex';
+        }
+    });
+
+    // Закриття модалки
+    const closeModal = () => {
+        document.getElementById('commentReportModal').style.display = 'none';
+        document.getElementById('commentReportReason').value = '';
+        document.getElementById('commentReportDetails').value = '';
+        document.getElementById('commentCustomReason').style.display = 'none';
+        currentCommentId = null;
+    };
+
+    // Обробники модалки
+    document.getElementById('commentReportCancel').addEventListener('click', closeModal);
+    document.getElementById('commentReportReason').addEventListener('change', (e) => {
+        document.getElementById('commentCustomReason').style.display = 
+            e.target.value === 'Інше' ? 'block' : 'none';
+    });
+
+    // Відправка форми
+    document.getElementById('commentReportSubmit').addEventListener('click', async () => {
+        const reason = document.getElementById('commentReportReason').value;
+        const details = document.getElementById('commentReportDetails').value;
+        
+        if (!reason) {
+            showAlert('Оберіть причину скарги');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/comments/report/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({
+                    comment_id: parseInt(currentCommentId), // Додано парсинг до числа
+                    reason: reason === 'Інше' ? `Інше: ${details}` : reason
+                })
+            });
+            
+            // Додано детальну обробку відповіді
+            
+            
+            const data = await response.json();
+
+            if (!response.ok) throw new Error('Помилка відправки');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Помилка HTTP: ${response.status}`);
+            }
+            showAlert('Скаргу успішно надіслано!');
+            closeModal();
+        } catch (error) {
+            showAlert('Не вдалося надіслати скаргу');
+        }
+    });
+
+</script>
 
 <div id="customAlert" style="display: none;">
     <div id="customAlertBox">
@@ -551,6 +691,7 @@
             commentDiv.className = 'comment';
             commentDiv.setAttribute('data-comment-id', comment.idComments);
             commentDiv.setAttribute('data-parent-id', comment.ParentId || 'null');
+            commentDiv.id = `comment-${comment.idComments}`;
 
             // Додано перевірку на видалені коментарі
             const authorLink = comment.Author === "Користувача видалено" || comment.Author === "Коментар видалено"
@@ -581,6 +722,7 @@
                     : 'Коментар видалено');
 
             commentDiv.innerHTML = `
+                <div class="comment" id="comment-{{ comment.id }}">
                 <p>Автор: ${authorLink} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
@@ -591,10 +733,15 @@
                     <div class="topic-actions">
                         <button class="actions-btn-comment">...</button>
                         <div class="actions-menu-comment" style="display: none;">
+                            <button class="report-comment-btn" data-comment-id="${comment.idComments}">
+                                Поскаржитися
+                            </button>
+                            
                             <button class="edit-comment-btn" id="edit-comment-btn" style="display: none; margin: 10px; width: auto;">Редагувати коментар</button>
                             <button class="delete-comment-btn" id="delete-comment-btn" style="display: none; margin: 10px; width: auto;">Видалити коментар</button>
                         </div>
                     </div>
+                </div>
                 </div>
             `;
 
