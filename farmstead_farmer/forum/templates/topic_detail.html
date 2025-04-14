@@ -445,15 +445,6 @@
     to { transform: translateY(0); opacity: 1; }
 }
 
-.comment-highlight {
-    animation: highlight 2s ease-out;
-    border-left: 4px solid #ffd700;
-}
-
-@keyframes highlight {
-    0% { background-color: rgba(255, 215, 0, 0.3); }
-    100% { background-color: transparent; }
-}
 
 </style>
 
@@ -722,7 +713,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     : 'Коментар видалено');
 
             commentDiv.innerHTML = `
-                <div class="comment" id="comment-{{ comment.id }}">
                 <p>Автор: ${authorLink} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
@@ -741,7 +731,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="delete-comment-btn" id="delete-comment-btn" style="display: none; margin: 10px; width: auto;">Видалити коментар</button>
                         </div>
                     </div>
-                </div>
                 </div>
             `;
 
