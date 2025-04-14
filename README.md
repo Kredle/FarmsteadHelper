@@ -3,6 +3,13 @@
 **FarmsteadHelper** is a web platform designed for landowners, gardeners and nature enthusiasts. It combines a wiki-like catalog of different sorts of trees, vegetables, flowers and animals, a discussion forum, an interactive yard planner, and a yearly calendar to help users organize their homesteading life.
 
 ---
+## Authors:
+
+- **Kredle (Oleh Paliukh)**: <a href="https://www.linkedin.com/in/oleh-paliukh-8838472b5/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a> 
+- **GreyTheCat (Nazarii Fedorchak)**: <a href="https://www.linkedin.com/in/nazariy-fedorchak-845692334/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a>
+- **Andrii Kravchuk**: <a href="https://www.linkedin.com/in/andrii-kravchuk-15a251360/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a>
+- **Iris (Iryna Turkevutch)**: Does not have any contact links yet
+---
 
 ## Tech Stack
 
@@ -255,15 +262,71 @@ To protect the platform from cyberattacks were added next things:
 - Integration with reCAPTCHA when deleting account, sending feedback and authenticating (Checking on FrontEnd and BackEnd)
 - Added rate limiting:
   - By creating trottle classes and using trottle_class decorator
+    ```python
+    class SendOTPThrottle(UserRateThrottle):
+        rate = '10/minute'
+
+    class BasicThrottle(UserRateThrottle):
+        rate = '15/minute'
+    
+    class UpdateData(UserRateThrottle):
+        rate = '50/minute'
+    
+    class MainAPiThrottle(UserRateThrottle):
+        rate = '30/minute'
+    
+    class DataScraptingTrottle(UserRateThrottle):
+        rate = '40/minute'
+    
+    class CatalogTrottle(UserRateThrottle):
+        rate = '40/minute'
+
+    class GetSortsAndDetailsTrottle(UserRateThrottle):
+        rate = '30/minute'
+
+    class ForumTrottling(UserRateThrottle):
+        rate = '100/minute'
+    ```
   - By adding DEFAULT_TROTTLE_CLASSES to settings.py
-- Added ALLOWED_PATHS, so that DDOS attacks that are sending fake requests wouldn't work
-- Blocked access to users with russian or belarusian IP by using IPinfo
+    ```python
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+      'DEFAULT_THROTTLE_RATES': {
+        'user': '5000/day',
+        'anon': '100/hour',
+    }
+    ```
+- Added ALLOWED_PATHS for api.middleware.APIWhitelistMiddleware, so that DDOS attacks that are sending fake requests wouldn't work
+- Blocked access to users with russian or belarusian IP by using IPinfo in api.middleware.GeoBlockMiddleware
 
 #### All database data is secured by Django ORM
 
 
 ---
-
+## API Documentation
+- api/register
+  - Creates new user by using RegisterSerializer
+  - Takes data from register form
+  - Checks if password matches repeat_password
+  - Creating token for certain user and returns 201 response
+  - Is used only after verifying email at comfirm-email.html
+  - Trottle class: BasicThrottle
+- api/login/
+  - Authenticates user into platform by using LoginSerializer
+  - Takes data from login form
+  - Checks if user with data exists in database
+  - As output gives auth token and 200 response if success
+  - Trottle class: BasicThrottle
+- api/send-otp/
+  - Sends html context page to users email
+  - Takes user email in body
+  - Caches OTP for 10 minutes as "otp_{email}"
+  - Used for verifying email when registrating
+  - Trottle class: SendOTPTrottle
+- 
+---
 
 ## Installation
 
