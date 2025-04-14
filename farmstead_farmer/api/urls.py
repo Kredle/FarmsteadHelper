@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar, UpdateNameView, DeleteAccountView, SendOTPEmailView, ChangeEmailView, SendOTPDeleteView, toggle_favorite, check_favorite, check_profile, is_favorite_private_change, SendOTPModerationView, VerifyOTPModerationView, ReportView, is_map_private_change, check_map
+from .views import register_view, login_view, RegisterView, LoginView, SendOTPView, VerifyOTPView, CheckUserView, confirm_register_view, CheckUserPassApi, ResetPasswordApi, reset_password_view, new_password_view, profile_view, UserProfileView, UpdateProfileView, CheckAuthView, UserProfileView, LogoutView, SendResetOTPView, change_username, change_bio, change_password, edit_profile_view, upload_avatar, UpdateNameView, DeleteAccountView, SendOTPEmailView, ChangeEmailView, SendOTPDeleteView, toggle_favorite, check_favorite, check_profile, is_favorite_private_change, SendOTPModerationView, VerifyOTPModerationView, ReportView, CommentReportAPI, is_map_private_change, check_map
 
 from django.conf.urls.static import static
 from django.conf import settings
@@ -45,4 +45,5 @@ urlpatterns = [
     path('api/verify_moderation/', VerifyOTPModerationView.as_view(), name = 'verify_otp_moderation'),
     path('api/report/', ReportView.as_view(), name='report-topic'),
     path('report/', ReportView.as_view(), name='report-topic'),
+    path('api/comments/report/', CommentReportAPI.as_view(), name='comment-report'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
