@@ -1421,3 +1421,83 @@ class ReportView(APIView):
                 {"error": f"Помилка сервера: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+            
+            
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from django.conf import settings
+from forum.models import Comment
+from forum.models import Topic
+import logging
+logger = logging.getLogger(__name__)
+
+class CommentReportAPI(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            logger.info(f"Отримано дані: {request.data}")
+            # Валідація даних
+            comment_id = request.data.get('comment_id')
+            if not comment_id:
+                return Response(
+                    {"error": "Вкажіть ID коментаря"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                comment = Comment.objects.get(idComments=int(comment_id))
+            except (Comment.DoesNotExist, ValueError):
+                return Response(
+                    {"error": "Невірний ID коментаря"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            author_name = comment.Author
+            
+            # Спроба знайти користувача за іменем
+            try:
+                user = User.objects.get(username=author_name)
+                author_display = user.username
+            except ObjectDoesNotExist:
+                author_display = "Анонім"
+            try:
+                topic = Topic.objects.get(idTopic=comment.Topics_id)
+                topic_title = topic.Title
+            except Topic.DoesNotExist:
+                topic_title = "Тема видалена"
+            
+            kyiv_tz = pytz.timezone("Europe/Kyiv")
+            kyiv_time = timezone.now().astimezone(kyiv_tz)
+            # Відправка email адмінам
+            admins = User.objects.filter(is_superuser=True)
+            message = f"""
+            Нова скарга на коментар #{comment.idComments}
+            
+            Автор коментаря: {author_display}
+            Тема: {topic_title}
+            Час: {comment.Date} {comment.Time}
+            
+            Автор скарги: {request.user.username} (ID: {request.user.id})
+            Надіслано о {kyiv_time}
+            Причина: {request.data.get('reason', 'Не вказано')}
+            Посилання: {request.build_absolute_uri(comment.get_absolute_url())}
+            
+            """
+            #
+            send_mail(
+                subject=f'Скарга на коментар #{comment.idComments}',
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[admin.email for admin in admins],
+                fail_silently=False
+            )
+
+            return Response({'success': 'Скаргу надіслано'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.critical(f"Критична помилка: {str(e)}", exc_info=True)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
