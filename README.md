@@ -90,7 +90,7 @@ farmstead_farmer/
 │   ├── create_discussion.html              # Create discussin page
 │   ├── edit_topic.html                     # Edit topic page
 │   ├── forumpage.html                      # Main forum page
-│   └── topic_detail.html                   # Topic detaid page, where users can communicate with each other
+│   └── topic_detail.html                   # Topic detailed page, where users can communicate with each other
 │ ├── forms.py                              # Discussion Form
 │ ├── models.py                             # Topic, Comment, User Models
 │ ├── urls.py                               # Setting urls of APIs
