@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from api.views import toggle_favorite, check_favorite
 urlpatterns = [
     path('', views.forum_main, name='forum_main'),
     path('test', views.discussion_detail, name='discussion_detail'),
@@ -8,7 +7,8 @@ urlpatterns = [
     path('create/', views.create_discussion, name='create_discussion'),
     path('topic/<int:pk>/', views.topic_detail, name='topic_detail'), 
     path('get_topics', views.get_topics, name = 'get_topics'),
-    path('get_popular_topics', views.get_popular_topics, name = 'get_popular_topics'),
+    path('get_popular_topics', views.get_popular_topics, name='get_popular_topics'),
+    path('api/topic/<int:pk>/', views.topic_detail_api, name='topic_detail_api'),
     path('update_topic/<int:topic_id>/', views.update_topic_reaction, name='update_topic_reaction'),
     path('delete_topic/<int:topic_id>/', views.delete_topic, name='delete_topic'),
     path('edit-topic/<int:topic_id>/', views.edit_topic_new, name='edit_topic_new'),
@@ -23,6 +23,6 @@ urlpatterns = [
     path('edit_comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
     #path('increace_comment_counter_comment/<int:parentCommentId>/', views.increace_comment_counter_comment, name='increace_comment_counter_comment'),
     path('get_comment/<int:comment_id>/', views.get_comment, name = 'get_comment'),
-    path('api/toggle_favorite/', toggle_favorite, name='toggle_favorite'),
-    path('api/check_favorite/', check_favorite, name='check_favorite'),
+    path('api/toggle_favorite/', views.toggle_favorite_forum, name='toggle_favorite'),
+    path('api/check_favorite/', views.check_favorite_forum, name='check_favorite'),
 ]

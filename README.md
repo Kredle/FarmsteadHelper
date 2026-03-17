@@ -14,11 +14,42 @@
 ## Tech Stack
 
 - **Backend**: Django (Python)
-- **Frontend**: HTML, CSS, JavaScript (Django Templates)
+- **Frontend**: React (JavaScript) + Django Templates
 - **Database**: MySQL
 - **Deployment**: WSGI/ASGI
 - **API Testing**: Postman
 - **Other Tools**: reCAPTCHA, IPinfo
+
+---
+
+## Layered Architecture (3 Layers)
+
+The project now includes a layered core architecture to separate responsibilities and reduce cross-app coupling:
+
+- **Domain Layer** (`farmstead_farmer/core/domain`):
+  - Pure business entities (`FavoriteItem`, `FavoriteViewItem`)
+  - Domain exceptions
+  - Repository interfaces
+- **Application Layer** (`farmstead_farmer/core/application`):
+  - Use cases for profile visibility and favorites
+  - Business orchestration without framework dependencies
+- **Infrastructure Layer** (`farmstead_farmer/core/infrastructure`):
+  - Django ORM and Token repository adapters
+
+The API presentation layer (`farmstead_farmer/api/views.py`) now delegates key business operations to application use cases.
+
+---
+
+## React Presentation Layer
+
+A dedicated Django app now serves a React (JS) presentation shell:
+
+- Route: `/app/`
+- App: `farmstead_farmer/presentation`
+- Template: `presentation/index.html`
+- Static assets: `presentation/static/presentation/*`
+
+This enables progressive migration from legacy templates to React while keeping Django as the backend/API and server-side integration point.
 
 ---
 

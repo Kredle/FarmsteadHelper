@@ -8,8 +8,8 @@ from farmstead_farmer import settings
 ALLOWED_PATHS = [
     # Animals branch paths
     "/catalog/animals/",
-    "/catalog/animals/\d+/",  # Path with animal_id parametr
-    "/catalog/animals/\d+/\d+/", # Path with sort_id parametr
+    r"/catalog/animals/\d+/",  # Path with animal_id parametr
+    r"/catalog/animals/\d+/\d+/", # Path with sort_id parametr
 
     # Calendar paths
     "/api/get_sorts/",
@@ -30,21 +30,21 @@ ALLOWED_PATHS = [
     "/forum/test/",
     "/forum/create-discussion/",
     "/forum/create/",
-    "/forum/topic/\d+/",  # Path with pk parameter
+    r"/forum/topic/\d+/",  # Path with pk parameter
     "/forum/get_topics/",
     "/forum/get_popular_topics/",
-    "/forum/update_topic/\d+/",
-    "/forum/delete_topic/\d+/",
-    "/forum/edit-topic/\d+/",
-    "/forum/edit_topic/\d+/",
-    "/forum/add_comment/\d+/",
-    "/forum/get_user_reaction/\d+/",
-    "/forum/topic/\d+/comments_list/",
-    "/forum/update_comment/\d+/",
-    "/forum/delete_comment/\d+/",
+    r"/forum/update_topic/\d+/",
+    r"/forum/delete_topic/\d+/",
+    r"/forum/edit-topic/\d+/",
+    r"/forum/edit_topic/\d+/",
+    r"/forum/add_comment/\d+/",
+    r"/forum/get_user_reaction/\d+/",
+    r"/forum/topic/\d+/comments_list/",
+    r"/forum/update_comment/\d+/",
+    r"/forum/delete_comment/\d+/",
     "/forum/update-comment-reaction/",
-    "/forum/edit_comment/\d+/",
-    "/forum/get_comment/\d+/",
+    r"/forum/edit_comment/\d+/",
+    r"/forum/get_comment/\d+/",
     "/api/toggle_favorite/",
     "/api/check_favorite/",
 
@@ -53,7 +53,7 @@ ALLOWED_PATHS = [
     "/map/interactive-map/",
     "/map/save-interactive-map/",
     "/map/check-map/",
-    "/map/get-map/\d+/",  # Path with user_id parameter
+    r"/map/get-map/\d+/",  # Path with user_id parameter
     "/map/update-interactive-map/",
 
     # Main page
@@ -98,15 +98,15 @@ ALLOWED_PATHS = [
     "/report/",
 
     "/catalog/flowers/",
-    "/catalog/flowers/\d+/",  # Path with id parameter
+    r"/catalog/flowers/\d+/",  # Path with id parameter
 
     "/catalog/trees/",
-    "/catalog/trees/\d+/\d+/",  # Path with two parameters (tree_id, sort_id)
-    "/catalog/trees/\d+/",  # Path with tree_id parameter
+    r"/catalog/trees/\d+/\d+/",  # Path with two parameters (tree_id, sort_id)
+    r"/catalog/trees/\d+/",  # Path with tree_id parameter
 
     "/catalog/vegetables/",
-    "/catalog/vegetables/\d+/",  # Path with veg_id parameter
-    "/catalog/vegetables/\d+/\d+/"  # Path with two parameters (veg_id, sort_id)
+    r"/catalog/vegetables/\d+/",  # Path with veg_id parameter
+    r"/catalog/vegetables/\d+/\d+/"  # Path with two parameters (veg_id, sort_id)
 ]
 
 class APIWhitelistMiddleware:

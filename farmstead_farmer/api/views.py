@@ -37,26 +37,25 @@ from django.core.mail import EmailMultiAlternatives
 from forum.models import Topic, Comment
 import pytz
 from datetime import datetime
-from rest_framework.throttling import UserRateThrottle
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import now
 from django.urls import reverse
+from api.throttles import SendOTPThrottle, BasicThrottle, UpdateData, MainAPiThrottle, DataScraptingTrottle
+from core.application.auth import AuthUseCase
+from core.application.favorites import FavoriteUseCase
+from core.application.forum import ForumUseCase
+from core.application.profile import ProfileUseCase
+from core.domain.exceptions import InvalidTokenError, MissingFieldError, UserNotFoundError
+from core.infrastructure.forum_repositories import DjangoForumRepository
+from core.infrastructure.repositories import DjangoUserRepository
 
-class SendOTPThrottle(UserRateThrottle):
-    rate = '10/minute'
-
-class BasicThrottle(UserRateThrottle):
-    rate = '15/minute'
-
-class UpdateData(UserRateThrottle):
-    rate = '50/minute'
-
-class MainAPiThrottle(UserRateThrottle):
-    rate = '30/minute'
-
-class DataScraptingTrottle(UserRateThrottle):
-    rate = '40/minute'
+user_repository = DjangoUserRepository()
+forum_repository = DjangoForumRepository()
+auth_use_case = AuthUseCase(user_repository)
+favorite_use_case = FavoriteUseCase(user_repository)
+forum_use_case = ForumUseCase(forum_repository, user_repository)
+profile_use_case = ProfileUseCase(user_repository)
 
 def edit_profile_view(request):
     return render(request, 'profile/edit_profile.html')
@@ -64,60 +63,27 @@ def edit_profile_view(request):
 @api_view(['POST'])
 @throttle_classes([UpdateData])
 def is_map_private_change(request):
-    token = request.data.get('token')
-
-    if not token:
-        return Response({'detail': 'Неправильний токен'}, status=400)
     try:
-        user = CustomUser.objects.get(auth_token=token)
-    except CustomUser.DoesNotExist:
-        return Response({'detail': 'Неправильний токен'}, status=400)
-
-    if user.is_map_private:
-        user.is_map_private = 0
-        user.save()
-        return Response({'status':'Статус змінено на 0'})
-    else:
-        user.is_map_private = 1
-        user.save()
-        return Response({'status':'Статус змінено на 1'})
+        payload = profile_use_case.toggle_map_private(request.data.get('token'))
+        return Response(payload)
+    except InvalidTokenError as error:
+        return Response({'detail': str(error)}, status=400)
 
 @api_view(['POST'])
 @throttle_classes([MainAPiThrottle])
 def check_profile(request):
-    token = request.data.get('token')
-    username = request.data.get('username')
-
-    if not username:
-        return Response({'detail': 'Username відсутній'}, status=400)
-
-    if not token:
-        return Response({'favorites': []})
-
     try:
-        # Отримуємо користувача по токену
-        user_from_token = CustomUser.objects.get(auth_token=token)
-    except CustomUser.DoesNotExist:
-        return Response({'detail': 'Неправильний токен'}, status=400)
-
-    if user_from_token.username != username:
-        return Response({'favorites': []})
-
-    try:
-        user = CustomUser.objects.get(username=username)
-    except CustomUser.DoesNotExist:
-        return Response({'detail': 'Користувача не знайдено'}, status=404)
-
-    favorite_items = []
-    if user_from_token == user and user.is_favorite_private:
-        for item in user.favorites:
-            favorite_items.append({
-                'common_name': item.get('name', 'Невідомий обʼєкт'),
-                'image_url': item.get('image_url', 'default.jpg'),
-                'url': item.get('link', '#'),
-                'category': item.get('category', 'Без категорії')
-            })
-    return Response({'favorites': favorite_items})
+        payload = profile_use_case.check_profile(
+            token=request.data.get('token'),
+            username=request.data.get('username'),
+        )
+        return Response(payload)
+    except MissingFieldError as error:
+        return Response({'detail': str(error)}, status=400)
+    except InvalidTokenError as error:
+        return Response({'detail': str(error)}, status=400)
+    except UserNotFoundError as error:
+        return Response({'detail': str(error)}, status=404)
 
 @throttle_classes([MainAPiThrottle])
 def update_author_name(request):
@@ -127,11 +93,7 @@ def update_author_name(request):
             old_name = data.get('oldName')
             new_name = data.get('newName')
 
-            # Оновлюємо ім'я автора в таблиці topics
-            Topic.objects.filter(Author=old_name).update(Author=new_name)
-
-            # Оновлюємо ім'я автора в таблиці comments
-            Comment.objects.filter(Author=old_name).update(Author=new_name)
+            forum_use_case.update_author_name(old_name, new_name)
 
             return JsonResponse({'status': 'success', 'message': 'Ім\'я автора оновлено успішно в topics та comments'})
         except Exception as e:
@@ -141,23 +103,16 @@ def update_author_name(request):
 
 @throttle_classes([MainAPiThrottle])
 def profile_view(request, username):
-    try:
-        user = CustomUser.objects.get(username=username)
-    except CustomUser.DoesNotExist:
-        return render(request, 'error.html', {'error': 'Користувача не знайдено'})
+    viewed_user = user_repository.get_by_username(username)
+    if viewed_user is None:
+        return redirect('/')
+    favorites = getattr(viewed_user, 'favorites', []) or []
+    return render(request, 'profile/view_profile.html', {
+        'user': viewed_user,
+        'favorites': favorites,
+    })
 
-    favorite_items = []
 
-    if not user.is_favorite_private:
-        for item in user.favorites:
-            favorite_items.append({
-                    'common_name': item.get('name', 'Невідомий обʼєкт'),
-                    'image_url': item.get('image_url', 'default.jpg'),
-                    'url': item.get('link', '#'),
-                    'category': item.get('category', 'Без категорії')
-                })
-
-    return render(request, 'profile/view_profile.html', {'user': user, 'favorites': favorite_items, 'is_own_profile': False})
 
 
 
@@ -316,8 +271,7 @@ class CheckUserView(APIView):
         if not email:
             return Response({'error': 'Email обов’язковий.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Використовуємо кастомну модель користувача для перевірки
-        if User.objects.filter(email=email).exists():
+        if user_repository.email_exists(email):
             return Response({'error': 'Цей логін або email вже використовується.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'message': 'Email доступний'}, status=status.HTTP_200_OK)
@@ -350,41 +304,12 @@ class VerifyOTPView(APIView):
 # Форма для реєстрації через HTML
 @throttle_classes([BasicThrottle])
 def register_view(request): #HERE add otp checking
-    if request.method == 'POST':
-        data = {
-            'username': request.POST.get('username'),
-            'email': request.POST.get('email'),
-            'firstname': request.POST.get('firstname'),
-            'lastname': request.POST.get('lastname'),
-            'password': request.POST.get('password'),
-            'repeat_password': request.POST.get('repeat_password')
-        }
-        serializer = RegisterSerializer(data=data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return render(request, 'api/login.html', {'success': 'Успішно зареєстровано. Тепер увійдіть.'})
-        else:
-            return render(request, 'api/register.html', {'errors': serializer.errors})
-
     return render(request, 'api/register.html')
 
 
 # Форма для логіну через HTML
 @throttle_classes([BasicThrottle])
 def login_view(request):
-    if request.method == 'POST':
-        data = {
-            'username': request.POST.get('username'),
-            'password': request.POST.get('password')
-        }
-        serializer = LoginSerializer(data=data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            token, _ = Token.objects.get_or_create(user=user)
-            return render(request, 'dashboard.html', {'token': token.key})
-        else:
-            return render(request, 'api/login.html', {'error': 'Неправильні дані для входу.'})
-
     return render(request, 'api/login.html')
 
 
@@ -396,8 +321,8 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_201_CREATED)
+            token = auth_use_case.issue_token(user)
+            return Response({"token": token}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -409,8 +334,8 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
+            token = auth_use_case.issue_token(user)
+            return Response({"token": token}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 def confirm_register_view(request):
@@ -423,7 +348,7 @@ class CheckUserPassApi(APIView):
         if not email:
             return Response({'error': 'Email обов’язковий.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if User.objects.filter(email=email).exists():
+        if auth_use_case.check_user_email_exists(email):
             return Response({'message': 'Користувача знайдено.'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Користувача з таким email не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
@@ -432,99 +357,27 @@ class CheckUserPassApi(APIView):
 class ResetPasswordApi(APIView):
     def post(self, request):
         try:
-            # Отримуємо параметри з запиту
             email = request.data.get('email')
             new_password = request.data.get('new_password')
             confirm_password = request.data.get('confirm_password')
 
-            if not email or not new_password or not confirm_password:
-                return Response({'error': 'Усі поля є обов’язковими.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            if len(new_password) < 8:
-                return Response({'error': 'Пароль має бути не менше 8 символів .'}, status=status.HTTP_400_BAD_REQUEST)
-            if new_password != confirm_password:
-                return Response({'error': 'Паролі не співпадають.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            user = User.objects.filter(email=email).first()
-
-            if not user:
-                return Response({'error': 'Користувача з таким email не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
-
-            # Update password
-            user.password = make_password(new_password)
-            user.save()
-
+            auth_use_case.reset_password(email, new_password, confirm_password)
             return Response({'message': 'Пароль успішно змінено.'}, status=status.HTTP_200_OK)
-
-        except ObjectDoesNotExist as e:
-            # This will catch the specific exception if the user is not found
+        except UserNotFoundError:
             return Response({'error': 'Користувача з таким email не знайдено.'}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError as error:
+            return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # General error handling
             print(f"An error occurred: {e}")
             return Response({'error': 'Сталася помилка. Спробуйте пізніше.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @throttle_classes([BasicThrottle])
 def reset_password_view(request):
-    email = request.GET.get('email')
-
-    if request.method == 'GET':
-        if email:
-            return render(request, 'api/new_password.html', {'email': email})
-        else:
-            return render(request, 'api/reset_password.html')
-
-    elif request.method == 'POST':
-        if email:
-            new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')
-
-            if not new_password or not confirm_password:
-                return render(request, 'api/new_password.html', {
-                    'error': 'Всі поля є обов’язковими.',
-                    'email': email
-                })
-
-            if new_password != confirm_password:
-                return render(request, 'api/new_password.html', {
-                    'error': 'Паролі не співпадають.',
-                    'email': email
-                })
-
-            user = User.objects.filter(email=email).first()
-            if not user:
-                return render(request, 'api/new_password.html', {
-                    'error': 'Користувача з таким email не знайдено.',
-                    'email': email
-                })
-
-            user.password = make_password(new_password)
-            user.save()
-
-            return render(request, 'api/new_password.html', {
-                'success': 'Пароль успішно змінено.',
-            })
-        else:  # Обробка введення email
-            email = request.POST.get('email')
-            if not email:
-                return render(request, 'api/reset_password.html', {
-                    'error': 'Введіть email для відновлення пароля.'
-                })
-
-            user = User.objects.filter(email=email).first()
-            if not user:
-                return render(request, 'api/reset_password.html', {
-                    'error': 'Користувача з таким email не знайдено.'
-                })
-
-            return render(request, 'api/reset_password.html', {
-                'success': 'Інструкції для відновлення пароля надіслані на вашу електронну пошту.'
-            })
+    return render(request, 'api/reset_password.html')
 
 
 def new_password_view(request):
-    email = request.GET.get('email')
-    return render(request, 'api/new_password.html', {'email': email})
+    return render(request, 'api/new_password.html')
 
 @throttle_classes([BasicThrottle])
 class CheckAuthView(APIView):
@@ -537,59 +390,28 @@ class CheckAuthView(APIView):
 @throttle_classes([DataScraptingTrottle])
 class UserProfileView(APIView):
     def post(self, request):
-        """
-        Отримати дані користувача за переданим токеном у тілі запиту.
-        """
         token_key = request.data.get('token', None)
         if not token_key:
             raise ValidationError("Токен відсутній у запиті.")
 
         try:
-            token = Token.objects.get(key=token_key)
-            user = token.user
-        except Token.DoesNotExist:
+            data = auth_use_case.get_profile_by_token(token_key)
+        except InvalidTokenError:
             raise NotFound("Користувача з таким токеном не знайдено.")
-
-        user.last_activity = timezone.now()
-        user.save(update_fields=['last_activity'])
-
-        avatar_url = user.get_avatar_url()
-
-        data = {
-            "username": user.username,
-            "email": user.email,
-            "firstname": user.firstname,
-            "lastname": user.lastname,
-            "bio": user.bio,
-            "favorites": user.favorites,
-            "avatarUrl": avatar_url,
-            "lastActivity": user.last_activity,
-            "dateJoined": user.date_joined,
-            "flag" : user.is_favorite_private,
-            "id" : user.id,
-            "is_superuser" : user.is_superuser,
-            "map_flag" : user.is_map_private
-        }
 
         return Response(data, status=200)
 
 @throttle_classes([UpdateData])
 class LogoutView(APIView):
     def post(self, request):
-        """
-        Вихід користувача за переданим токеном у тілі запиту.
-        """
-        # Витягуємо токен із тіла запиту
         token_key = request.data.get('token', None)
         if not token_key:
             raise ValidationError("Токен відсутній у запиті.")
 
         try:
-            # Знаходимо токен у базі даних
-            token = Token.objects.get(key=token_key)
-            token.delete()
+            auth_use_case.logout(token_key)
             return Response({"detail": "Ви успішно вийшли з облікового запису"}, status=status.HTTP_200_OK)
-        except Token.DoesNotExist:
+        except InvalidTokenError:
             raise ValidationError("Неправильний токен.")
 
 @throttle_classes([SendOTPThrottle])
@@ -708,48 +530,26 @@ class SendResetOTPView(APIView):
 def change_username(request):
     token = request.data.get('token')
     new_username = request.data.get('username')
-
-    if not token or not new_username:
-        return Response({'error': 'Token та новий username є обов\'язковими'}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = User.objects.filter(auth_token=token).first()
-    if not user:
+    try:
+        auth_use_case.change_username(token, new_username)
+        return Response({'message': 'Username успішно оновлено'}, status=status.HTTP_200_OK)
+    except InvalidTokenError:
         return Response({'error': 'Неправильний токен'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if User.objects.filter(username=new_username).exists():
-        return Response({'error': 'Користувач із таким ім’ям уже існує'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if user.last_username_update and timezone.now() - user.last_username_update < timedelta(days=7):
-        return Response({'error': 'Ви можете змінити ім\'я користувача раз у 7 днів'}, status=status.HTTP_400_BAD_REQUEST)
-
-    user.username = new_username
-    user.last_username_update = timezone.now()
-    user.save()
-
-    return Response({'message': 'Username успішно оновлено'}, status=status.HTTP_200_OK)
+    except ValueError as error:
+        return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @throttle_classes([UpdateData])
 def change_bio(request):
     token = request.data.get('token')
     new_bio = request.data.get('bio')
-
-    if not token:
-        return Response({'error': 'Токен є обов\'язковим'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get the user
-    user = User.objects.filter(auth_token=token).first()
-    if not user:
+    try:
+        auth_use_case.change_bio(token, new_bio)
+        return Response({'message': 'Біо змінено'}, status=status.HTTP_200_OK)
+    except InvalidTokenError:
         return Response({'error': 'Недійсний токен'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Limit max length of bio
-    if len(new_bio) > 150:
-        return Response({'error': 'Максимум 150 символів'}, status=status.HTTP_400_BAD_REQUEST)
-    # Update bio
-    user.bio = new_bio
-    user.save()
-
-    return Response({'message': 'Біо змінено'}, status=status.HTTP_200_OK)
+    except ValueError as error:
+        return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @throttle_classes([UpdateData])
@@ -758,27 +558,13 @@ def change_password(request):
     current_password = request.data.get('current_password')
     new_password = request.data.get('new_password')
     confirm_password = request.data.get('confirm_password')
-
-    if not token or not current_password or not new_password or not confirm_password:
-        return Response({'error': 'Неправильні дані. Подивіться, чи все добре передається'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if new_password != confirm_password:
-        return Response({'error': 'Паролі не співпадають'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Validate token and get the user
-    user = User.objects.filter(auth_token=token).first()
-    if not user:
+    try:
+        auth_use_case.change_password(token, current_password, new_password, confirm_password)
+        return Response({'message': 'Пароль успішно змінено'}, status=status.HTTP_200_OK)
+    except InvalidTokenError:
         return Response({'error': 'Недійсний токен'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Check if the current password is correct
-    if not user.check_password(current_password):
-        return Response({'error': 'Поточний пароль є неправильним'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Update password
-    user.password = make_password(new_password)
-    user.save()
-
-    return Response({'message': 'Пароль успішно змінено'}, status=status.HTTP_200_OK)
+    except ValueError as error:
+        return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -790,7 +576,7 @@ def upload_avatar(request):
     if not token or not avatar:
         return Response({'error': 'Token та avatar файл є обов\'язковими'}, status=status.HTTP_400_BAD_REQUEST)
 
-    user = User.objects.filter(auth_token=token).first()
+    user = user_repository.find_by_token(token)
     if not user:
         return Response({'error': 'Недійсний токен'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -801,17 +587,13 @@ def upload_avatar(request):
     except Exception as e:
         return Response({'error': f"Не вдалося зберегти avatar: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    user.avatar = avatar_url
-    user.save()
+    auth_use_case.update_avatar(token, avatar_url)
 
     return Response({'message': 'Avatar успішно оновлено', 'avatar_url': avatar_url}, status=status.HTTP_200_OK)
 
 @throttle_classes([UpdateData])
 class UpdateNameView(APIView):
     def post(self, request):
-        """
-        Оновлення імені та прізвища користувача через токен.
-        """
         token_key = request.data.get('token')
         new_firstname = request.data.get('firstname')
         new_lastname = request.data.get('lastname')
@@ -822,19 +604,14 @@ class UpdateNameView(APIView):
             raise ValidationError("Ім'я та прізвище обов'язкові для заповнення.")
 
         try:
-            token = Token.objects.get(key=token_key)
-            user = token.user
-        except Token.DoesNotExist:
+            firstname, lastname = auth_use_case.update_name(token_key, new_firstname, new_lastname)
+        except InvalidTokenError:
             raise NotFound("Користувача з таким токеном не знайдено.")
-
-        user.firstname = new_firstname
-        user.lastname = new_lastname
-        user.save(update_fields=['firstname', 'lastname'])
 
         return Response({
             "message": "Ім'я та прізвище успішно оновлені.",
-            "firstname": user.firstname,
-            "lastname": user.lastname,
+            "firstname": firstname,
+            "lastname": lastname,
         }, status=200)
 
 @throttle_classes([UpdateData])
@@ -864,16 +641,11 @@ class DeleteAccountView(APIView):
             return Response('Неправильний або прострочений OTP', status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+            auth_use_case.delete_account(email, password)
+        except UserNotFoundError:
             return Response('Користувача з таким email не знайдено', status=status.HTTP_404_NOT_FOUND)
-
-        if not user.check_password(password):
+        except ValueError:
             return Response('Неправильний пароль', status=status.HTTP_400_BAD_REQUEST)
-
-        # Видалення акаунту
-        user.auth_token.delete()
-        user.delete()
 
         return Response({'message': 'Обліковий запис успішно видалено'}, status=status.HTTP_200_OK)
 
@@ -886,8 +658,7 @@ class SendOTPEmailView(APIView):
         if not email:
             return Response({'error': 'Email є обов\'язковим'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Перевірка, чи існує користувач з таким email
-        if User.objects.filter(email=email).exists():
+        if user_repository.email_exists(email):
             return Response({'error': 'Користувач з таким email вже існує'}, status=status.HTTP_400_BAD_REQUEST)
 
         otp = generate_otp()
@@ -1003,13 +774,7 @@ class ChangeEmailView(APIView):
         if not token or not new_email or not otp:
             return Response({'error': 'Token, новий email, та OTP є обов\'язковими'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            auth_token = Token.objects.get(key=token)
-            user = auth_token.user
-        except Token.DoesNotExist:
-            return Response({'error': 'Недійсний токен'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if User.objects.filter(email=new_email).exists():
+        if user_repository.email_exists(new_email):
             return Response({'error': 'Цей email вже є зареєстрованим'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -1018,8 +783,11 @@ class ChangeEmailView(APIView):
             return Response({'error': 'Неправильний або прострочений OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user.email = new_email
-            user.save()
+            auth_use_case.change_email(token, new_email)
+        except InvalidTokenError:
+            return Response({'error': 'Недійсний токен'}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': f'Не вдалося надіслати на емейл: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -1142,124 +910,47 @@ User = get_user_model()
 @api_view(['POST'])
 @throttle_classes([UpdateData])
 def toggle_favorite(request):
-    data = request.data
-
-    token = data.get('token')
-    if not token:
-        return Response({'error': 'Токен не надано.'}, status=400)
-
     try:
-        user = Token.objects.get(key=token).user
-    except Token.DoesNotExist:
-        return Response({'error': 'Недійсний токен.'}, status=403)
-
-    required_fields = ['name', 'link', 'category']
-    if not all(field in data for field in required_fields):
-        return Response({'error': 'Відсутні необхідні дані.'}, status=400)
-
-    favorite_item = {
-        'name': data['name'],
-        'image_url': data.get('image_url'),
-        'link': data['link'],
-        'category': data['category']
-    }
-
-    if favorite_item in user.favorites:
-        user.favorites.remove(favorite_item)
-        action = 'removed'
-    else:
-        user.favorites.append(favorite_item)
-        action = 'added'
-
-    user.save()
-    return Response({'status': action, 'favorites': user.favorites})
+        payload = favorite_use_case.toggle(request.data.get('token'), request.data)
+        return Response(payload)
+    except MissingFieldError as error:
+        return Response({'error': str(error)}, status=400)
+    except InvalidTokenError as error:
+        return Response({'error': str(error)}, status=403)
 
 @api_view(['POST'])
 @throttle_classes([UpdateData])
 def check_favorite(request):
-    data = request.data
-
-    # Отримуємо токен
-    token = data.get('token')
-    if not token:
-        return Response({'error': 'Токен не надано.'}, status=400)
-
-    # Перевірка на дійсність токену
     try:
-        user = Token.objects.get(key=token).user
-    except Token.DoesNotExist:
-        return Response({'error': 'Недійсний токен.'}, status=403)
-
-    # Перевіряємо, чи є всі необхідні дані
-    required_fields = ['name', 'link', 'category']
-    if not all(field in data for field in required_fields):
-        return Response({'error': 'Відсутні необхідні дані.'}, status=400)
-
-    favorite_item = {
-        'name': data['name'],
-        'image_url': data.get('image_url'),
-        'link': data['link'],
-        'category': data['category']
-    }
-
-    if favorite_item in user.favorites:
-        action = 'inside'
-    else:
-        action = 'not inside'
-    return Response({'status': action})
+        payload = favorite_use_case.check(request.data.get('token'), request.data)
+        return Response(payload)
+    except MissingFieldError as error:
+        return Response({'error': str(error)}, status=400)
+    except InvalidTokenError as error:
+        return Response({'error': str(error)}, status=403)
 
 @api_view(['POST'])
 @throttle_classes([MainAPiThrottle])
 def check_map(request):
-    token = request.data.get('token')
-    username = request.data.get('username')
-
-    if not username:
-        return Response({'detail': 'Username відсутній'}, status=400)
-
     try:
-        # Отримуємо користувача, профіль якого переглядається
-        profile_user = CustomUser.objects.get(username=username)
-    except CustomUser.DoesNotExist:
-        return Response({"error": "Користувача не знайдено"}, status=404)
-
-    try:
-        user_from_token = CustomUser.objects.get(auth_token=token)
-    except CustomUser.DoesNotExist:
-        if profile_user.has_map and not profile_user.is_map_private:
-            return Response({"show_map": True})
-        else:
-            return Response({"show_map": False})
-
-    show_map = (user_from_token == profile_user)
-    if show_map == True and user_from_token.has_map:
-        return Response({"show_map": True})
-    else:
-        if profile_user.has_map and not profile_user.is_map_private:
-            return Response({"show_map": True})
-        else:
-            return Response({"show_map": False})
+        payload = profile_use_case.check_map_visibility(
+            token=request.data.get('token'),
+            username=request.data.get('username'),
+        )
+        return Response(payload)
+    except MissingFieldError as error:
+        return Response({'detail': str(error)}, status=400)
+    except UserNotFoundError as error:
+        return Response({'error': str(error)}, status=404)
 
 @api_view(['POST'])
 @throttle_classes([UpdateData])
 def is_favorite_private_change(request):
-    token = request.data.get('token')
-
-    if not token:
-        return Response({'detail': 'Неправильний токен'}, status=400)
     try:
-        user = CustomUser.objects.get(auth_token=token)
-    except CustomUser.DoesNotExist:
-        return Response({'detail': 'Невірний токен'}, status=400)
-
-    if user.is_favorite_private:
-        user.is_favorite_private = 0
-        user.save()
-        return Response({'status':'Статус змінено на 0'})
-    else:
-        user.is_favorite_private = 1
-        user.save()
-        return Response({'status':'Статус змінено на 1'})
+        payload = profile_use_case.toggle_favorite_private(request.data.get('token'))
+        return Response(payload)
+    except InvalidTokenError as error:
+        return Response({'detail': str(error)}, status=400)
 
 @throttle_classes([SendOTPThrottle])
 class SendOTPModerationView(APIView):
@@ -1269,10 +960,9 @@ class SendOTPModerationView(APIView):
 
         if not username:
             return Response({'error': 'username є обов\'язковим'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            user = CustomUser.objects.get(username=username)
-        except:
-            return Response({'error': f'Не вдалося надіслати на email: {str(e)}. Not Found'}, status=status.HTTP_404_NOT_FOUND)
+        user = user_repository.get_by_username(username)
+        if not user:
+            return Response({'error': 'Користувача не знайдено'}, status=status.HTTP_404_NOT_FOUND)
         otp = generate_otp()
 
         cache.set(f"otp_{username}", otp, timeout=600)
@@ -1336,14 +1026,10 @@ class VerifyOTPModerationView(APIView):
 
             if cached_otp == otp_code:
                 cache.delete(f"otp_{username}")
-                user = CustomUser.objects.get(username=username)
-                if user.is_superuser:
-                    user.is_superuser = 0
-                    user.save()
-                    return Response({'message': f'OTP вірний. Тепер {username} не є модератором'}, status=status.HTTP_200_OK)
-                user.is_superuser = 1
-                user.save()
-                return Response({'message': f'OTP вірний. Тепер {username} є модератором'}, status=status.HTTP_200_OK)
+                is_superuser = auth_use_case.toggle_superuser(username)
+                if is_superuser:
+                    return Response({'message': f'OTP вірний. Тепер {username} є модератором'}, status=status.HTTP_200_OK)
+                return Response({'message': f'OTP вірний. Тепер {username} не є модератором'}, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Невірний код OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1377,8 +1063,7 @@ class ReportView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            admins = User.objects.filter(is_superuser=True)
-            admin_emails = [admin.email for admin in admins if admin.email]
+            admin_emails = [email for email in user_repository.get_superuser_emails() if email]
 
             if not admin_emails:
                 return Response(
@@ -1449,50 +1134,45 @@ class CommentReportAPI(APIView):
                 )
 
             try:
-                comment = Comment.objects.get(idComments=int(comment_id))
-            except (Comment.DoesNotExist, ValueError):
+                comment = forum_repository.get_comment(int(comment_id))
+            except ValueError:
+                return Response(
+                    {"error": "Невірний ID коментаря"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            if not comment:
                 return Response(
                     {"error": "Невірний ID коментаря"},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            author_name = comment.Author
+            author_name = comment['Author']
             
-            # Спроба знайти користувача за іменем
-            try:
-                user = User.objects.get(username=author_name)
-                author_display = user.username
-            except ObjectDoesNotExist:
-                author_display = "Анонім"
-            try:
-                topic = Topic.objects.get(idTopic=comment.Topics_id)
-                topic_title = topic.Title
-            except Topic.DoesNotExist:
-                topic_title = "Тема видалена"
+            user = user_repository.get_by_username(author_name)
+            author_display = user.username if user else 'Анонім'
+            topic_title = forum_repository.get_topic_title(comment['Topics_id']) or 'Тема видалена'
             
             kyiv_tz = pytz.timezone("Europe/Kyiv")
             kyiv_time = timezone.now().astimezone(kyiv_tz)
-            # Відправка email адмінам
-            admins = User.objects.filter(is_superuser=True)
+            admin_emails = [email for email in user_repository.get_superuser_emails() if email]
             message = f"""
-            Нова скарга на коментар #{comment.idComments}
+            Нова скарга на коментар #{comment['id']}
             
             Автор коментаря: {author_display}
             Тема: {topic_title}
-            Час: {comment.Date} {comment.Time}
+            Час: {comment['Date']} {comment['Time']}
             
             Автор скарги: {request.user.username} (ID: {request.user.id})
             Надіслано о {kyiv_time}
             Причина: {request.data.get('reason', 'Не вказано')}
-            Посилання: {request.build_absolute_uri(comment.get_absolute_url())}
+            Посилання: {request.build_absolute_uri(comment['absolute_url'])}
             
             """
-            #
             send_mail(
-                subject=f'Скарга на коментар #{comment.idComments}',
+                subject=f"Скарга на коментар #{comment['id']}",
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[admin.email for admin in admins],
+                recipient_list=admin_emails,
                 fail_silently=False
             )
 

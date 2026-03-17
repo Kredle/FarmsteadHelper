@@ -25,12 +25,12 @@ ReCapcha_secret_key = '6Lct-rEqAAAAAIzeO0FW9UMFwbuveyCzBgavSTwj'
 ReCapcha_private_key = '6Lct-rEqAAAAAMHcmMqBfqsMKJA6PFYmvpGrH6nd'
 IPinfo_token = '85dd0376e9af66'
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', "farmsteadhelper.pythonanywhere.com"]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://farmsteadhelper.pythonanywhere.com/"
+    "https://farmsteadhelper.pythonanywhere.com"
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     'forum',
     'interactive_map',
     'calendar_',
+    'presentation',
 ]
 
 LOGGING = {
@@ -149,7 +150,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",  # Додайте потрібні домени
     "http://localhost:8000",
-    "https://farmsteadhelper.pythonanywhere.com/",
+    "https://farmsteadhelper.pythonanywhere.com",
 ]
 
 ROOT_URLCONF = 'farmstead_farmer.urls'
@@ -181,12 +182,12 @@ WSGI_APPLICATION = 'farmstead_farmer.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'farmsteadhelper$default',
-        'USER': 'farmsteadhelper',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'farmsteadhelper',
+        'USER': 'postgres',
         'PASSWORD': 'yourpass_13',
-        'HOST': 'farmsteadhelper.mysql.pythonanywhere-services.com',
-        'PORT': '3306',
+        'HOST': 'localhost',
+        'PORT': '5432',
     },
 }
 

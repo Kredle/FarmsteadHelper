@@ -9,4 +9,5 @@ urlpatterns = [
     path('', include('main_page.urls')),
     path('catalog/vegetables/', include('vegetables.urls')),
     path('forum/', include('forum.urls')),
+    path('app/', include('presentation.urls')),
 ]

@@ -1,32 +1,46 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Sort, Tree, Cutting, Fertilizer, Disease, Planting
+from django.shortcuts import get_object_or_404, render
+
+from .models import Cutting, Disease, Fertilizer, Planting, Sort, Tree
+
 
 def sort_detail(request, tree_id, sort_id):
-    tree = get_object_or_404(Tree, idTree=tree_id)
-    sort = get_object_or_404(Sort, idSort=sort_id, tree=tree)
-    cuttings = Cutting.objects.all()
-    fertilizers = Fertilizer.objects.all()
-    diseases = Disease.objects.all()
-    plantings = Planting.objects.all()
-
-    context = {
+    try:
+        tree = get_object_or_404(Tree, idTree=tree_id)
+        sort = get_object_or_404(Sort, idSort=sort_id, tree_id=tree_id)
+        cutting = list(Cutting.objects.all())
+        fertilizer = list(Fertilizer.objects.all())
+        disease = list(Disease.objects.all())
+        planting = list(Planting.objects.all())
+    except Exception:
+        tree = None
+        sort = None
+        cutting = []
+        fertilizer = []
+        disease = []
+        planting = []
+    return render(request, 'trees/sort_detail.html', {
         'tree': tree,
         'sort': sort,
-        'cuttings': cuttings,
-        'fertilizers': fertilizers,
-        'diseases': diseases,
-        'plantings': plantings,
-    }
-
-    return render(request, 'trees/sort_detail.html', context)
-
+        'cutting': cutting,
+        'fertilizer': fertilizer,
+        'disease': disease,
+        'planting': planting,
+    })
 
 
 def tree_sorts(request, tree_id):
-    tree = get_object_or_404(Tree, idTree=tree_id)
-    sorts = tree.sorts.all()
+    try:
+        tree = get_object_or_404(Tree, idTree=tree_id)
+        sorts = list(Sort.objects.filter(tree_id=tree_id))
+    except Exception:
+        tree = None
+        sorts = []
     return render(request, 'trees/sorts_list.html', {'tree': tree, 'sorts': sorts})
 
+
 def tree_list(request):
-    trees = Tree.objects.all() 
+    try:
+        trees = list(Tree.objects.all())
+    except Exception:
+        trees = []
     return render(request, 'trees/trees_main_list.html', {'trees': trees})

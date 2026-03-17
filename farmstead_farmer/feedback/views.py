@@ -3,13 +3,14 @@ from django.core.mail import EmailMessage
 from django.http import JsonResponse
 from .forms import FeedbackForm
 from django.conf import settings
-from api.models import CustomUser
 from farmstead_farmer import settings
+from core.infrastructure.repositories import DjangoUserRepository
 import requests
 import logging
-from api.views import SendOTPThrottle
+from api.throttles import SendOTPThrottle
 from rest_framework.decorators import throttle_classes
 logger = logging.getLogger(__name__)
+_user_repo = DjangoUserRepository()
 
 @throttle_classes([SendOTPThrottle])
 def feedback_view(request):
@@ -32,7 +33,7 @@ def feedback_view(request):
 
             if not captcha_result.get("success", False):
                 return JsonResponse({"message": "Час дії капчі вичерпався."}, status=400)
-            staff_emails = list(CustomUser.objects.filter(is_staff=True).values_list('email', flat=True))
+            staff_emails = _user_repo.get_staff_emails()
 
             if not staff_emails:
                 logger.warning("No staff users found to send the email.")

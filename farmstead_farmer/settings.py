@@ -151,12 +151,12 @@ WSGI_APPLICATION = 'farmstead_farmer.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'farmsteadhelper$default',
-        'USER': 'farmsteadhelper',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'farmsteadhelper',
+        'USER': 'postgres',
         'PASSWORD': 'yourpass_13',
-        'HOST': 'farmsteadhelper.mysql.pythonanywhere-services.com',
-        'PORT': '3306',
+        'HOST': 'localhost',
+        'PORT': '5432',
     },
 }
 

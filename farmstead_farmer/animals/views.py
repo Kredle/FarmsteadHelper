@@ -1,19 +1,53 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Animal, Animal_main
+﻿from django.shortcuts import render
 
-# Відображення списку тварин
+from core.application.catalog import CatalogUseCase
+from core.infrastructure.catalog_repositories import DjangoCatalogRepository
+
+
+catalog_use_case = CatalogUseCase(DjangoCatalogRepository())
+
+
 def animal_list(request):
-    animals = Animal_main.objects.all()
-    return render(request, 'animals/animal_list.html', {'animals': animals})
+    try:
+        animals = catalog_use_case.animals_list()
+    except Exception:
+        animals = []
+    legacy_animals = [
+        {
+            'idAni': item.get('id'),
+            'Name': item.get('name'),
+            'Image': item.get('image'),
+        }
+        for item in animals
+    ]
+    return render(request, 'animals/animal_list.html', {'animals': legacy_animals})
 
 
 def animal_detail(request, animal_id, sort_id):
-    animal = get_object_or_404(Animal_main, idAni=animal_id)
-    sort = get_object_or_404(Animal, id=sort_id, animal_idAni=animal)
+    try:
+        detail = catalog_use_case.animal_detail(animal_id, sort_id)
+    except Exception:
+        detail = {}
+    return render(request, 'animals/animal_detail.html', {'animal': detail})
 
-    return render(request, 'animals/animal_detail.html', {'animal': sort})
 
 def animal_sorts(request, animal_id):
-    animal = get_object_or_404(Animal_main, idAni=animal_id)
-    sorts = animal.sorts.all()
+    try:
+        payload = catalog_use_case.animal_sorts(animal_id)
+    except Exception:
+        payload = {'animal': {}, 'sorts': []}
+    animal = {
+        'idAni': payload.get('animal', {}).get('id'),
+        'Name': payload.get('animal', {}).get('name'),
+        'Image': payload.get('animal', {}).get('image'),
+    }
+    sorts = [
+        {
+            'id': sort.get('id'),
+            'common_name': sort.get('name'),
+            'sort': sort.get('name'),
+            'image': sort.get('image'),
+        }
+        for sort in payload.get('sorts', [])
+    ]
     return render(request, 'animals/animal_sorts_list.html', {'animal': animal, 'sorts': sorts})
