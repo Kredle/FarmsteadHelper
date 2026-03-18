@@ -124,6 +124,50 @@
             z-index: 9999;
             white-space: nowrap;
         }
+        .context-popup {
+            position: fixed;
+            display: none;
+            min-width: 220px;
+            max-width: 300px;
+            background: #ffffff;
+            border: 1px solid #c9d9d2;
+            border-radius: 10px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            padding: 12px;
+            z-index: 10020;
+        }
+        .context-popup-title {
+            font-weight: 700;
+            color: #28463b;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        .context-popup-description {
+            color: #334;
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        .context-popup-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .context-popup-actions button {
+            width: auto;
+            margin: 0;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+        .delete-btn {
+            background: #b83232;
+            color: #fff;
+            border: none;
+        }
+        .delete-btn:hover {
+            background: #9f2a2a;
+        }
         .modal input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -180,10 +224,19 @@
     </style>
 </head>
 <div id="flowerTooltip" class="tooltip"></div>
+<div id="contextDeletePopup" class="context-popup">
+    <div id="contextDeleteTitle" class="context-popup-title"></div>
+    <div id="contextDeleteDescription" class="context-popup-description"></div>
+    <div class="context-popup-actions">
+        <button type="button" id="contextDeleteCancelBtn">Скасувати</button>
+        <button type="button" id="contextDeleteConfirmBtn" class="delete-btn">Видалити</button>
+    </div>
+</div>
 <body>
 <div class="toolbar" id = "mainToolbar">
     <h3>Інструменти</h3>
     <button onclick="setTool('draw')" title="Малювати">✎</button>
+    <button onclick="setTool('erase')" title="Гумка">⌫</button>
     <button onclick="setTool('points')" title="Точки і лінії">☉ ‧ ‧ ‧ •</button>
     <button onclick="setTool('flower')" title="Квітка">✿</button>
     <button onclick="setTool('tree')" title="Дерево">↟</button>
@@ -301,6 +354,10 @@
         <span class="close-help" id="close-help">&times;</span>
         <h3>Довідка</h3>
         <p><strong>Shift:</strong> підписує всі дерева, будівлі, овочі, квіти та показує довжину ліній у метрах.</p>
+        <p><strong>Гумка:</strong> видаляє тільки лінії пензля.</p>
+        <p><strong>ПКМ по об'єкту/ділянці:</strong> відкриває меню з кнопкою видалення.</p>
+        <p><strong>ПКМ + перетягування:</strong> рухає карту (панорамування).</p>
+        <p><strong>Колесо миші:</strong> масштабує карту (наблизити/віддалити).</p>
         <p><strong>Курсор:</strong> При наведені на об'єкт показує назву цього об'єкта.</p>
     </div>
 </div>
@@ -571,6 +628,7 @@
     let user_id = null;
     let owner_id = "{{owner_id}}"
     let loadedBackgroundImage = null;
+    let persistedCanvasImageData = null;
     const mapData = "{{ map_data|escapejs }}";
     const token = localStorage.getItem("authToken");
     const canvas = document.getElementById("mapCanvas");
@@ -584,6 +642,7 @@
                 const parsedData = JSON.parse(mapData);
                 // Завантажуємо фон (якщо він є)
                 if (parsedData.canvasImage) {
+                    persistedCanvasImageData = parsedData.canvasImage;
                     const img = new Image();
                     img.onload = function() {
                         loadedBackgroundImage = img;
@@ -615,13 +674,13 @@
 
                 // Відновлюємо фігури
                 if (parsedData.figures) {
-                    allFigures = parsedData.figures;
+                    allFigures = cloneFiguresWithoutRuntimeFill(parsedData.figures);
                     // Відновлюємо текстури для фігур
-                    allFigures.forEach(figure => {
-                        if (figure.fillType) {
-                            figure.fill = createTexture(figure.fillType);
-                        }
-                    });
+                    hydrateFigureTextures(allFigures);
+                }
+
+                if (parsedData.brushStrokes) {
+                    brushStrokes = decodeBrushStrokes(parsedData.brushStrokes);
                 }
 
                 redrawCanvas();
@@ -629,6 +688,7 @@
             } catch (e) {
                 console.error("Помилка при парсингу даних карти:", e);
                 // Якщо дані не в JSON форматі (стара версія), завантажуємо просто зображення
+                persistedCanvasImageData = mapData;
                 const img = new Image();
                 img.onload = function() {
                     loadedBackgroundImage = img;
@@ -742,10 +802,13 @@
     let tool = 'draw';
     let currentPoints = [];
     let allFigures = [];
+    let brushStrokes = [];
+    let activeStrokePoints = [];
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
     let currentTexture = '#000000';
+    let currentTextureType = 'solid';
     let currentBrushSize = 5;
     let history = [];
     let historyIndex = 0;
@@ -755,6 +818,10 @@
     let isShiftPressed = false;
     const ALLOWED_ENTITY_TERRAINS = new Set(['grass', 'dirt', 'mud']);
     const BLOCKED_ENTITY_TERRAINS = new Set(['water']);
+    const texturePatternCache = new Map();
+    const STROKE_POINT_MIN_DISTANCE = 0.8;
+    const STROKE_SIMPLIFY_TOLERANCE = 1.5;
+    const ERASER_RADIUS_MULTIPLIER = 1.4;
 
     // === ZOOM & PAN VARIABLES ===
     let zoomLevel = 1;
@@ -786,6 +853,219 @@
             console.warn('Canvas export skipped due to browser security restrictions:', error);
             return null;
         }
+    }
+
+    function getStrokeStyle(textureType) {
+        if (!textureType || textureType === 'solid') {
+            return '#000000';
+        }
+
+        if (!texturePatternCache.has(textureType)) {
+            texturePatternCache.set(textureType, createTexture(textureType));
+        }
+
+        return texturePatternCache.get(textureType);
+    }
+
+    function distancePointToSegment(point, start, end) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+
+        if (dx === 0 && dy === 0) {
+            const dpx = point.x - start.x;
+            const dpy = point.y - start.y;
+            return Math.sqrt(dpx * dpx + dpy * dpy);
+        }
+
+        const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)));
+        const projX = start.x + t * dx;
+        const projY = start.y + t * dy;
+        const distX = point.x - projX;
+        const distY = point.y - projY;
+        return Math.sqrt(distX * distX + distY * distY);
+    }
+
+    function simplifyStrokeRecursive(points, startIndex, endIndex, tolerance, kept) {
+        let maxDistance = 0;
+        let index = -1;
+
+        for (let i = startIndex + 1; i < endIndex; i++) {
+            const distance = distancePointToSegment(points[i], points[startIndex], points[endIndex]);
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                index = i;
+            }
+        }
+
+        if (index !== -1 && maxDistance > tolerance) {
+            kept.add(index);
+            simplifyStrokeRecursive(points, startIndex, index, tolerance, kept);
+            simplifyStrokeRecursive(points, index, endIndex, tolerance, kept);
+        }
+    }
+
+    function simplifyStroke(points, brushSize) {
+        if (!Array.isArray(points) || points.length <= 2) {
+            return points || [];
+        }
+
+        const tolerance = Math.max(0.8, Math.min(STROKE_SIMPLIFY_TOLERANCE + brushSize * 0.15, 4));
+        const kept = new Set([0, points.length - 1]);
+        simplifyStrokeRecursive(points, 0, points.length - 1, tolerance, kept);
+
+        return [...kept]
+            .sort((a, b) => a - b)
+            .map(index => ({
+                x: Math.round(points[index].x),
+                y: Math.round(points[index].y)
+            }));
+    }
+
+    function encodeSignedInt(value) {
+        const intValue = Number(value) || 0;
+        const zigZag = intValue >= 0 ? intValue * 2 : (-intValue * 2) - 1;
+        return zigZag.toString(36);
+    }
+
+    function decodeSignedInt(encodedValue) {
+        const zigZag = parseInt(encodedValue, 36);
+        if (Number.isNaN(zigZag)) {
+            return 0;
+        }
+        return (zigZag % 2 === 0) ? zigZag / 2 : -((zigZag + 1) / 2);
+    }
+
+    function encodeStrokePoints(points) {
+        if (!Array.isArray(points) || points.length === 0) {
+            return '';
+        }
+
+        const roundedPoints = points.map(point => ({
+            x: Math.round(point.x),
+            y: Math.round(point.y)
+        }));
+
+        const first = roundedPoints[0];
+        const deltas = [];
+
+        for (let i = 1; i < roundedPoints.length; i++) {
+            const prev = roundedPoints[i - 1];
+            const curr = roundedPoints[i];
+            deltas.push(`${encodeSignedInt(curr.x - prev.x)}:${encodeSignedInt(curr.y - prev.y)}`);
+        }
+
+        return `${first.x.toString(36)}:${first.y.toString(36)}|${deltas.join(';')}`;
+    }
+
+    function decodeStrokePoints(encoded) {
+        if (!encoded || typeof encoded !== 'string') {
+            return [];
+        }
+
+        const [firstPart, deltasPart = ''] = encoded.split('|');
+        if (!firstPart) {
+            return [];
+        }
+
+        const firstCoords = firstPart.split(':');
+        if (firstCoords.length !== 2) {
+            return [];
+        }
+
+        let currentX = parseInt(firstCoords[0], 36);
+        let currentY = parseInt(firstCoords[1], 36);
+        if (Number.isNaN(currentX) || Number.isNaN(currentY)) {
+            return [];
+        }
+
+        const points = [{ x: currentX, y: currentY }];
+        if (!deltasPart) {
+            return points;
+        }
+
+        const deltas = deltasPart.split(';');
+        for (const delta of deltas) {
+            if (!delta) {
+                continue;
+            }
+            const [dxRaw, dyRaw] = delta.split(':');
+            if (typeof dxRaw === 'undefined' || typeof dyRaw === 'undefined') {
+                continue;
+            }
+            currentX += decodeSignedInt(dxRaw);
+            currentY += decodeSignedInt(dyRaw);
+            points.push({ x: currentX, y: currentY });
+        }
+
+        return points;
+    }
+
+    function encodeBrushStrokes(strokes) {
+        if (!Array.isArray(strokes)) {
+            return [];
+        }
+
+        return strokes
+            .filter(stroke => Array.isArray(stroke.points) && stroke.points.length > 1)
+            .map(stroke => ({
+                v: 1,
+                t: stroke.textureType || 'solid',
+                s: Number(stroke.size) || 1,
+                p: encodeStrokePoints(stroke.points)
+            }));
+    }
+
+    function decodeBrushStrokes(encodedStrokes) {
+        if (!Array.isArray(encodedStrokes)) {
+            return [];
+        }
+
+        return encodedStrokes
+            .map(stroke => {
+                if (Array.isArray(stroke.points)) {
+                    return {
+                        textureType: stroke.textureType || 'solid',
+                        size: Number(stroke.size) || 1,
+                        points: stroke.points
+                    };
+                }
+
+                if (stroke && stroke.v === 1 && typeof stroke.p === 'string') {
+                    return {
+                        textureType: stroke.t || 'solid',
+                        size: Number(stroke.s) || 1,
+                        points: decodeStrokePoints(stroke.p)
+                    };
+                }
+
+                return null;
+            })
+            .filter(stroke => stroke && Array.isArray(stroke.points) && stroke.points.length > 1);
+    }
+
+    function commitCurrentStroke() {
+        if (!isDrawing || tool !== 'draw') {
+            return;
+        }
+
+        isDrawing = false;
+        if (activeStrokePoints.length < 2) {
+            activeStrokePoints = [];
+            return;
+        }
+
+        const simplified = simplifyStroke(activeStrokePoints, currentBrushSize);
+        if (simplified.length > 1) {
+            brushStrokes.push({
+                points: simplified,
+                size: currentBrushSize,
+                textureType: currentTextureType
+            });
+            redrawCanvas();
+            saveState();
+        }
+
+        activeStrokePoints = [];
     }
 
     function isImageDrawable(image) {
@@ -930,6 +1210,17 @@
     // === PAN WITH MIDDLE MOUSE BUTTON ===
     canvas.addEventListener('mousedown', (e) => {
         if (e.button === 2) { // Right click
+            if (canDraw) {
+                const worldPos = screenToWorld(e.offsetX, e.offsetY);
+                const deletionTarget = getDeletionTargetAtPoint(worldPos.x, worldPos.y);
+                if (deletionTarget) {
+                    showContextDeletePopup(e.clientX, e.clientY, deletionTarget);
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            hideContextDeletePopup();
             isPanning = true;
             panStartX = e.offsetX - panX;
             panStartY = e.offsetY - panY;
@@ -954,6 +1245,11 @@
     });
 
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+            hideContextDeletePopup();
+        }
+    });
 
     // === KEYBOARD ZOOM SHORTCUTS ===
     document.addEventListener('keydown', (e) => {
@@ -1052,8 +1348,50 @@
     function setTool(selectedTool) {
         tool = selectedTool;
         currentPoints = [];
-        topToolbar.classList.toggle('visible', tool === 'draw');
+        topToolbar.classList.toggle('visible', tool === 'draw' || tool === 'erase');
         applyButton.classList.toggle('visible', tool === 'points');
+    }
+
+    function getTexturePattern(type) {
+        if (!type || type === 'solid') {
+            return '#000000';
+        }
+
+        if (!texturePatternCache.has(type)) {
+            texturePatternCache.set(type, createTexture(type));
+        }
+
+        return texturePatternCache.get(type);
+    }
+
+    function cloneFiguresWithoutRuntimeFill(figures) {
+        if (!Array.isArray(figures)) {
+            return [];
+        }
+
+        return figures.map(figure => {
+            const clonedFigure = JSON.parse(JSON.stringify(figure));
+            delete clonedFigure.fill;
+            return clonedFigure;
+        });
+    }
+
+    function hydrateFigureTextures(figures) {
+        if (!Array.isArray(figures)) {
+            return;
+        }
+
+        figures.forEach(figure => {
+            if (!figure) {
+                return;
+            }
+
+            if (figure.fillType) {
+                figure.fill = getTexturePattern(figure.fillType);
+            } else {
+                figure.fill = null;
+            }
+        });
     }
 
     function createTexture(type) {
@@ -1090,9 +1428,13 @@
                 ctxTexture.fillStyle = '#8b4513';
                 ctxTexture.fillRect(0, 0, 20, 20);
                 ctxTexture.fillStyle = '#5a2d0a';
-                for (let i = 0; i < 10; i++) {
+                const dirtDots = [
+                    [3, 4], [7, 12], [11, 5], [15, 15], [18, 8],
+                    [5, 17], [9, 2], [13, 10], [2, 14], [17, 3]
+                ];
+                for (const dot of dirtDots) {
                     ctxTexture.beginPath();
-                    ctxTexture.arc(Math.random() * 20, Math.random() * 20, 1, 0, Math.PI * 2);
+                    ctxTexture.arc(dot[0], dot[1], 1, 0, Math.PI * 2);
                     ctxTexture.fill();
                 }
                 break;
@@ -1108,10 +1450,11 @@
     const textureSelect = document.getElementById('textureSelect');
     textureSelect.addEventListener('change', function() {
         const textureType = this.value;
+        currentTextureType = textureType;
         if (textureType === 'solid') {
             currentTexture = '#000000';
         } else {
-            currentTexture = createTexture(textureType);
+            currentTexture = getTexturePattern(textureType);
         }
     });
     textureSelect.dispatchEvent(new Event('change'));
@@ -1139,7 +1482,8 @@
             buildingsOnCanvas: JSON.parse(JSON.stringify(buildingsOnCanvas)),
             treesOnCanvas: JSON.parse(JSON.stringify(treesOnCanvas)),
             vegetablesOnCanvas: JSON.parse(JSON.stringify(vegetablesOnCanvas)),
-            allFigures: JSON.parse(JSON.stringify(allFigures)),
+            allFigures: cloneFiguresWithoutRuntimeFill(allFigures),
+            brushStrokes: JSON.parse(JSON.stringify(brushStrokes)),
             currentPoints: JSON.parse(JSON.stringify(currentPoints))
         };
         
@@ -1176,12 +1520,11 @@
         buildingsOnCanvas = JSON.parse(JSON.stringify(state.buildingsOnCanvas));
         treesOnCanvas = JSON.parse(JSON.stringify(state.treesOnCanvas));
         vegetablesOnCanvas = JSON.parse(JSON.stringify(state.vegetablesOnCanvas));
-        allFigures = JSON.parse(JSON.stringify(state.allFigures));
+        allFigures = cloneFiguresWithoutRuntimeFill(state.allFigures);
+        hydrateFigureTextures(allFigures);
+        brushStrokes = JSON.parse(JSON.stringify(state.brushStrokes || []));
         currentPoints = JSON.parse(JSON.stringify(state.currentPoints));
-
-        if (!state.imageData) {
-            redrawCanvas();
-        }
+        redrawCanvas();
     }
 
     document.addEventListener('keydown', (e) => {
@@ -1212,7 +1555,15 @@
         if (tool === "draw") {
             isDrawing = true;
             [lastX, lastY] = [worldPos.x, worldPos.y];
+            activeStrokePoints = [{ x: worldPos.x, y: worldPos.y }];
             saveState();
+        } else if (tool === "erase") {
+            isDrawing = true;
+            [lastX, lastY] = [worldPos.x, worldPos.y];
+            saveState();
+            if (eraseBrushStrokesAtPoint(worldPos.x, worldPos.y, getEraserRadius())) {
+                redrawCanvas();
+            }
         } else if (tool === "points") {
             currentPoints.push({ x: worldPos.x, y: worldPos.y });
             redrawCanvas();
@@ -1222,8 +1573,16 @@
 
     canvas.addEventListener("mousemove", (e) => {
         if (!canDraw) return;
-        if (!isDrawing || tool !== 'draw') return;
+        if (!isDrawing || (tool !== 'draw' && tool !== 'erase')) return;
         const worldPos = screenToWorld(e.offsetX, e.offsetY);
+
+        if (tool === 'erase') {
+            if (eraseBrushStrokesAlongPath(lastX, lastY, worldPos.x, worldPos.y, getEraserRadius())) {
+                redrawCanvas();
+            }
+            [lastX, lastY] = [worldPos.x, worldPos.y];
+            return;
+        }
 
         setCanvasTransform();
         ctx.beginPath();
@@ -1234,17 +1593,34 @@
         ctx.lineTo(worldPos.x, worldPos.y);
         ctx.stroke();
         restoreCanvasTransform();
+        const dx = worldPos.x - lastX;
+        const dy = worldPos.y - lastY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance >= STROKE_POINT_MIN_DISTANCE) {
+            activeStrokePoints.push({ x: worldPos.x, y: worldPos.y });
+        }
         [lastX, lastY] = [worldPos.x, worldPos.y];
     });
 
     canvas.addEventListener("mouseup", (e) => {
         if (!canDraw) return;
         if (e.button !== 0) return;
-        isDrawing = false;
-        saveState();
+        if (tool === 'draw') {
+            commitCurrentStroke();
+        } else if (tool === 'erase' && isDrawing) {
+            isDrawing = false;
+            saveState();
+        }
     });
 
-    canvas.addEventListener("mouseout", () => isDrawing = false);
+    canvas.addEventListener("mouseout", () => {
+        if (tool === 'draw') {
+            commitCurrentStroke();
+        } else if (tool === 'erase' && isDrawing) {
+            isDrawing = false;
+            saveState();
+        }
+    });
 
     function applyFigure() {
         if (currentPoints.length > 1) {
@@ -1297,6 +1673,10 @@
 
     function drawAllFigures() {
         for (let figure of allFigures) {
+            if (figure.fillType && !figure.fill) {
+                figure.fill = getTexturePattern(figure.fillType);
+            }
+
             if (figure.fill) {
                 ctx.fillStyle = figure.fill;
                 ctx.beginPath();
@@ -1319,6 +1699,316 @@
             ctx.stroke();
         }
     }
+
+    function drawAllBrushStrokes() {
+        for (const stroke of brushStrokes) {
+            if (!stroke || !Array.isArray(stroke.points) || stroke.points.length < 2) {
+                continue;
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = getStrokeStyle(stroke.textureType);
+            ctx.lineWidth = Number(stroke.size) || 1;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+
+            for (let i = 1; i < stroke.points.length; i++) {
+                ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+            }
+
+            ctx.stroke();
+        }
+    }
+
+    function getEraserRadius() {
+        return Math.max(4, currentBrushSize * ERASER_RADIUS_MULTIPLIER);
+    }
+
+    function splitStrokeByEraser(stroke, centerX, centerY, radius) {
+        const points = stroke.points;
+        if (!Array.isArray(points) || points.length < 2) {
+            return [];
+        }
+
+        const keptSegments = [];
+        let currentSegment = [];
+
+        for (let i = 0; i < points.length; i++) {
+            const point = points[i];
+            const dx = point.x - centerX;
+            const dy = point.y - centerY;
+            const pointInside = (dx * dx + dy * dy) <= radius * radius;
+
+            if (i === 0) {
+                if (!pointInside) {
+                    currentSegment.push(point);
+                }
+                continue;
+            }
+
+            const prev = points[i - 1];
+            const pdx = prev.x - centerX;
+            const pdy = prev.y - centerY;
+            const prevInside = (pdx * pdx + pdy * pdy) <= radius * radius;
+            const segmentIntersectsEraser = distancePointToSegment({ x: centerX, y: centerY }, prev, point) <= radius;
+
+            if (pointInside || prevInside || segmentIntersectsEraser) {
+                if (currentSegment.length > 1) {
+                    keptSegments.push(currentSegment);
+                }
+                currentSegment = pointInside ? [] : [point];
+                continue;
+            }
+
+            if (currentSegment.length === 0) {
+                currentSegment.push(prev);
+            }
+
+            const last = currentSegment[currentSegment.length - 1];
+            if (!last || last.x !== point.x || last.y !== point.y) {
+                currentSegment.push(point);
+            }
+        }
+
+        if (currentSegment.length > 1) {
+            keptSegments.push(currentSegment);
+        }
+
+        return keptSegments;
+    }
+
+    function eraseBrushStrokesAtPoint(x, y, radius) {
+        const updatedStrokes = [];
+        const initialStrokeCount = brushStrokes.length;
+
+        for (const stroke of brushStrokes) {
+            const segments = splitStrokeByEraser(stroke, x, y, radius);
+            for (const segment of segments) {
+                updatedStrokes.push({
+                    points: segment,
+                    size: stroke.size,
+                    textureType: stroke.textureType
+                });
+            }
+        }
+
+        brushStrokes = updatedStrokes;
+        return updatedStrokes.length !== initialStrokeCount;
+    }
+
+    function eraseBrushStrokesAlongPath(startX, startY, endX, endY, radius) {
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        let changed = false;
+
+        if (distance === 0) {
+            return eraseBrushStrokesAtPoint(startX, startY, radius);
+        }
+
+        const steps = Math.max(1, Math.ceil(distance / Math.max(2, radius * 0.5)));
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = startX + dx * t;
+            const y = startY + dy * t;
+            if (eraseBrushStrokesAtPoint(x, y, radius)) {
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    function isPointNearEntity(entity, x, y, radius) {
+        if (!entity || typeof entity.x !== 'number' || typeof entity.y !== 'number') {
+            return false;
+        }
+
+        const entitySize = Number(entity.size) || 50;
+        const hitRadius = Math.max(10, entitySize * 0.35) + radius;
+        const dx = entity.x - x;
+        const dy = entity.y - y;
+        return (dx * dx + dy * dy) <= hitRadius * hitRadius;
+    }
+
+    const contextDeletePopup = document.getElementById('contextDeletePopup');
+    const contextDeleteTitle = document.getElementById('contextDeleteTitle');
+    const contextDeleteDescription = document.getElementById('contextDeleteDescription');
+    const contextDeleteConfirmBtn = document.getElementById('contextDeleteConfirmBtn');
+    const contextDeleteCancelBtn = document.getElementById('contextDeleteCancelBtn');
+    let currentDeleteTarget = null;
+
+    function getEntityLabel(entityType, entity) {
+        if (entityType === 'vegetable') {
+            return `${entity.vegetableName} (${entity.sortVegName})`;
+        }
+        if (entityType === 'tree') {
+            return `${entity.treeName} (${entity.sortName})`;
+        }
+        if (entityType === 'building') {
+            return entity.name;
+        }
+        if (entityType === 'flower') {
+            return entity.name;
+        }
+        return 'Об’єкт';
+    }
+
+    function getFieldLabel(figure) {
+        const typeLabelMap = {
+            grass: 'трава',
+            water: 'вода',
+            dirt: 'земля',
+            mud: 'мул'
+        };
+        const type = String(figure.fillType || 'невідомо').toLowerCase();
+        return `Ділянка (${typeLabelMap[type] || type})`;
+    }
+
+    function getTopEntityTargetAtPoint(x, y) {
+        for (let i = vegetablesOnCanvas.length - 1; i >= 0; i--) {
+            if (isPointNearEntity(vegetablesOnCanvas[i], x, y, 0)) {
+                return { type: 'entity', entityType: 'vegetable', index: i, label: getEntityLabel('vegetable', vegetablesOnCanvas[i]) };
+            }
+        }
+
+        for (let i = treesOnCanvas.length - 1; i >= 0; i--) {
+            if (isPointNearEntity(treesOnCanvas[i], x, y, 0)) {
+                return { type: 'entity', entityType: 'tree', index: i, label: getEntityLabel('tree', treesOnCanvas[i]) };
+            }
+        }
+
+        for (let i = buildingsOnCanvas.length - 1; i >= 0; i--) {
+            if (isPointNearEntity(buildingsOnCanvas[i], x, y, 0)) {
+                return { type: 'entity', entityType: 'building', index: i, label: getEntityLabel('building', buildingsOnCanvas[i]) };
+            }
+        }
+
+        for (let i = flowersOnCanvas.length - 1; i >= 0; i--) {
+            if (isPointNearEntity(flowersOnCanvas[i], x, y, 0)) {
+                return { type: 'entity', entityType: 'flower', index: i, label: getEntityLabel('flower', flowersOnCanvas[i]) };
+            }
+        }
+
+        return null;
+    }
+
+    function getTopFieldTargetAtPoint(x, y) {
+        for (let i = allFigures.length - 1; i >= 0; i--) {
+            const figure = allFigures[i];
+            if (!figure || !Array.isArray(figure.points) || figure.points.length < 3) {
+                continue;
+            }
+            if (isPointInsidePolygon({ x, y }, figure.points)) {
+                return { type: 'field', index: i, label: getFieldLabel(figure) };
+            }
+        }
+        return null;
+    }
+
+    function getDeletionTargetAtPoint(x, y) {
+        return getTopEntityTargetAtPoint(x, y) || getTopFieldTargetAtPoint(x, y);
+    }
+
+    function removeTarget(target) {
+        if (!target) {
+            return false;
+        }
+
+        if (target.type === 'entity') {
+            if (target.entityType === 'vegetable' && vegetablesOnCanvas[target.index]) {
+                vegetablesOnCanvas.splice(target.index, 1);
+                return true;
+            }
+            if (target.entityType === 'tree' && treesOnCanvas[target.index]) {
+                treesOnCanvas.splice(target.index, 1);
+                return true;
+            }
+            if (target.entityType === 'building' && buildingsOnCanvas[target.index]) {
+                buildingsOnCanvas.splice(target.index, 1);
+                return true;
+            }
+            if (target.entityType === 'flower' && flowersOnCanvas[target.index]) {
+                flowersOnCanvas.splice(target.index, 1);
+                return true;
+            }
+            return false;
+        }
+
+        if (target.type === 'field' && allFigures[target.index]) {
+            allFigures.splice(target.index, 1);
+            return true;
+        }
+
+        return false;
+    }
+
+    function showContextDeletePopup(screenX, screenY, target) {
+        currentDeleteTarget = target;
+
+        contextDeleteTitle.textContent = target.type === 'field' ? 'Ділянка' : 'Об’єкт';
+        contextDeleteDescription.textContent = target.label;
+
+        const popupWidth = 280;
+        const popupHeight = 130;
+        const margin = 12;
+        let left = screenX + 10;
+        let top = screenY + 10;
+
+        if (left + popupWidth > window.innerWidth - margin) {
+            left = Math.max(margin, screenX - popupWidth - 10);
+        }
+        if (top + popupHeight > window.innerHeight - margin) {
+            top = Math.max(margin, screenY - popupHeight - 10);
+        }
+
+        contextDeletePopup.style.left = `${left}px`;
+        contextDeletePopup.style.top = `${top}px`;
+        contextDeletePopup.style.display = 'block';
+    }
+
+    function hideContextDeletePopup() {
+        currentDeleteTarget = null;
+        contextDeletePopup.style.display = 'none';
+    }
+
+    contextDeleteConfirmBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!canDraw || !currentDeleteTarget) {
+            hideContextDeletePopup();
+            return;
+        }
+
+        saveState();
+        const deleted = removeTarget(currentDeleteTarget);
+        hideContextDeletePopup();
+        if (deleted) {
+            redrawCanvas();
+            saveState();
+        }
+    });
+
+    contextDeleteCancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideContextDeletePopup();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideContextDeletePopup();
+        }
+    });
+
+    document.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) {
+            return;
+        }
+
+        if (contextDeletePopup.style.display === 'block' && !contextDeletePopup.contains(e.target)) {
+            hideContextDeletePopup();
+        }
+    });
 
     function drawCompletedFigureLengths() {
         ctx.font = '12px Arial';
@@ -1350,6 +2040,10 @@
     function redrawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         setCanvasTransform();
+        if (isImageDrawable(loadedBackgroundImage)) {
+            ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
+        }
+        drawAllBrushStrokes();
         drawAllFigures();
         drawCurrentFigure();
         drawAllFlowers();
@@ -1362,6 +2056,10 @@
     function redrawCanvasWithLabels() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         setCanvasTransform();
+        if (isImageDrawable(loadedBackgroundImage)) {
+            ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
+        }
+        drawAllBrushStrokes();
         drawAllFigures();
         drawCompletedFigureLengths();
         drawCurrentFigure();
@@ -1378,7 +2076,7 @@
             allFigures[currentFigureIndex].fill = null;
             allFigures[currentFigureIndex].fillType = null;
         } else {
-            allFigures[currentFigureIndex].fill = createTexture(fillType);
+            allFigures[currentFigureIndex].fill = getTexturePattern(fillType);
             allFigures[currentFigureIndex].fillType = fillType;
         }
         fillModal.classList.remove('visible');
@@ -1432,12 +2130,13 @@
         const user_id = await fetchUserData();
         // Збираємо всі дані для збереження
         const mapData = {
-            canvasImage: safeCanvasToDataURL(),
+            canvasImage: persistedCanvasImageData,
             flowers: flowersOnCanvas,
             buildings: buildingsOnCanvas,
             trees: treesOnCanvas,
             vegetables: vegetablesOnCanvas,
-            figures: allFigures
+            figures: cloneFiguresWithoutRuntimeFill(allFigures),
+            brushStrokes: encodeBrushStrokes(brushStrokes)
         };
 
         const response = await fetch(`/map/save-interactive-map/`, {
@@ -1464,12 +2163,13 @@
     async function updateMap() {
         // Збираємо всі дані для оновлення
         const mapData = {
-            canvasImage: safeCanvasToDataURL(),
+            canvasImage: persistedCanvasImageData,
             flowers: flowersOnCanvas,
             buildings: buildingsOnCanvas,
             trees: treesOnCanvas,
             vegetables: vegetablesOnCanvas,
-            figures: allFigures
+            figures: cloneFiguresWithoutRuntimeFill(allFigures),
+            brushStrokes: encodeBrushStrokes(brushStrokes)
         };
 
         const user_id = await fetchUserData();
