@@ -55,6 +55,8 @@ ALLOWED_PATHS = [
     "/map/check-map/",
     r"/map/get-map/\d+/",  # Path with user_id parameter
     "/map/update-interactive-map/",
+    "/map/get_tree_sorts/",
+    "/map/get_vegetable_sorts/",
 
     # Main page
     "/",

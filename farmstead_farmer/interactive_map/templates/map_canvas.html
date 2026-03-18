@@ -275,11 +275,32 @@
 </div>
 <div class="help-icon" id="help-icon">?</div>
 
+<div class="zoom-controls hidden" id="zoomControls">
+    <div class="zoom-controls-title">Масштаб карти</div>
+    <div class="zoom-slider-wrap">
+        <input type="range" id="zoomSlider" min="50" max="400" step="1" value="100" aria-label="Масштаб карти">
+    </div>
+    <div class="zoom-controls-row">
+        <div class="zoom-display" id="zoomDisplay">100%</div>
+        <button onclick="resetZoom()" title="Скинути масштаб">Скинути</button>
+    </div>
+</div>
+
+<div class="map-controls-icon" id="mapControlsIcon" title="Керування масштабом">🔍</div>
+
+<div class="scale-indicator" id="scaleIndicator">
+    <div class="coords-label" id="coordsLabel">X: 0.0 m, Y: 0.0 m</div>
+    <div class="scale-row">
+        <div class="scale-bar" id="scaleBar"></div>
+        <div class="scale-label" id="scaleLabel">1 m</div>
+    </div>
+</div>
+
 <div class="help-popup" id="help-popup">
     <div class="help-content">
         <span class="close-help" id="close-help">&times;</span>
         <h3>Довідка</h3>
-        <p><strong>Shift:</strong> підписує всі дерева, будівлі, овочі, квіти.</p>
+        <p><strong>Shift:</strong> підписує всі дерева, будівлі, овочі, квіти та показує довжину ліній у метрах.</p>
         <p><strong>Курсор:</strong> При наведені на об'єкт показує назву цього об'єкта.</p>
     </div>
 </div>
@@ -337,15 +358,189 @@
     .close-help:hover {
         color: #000;
     }
+
+    .zoom-controls {
+        position: fixed;
+        bottom: 75px;
+        right: 20px;
+        background: linear-gradient(180deg, rgba(245, 252, 248, 0.98), rgba(230, 244, 236, 0.98));
+        border: 1px solid #9dc7b6;
+        padding: 12px 12px 10px;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        z-index: 1000;
+        box-shadow: 0 10px 28px rgba(33, 73, 57, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12);
+        width: 120px;
+    }
+
+    .zoom-controls.hidden {
+        display: none;
+    }
+
+    .map-controls-icon {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1px solid #8ebca9;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #dff1e8);
+        color: #214939;
+        font-size: 21px;
+        line-height: 44px;
+        text-align: center;
+        cursor: pointer;
+        z-index: 1001;
+        box-shadow: 0 6px 18px rgba(33, 73, 57, 0.2);
+        user-select: none;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .map-controls-icon:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(33, 73, 57, 0.25);
+    }
+
+    .zoom-controls-title {
+        font-size: 12px;
+        color: #285644;
+        font-weight: bold;
+        letter-spacing: 0.2px;
+    }
+
+    .zoom-slider-wrap {
+        height: 148px;
+        width: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #zoomSlider {
+        width: 132px;
+        margin: 0;
+        transform: rotate(-90deg);
+        transform-origin: center;
+        accent-color: #3b9173;
+    }
+
+    .zoom-controls-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .zoom-controls button {
+        width: auto;
+        height: 30px;
+        padding: 0 8px;
+        margin: 0;
+        font-size: 12px;
+        font-weight: bold;
+        background-color: #3b9173;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .zoom-controls button:hover {
+        background-color: #4ab58f;
+    }
+
+    .zoom-controls button:active {
+        background-color: #2d6a58;
+    }
+
+    .zoom-display {
+        text-align: center;
+        font-weight: bold;
+        color: #285644;
+        font-size: 13px;
+        padding: 0;
+        min-width: 44px;
+    }
+
+    .scale-indicator {
+        position: fixed;
+        right: 70px;
+        bottom: 20px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #b9cfc5;
+        border-radius: 8px;
+        padding: 8px 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        min-width: 230px;
+    }
+
+    .coords-label {
+        font-size: 13px;
+        color: #2d4c40;
+        margin-bottom: 8px;
+        font-family: Consolas, monospace;
+    }
+
+    .scale-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .scale-bar {
+        position: relative;
+        height: 0;
+        border-bottom: 2px solid #2d4c40;
+        width: 80px;
+    }
+
+    .scale-bar::before,
+    .scale-bar::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        width: 0;
+        height: 10px;
+        border-left: 2px solid #2d4c40;
+    }
+
+    .scale-bar::before {
+        left: 0;
+    }
+
+    .scale-bar::after {
+        right: 0;
+    }
+
+    .scale-label {
+        font-size: 12px;
+        font-weight: bold;
+        color: #2d4c40;
+        white-space: nowrap;
+    }
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const helpIcon = document.getElementById('help-icon');
         const helpPopup = document.getElementById('help-popup');
         const closeHelp = document.getElementById('close-help');
+        const mapControlsIcon = document.getElementById('mapControlsIcon');
+        const zoomControls = document.getElementById('zoomControls');
 
         helpIcon.addEventListener('click', () => {
             helpPopup.style.display = 'block';
+        });
+
+        mapControlsIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            zoomControls.classList.toggle('hidden');
         });
 
         closeHelp.addEventListener('click', () => {
@@ -356,6 +551,9 @@
         window.addEventListener('click', (e) => {
             if (!helpPopup.contains(e.target) && e.target !== helpIcon) {
                 helpPopup.style.display = 'none';
+            }
+            if (!zoomControls.contains(e.target) && e.target !== mapControlsIcon) {
+                zoomControls.classList.add('hidden');
             }
         });
     });
@@ -472,7 +670,10 @@
             document.body.appendChild(infoBanner);
             //document.getElementById('canvasContainer').classList.add('full-width');
             const oldImage = new Image();
-            oldImage.src = canvas.toDataURL();
+            const previewData = safeCanvasToDataURL();
+            if (previewData) {
+                oldImage.src = previewData;
+            }
 
             const prevWidth = canvas.width;
             const prevHeight = canvas.height;
@@ -552,6 +753,301 @@
     const applyButton = document.getElementById('applyButton');
     const fillModal = document.getElementById('fillModal');
     let isShiftPressed = false;
+    const ALLOWED_ENTITY_TERRAINS = new Set(['grass', 'dirt', 'mud']);
+    const BLOCKED_ENTITY_TERRAINS = new Set(['water']);
+
+    // === ZOOM & PAN VARIABLES ===
+    let zoomLevel = 1;
+    const minZoom = 0.5;
+    const maxZoom = 4;
+    let panX = 0;
+    let panY = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    const PIXELS_PER_METER = 20;
+    const coordsLabel = document.getElementById('coordsLabel');
+    const scaleBar = document.getElementById('scaleBar');
+    const scaleLabel = document.getElementById('scaleLabel');
+    const zoomSlider = document.getElementById('zoomSlider');
+
+    function pixelsToMeters(pixelDistance) {
+        return pixelDistance / PIXELS_PER_METER;
+    }
+
+    function metersToPixels(meters) {
+        return meters * PIXELS_PER_METER;
+    }
+
+    function safeCanvasToDataURL() {
+        try {
+            return canvas.toDataURL();
+        } catch (error) {
+            console.warn('Canvas export skipped due to browser security restrictions:', error);
+            return null;
+        }
+    }
+
+    function isImageDrawable(image) {
+        return Boolean(image && image.complete && image.naturalWidth > 0);
+    }
+
+    function drawFallbackMarker(x, y, size, symbol) {
+        ctx.beginPath();
+        ctx.fillStyle = '#2f7d62';
+        ctx.arc(x, y, Math.max(8, size * 0.28), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = 'bold 12px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(symbol, x, y + 1);
+        ctx.textBaseline = 'alphabetic';
+    }
+
+    function roundToNiceScale(rawMeters) {
+        if (rawMeters <= 0) {
+            return 1;
+        }
+        const exponent = Math.floor(Math.log10(rawMeters));
+        const base = Math.pow(10, exponent);
+        const normalized = rawMeters / base;
+
+        if (normalized <= 1) {
+            return 1 * base;
+        }
+        if (normalized <= 2) {
+            return 2 * base;
+        }
+        if (normalized <= 5) {
+            return 5 * base;
+        }
+        return 10 * base;
+    }
+
+    function updateScaleIndicator() {
+        const targetScreenPixels = 120;
+        const worldPixelsAtTarget = targetScreenPixels / zoomLevel;
+        const rawMeters = pixelsToMeters(worldPixelsAtTarget);
+        const niceMeters = roundToNiceScale(rawMeters);
+        const barWidthPixels = metersToPixels(niceMeters) * zoomLevel;
+
+        scaleBar.style.width = `${Math.max(30, Math.min(220, barWidthPixels)).toFixed(0)}px`;
+        scaleLabel.textContent = `${niceMeters.toLocaleString('uk-UA')} m`;
+    }
+
+    // === ZOOM & PAN FUNCTIONS ===
+    function screenToWorld(screenX, screenY) {
+        // Convert screen coordinates to world coordinates accounting for pan and zoom
+        return {
+            x: (screenX - panX) / zoomLevel,
+            y: (screenY - panY) / zoomLevel
+        };
+    }
+
+    function worldToScreen(worldX, worldY) {
+        // Convert world coordinates to screen coordinates accounting for pan and zoom
+        return {
+            x: worldX * zoomLevel + panX,
+            y: worldY * zoomLevel + panY
+        };
+    }
+
+    function setCanvasTransform() {
+        // Save canvas state and apply transformation
+        ctx.save();
+        ctx.translate(panX, panY);
+        ctx.scale(zoomLevel, zoomLevel);
+    }
+
+    function restoreCanvasTransform() {
+        // Restore canvas state
+        ctx.restore();
+    }
+
+    function setZoomLevel(nextZoom, anchorX = canvas.width / 2, anchorY = canvas.height / 2) {
+        const clampedZoom = Math.max(minZoom, Math.min(maxZoom, nextZoom));
+        if (clampedZoom === zoomLevel) {
+            updateZoomDisplay();
+            updateScaleIndicator();
+            return;
+        }
+
+        const worldBefore = screenToWorld(anchorX, anchorY);
+        zoomLevel = clampedZoom;
+        panX = anchorX - worldBefore.x * zoomLevel;
+        panY = anchorY - worldBefore.y * zoomLevel;
+
+        updateZoomDisplay();
+        updateScaleIndicator();
+        redrawCanvas();
+    }
+
+    function zoomIn() {
+        setZoomLevel(zoomLevel * 1.2);
+    }
+
+    function zoomOut() {
+        setZoomLevel(zoomLevel / 1.2);
+    }
+
+    function resetZoom() {
+        zoomLevel = 1;
+        panX = 0;
+        panY = 0;
+        updateZoomDisplay();
+        updateScaleIndicator();
+        redrawCanvas();
+    }
+
+    function updateZoomDisplay() {
+        const percentage = Math.round(zoomLevel * 100);
+        document.getElementById('zoomDisplay').textContent = percentage + '%';
+        if (zoomSlider) {
+            zoomSlider.value = String(percentage);
+        }
+    }
+
+    if (zoomSlider) {
+        zoomSlider.addEventListener('input', (e) => {
+            const percent = Number(e.target.value);
+            setZoomLevel(percent / 100);
+        });
+    }
+
+    // === MOUSE WHEEL ZOOM ===
+    canvas.addEventListener('wheel', (e) => {
+        if (!canDraw && zoomLevel === 1) return; // Allow zoom even in view mode
+        
+        e.preventDefault();
+        
+        const mouseScreen = { x: e.offsetX, y: e.offsetY };
+        const nextZoom = zoomLevel * ((e.deltaY > 0) ? 0.9 : 1.1);
+        setZoomLevel(nextZoom, mouseScreen.x, mouseScreen.y);
+    }, { passive: false });
+
+    // === PAN WITH MIDDLE MOUSE BUTTON ===
+    canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 2) { // Right click
+            isPanning = true;
+            panStartX = e.offsetX - panX;
+            panStartY = e.offsetY - panY;
+            canvas.style.cursor = 'grabbing';
+            e.preventDefault();
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (isPanning) {
+            panX = e.offsetX - panStartX;
+            panY = e.offsetY - panStartY;
+            redrawCanvas();
+        }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if (e.button === 2) {
+            isPanning = false;
+            canvas.style.cursor = 'crosshair';
+        }
+    });
+
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // === KEYBOARD ZOOM SHORTCUTS ===
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                zoomIn();
+            } else if (e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                zoomOut();
+            } else if (e.key === '0') {
+                e.preventDefault();
+                resetZoom();
+            }
+        }
+    });
+
+    // Initialize zoom display
+    updateZoomDisplay();
+    updateScaleIndicator();
+
+    function isPointOnSegment(px, py, ax, ay, bx, by) {
+        const epsilon = 1e-6;
+        const cross = (py - ay) * (bx - ax) - (px - ax) * (by - ay);
+        if (Math.abs(cross) > epsilon) {
+            return false;
+        }
+
+        const dot = (px - ax) * (px - bx) + (py - ay) * (py - by);
+        return dot <= epsilon;
+    }
+
+    function isPointInsidePolygon(point, polygon) {
+        if (!Array.isArray(polygon) || polygon.length < 3) {
+            return false;
+        }
+
+        const { x, y } = point;
+        let inside = false;
+
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = Number(polygon[i].x);
+            const yi = Number(polygon[i].y);
+            const xj = Number(polygon[j].x);
+            const yj = Number(polygon[j].y);
+
+            if (
+                isPointOnSegment(x, y, xi, yi, xj, yj)
+            ) {
+                return true;
+            }
+
+            const intersects =
+                (yi > y) !== (yj > y) &&
+                x < ((xj - xi) * (y - yi)) / ((yj - yi) || 1e-12) + xi;
+
+            if (intersects) {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
+
+    function getTerrainAtPoint(x, y) {
+        for (let i = allFigures.length - 1; i >= 0; i--) {
+            const figure = allFigures[i];
+            if (!figure || !figure.fillType || !Array.isArray(figure.points)) {
+                continue;
+            }
+
+            if (isPointInsidePolygon({ x, y }, figure.points)) {
+                return String(figure.fillType).toLowerCase();
+            }
+        }
+
+        return null;
+    }
+
+    function canPlaceEntityAt(x, y) {
+        const terrainType = getTerrainAtPoint(x, y);
+
+        if (terrainType && ALLOWED_ENTITY_TERRAINS.has(terrainType)) {
+            return true;
+        }
+
+        if (terrainType && BLOCKED_ENTITY_TERRAINS.has(terrainType)) {
+            showAlert('❌ Об’єкти можна ставити лише на траву або землю. На воді розміщення заборонено.');
+            return false;
+        }
+
+        showAlert('❌ Об’єкти можна ставити лише в межах намальованої території (трава/земля), а не у порожнечу.');
+        return false;
+    }
 
     function setTool(selectedTool) {
         tool = selectedTool;
@@ -629,22 +1125,62 @@
 
     function saveState() {
         history = history.slice(0, historyIndex + 1);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        history.push(imageData);
+        let imageData = null;
+        try {
+            imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        } catch (error) {
+            console.warn('History snapshot saved without pixel data due to canvas security restrictions:', error);
+        }
+        
+        // Save complete application state
+        const state = {
+            imageData: imageData,
+            flowersOnCanvas: JSON.parse(JSON.stringify(flowersOnCanvas)),
+            buildingsOnCanvas: JSON.parse(JSON.stringify(buildingsOnCanvas)),
+            treesOnCanvas: JSON.parse(JSON.stringify(treesOnCanvas)),
+            vegetablesOnCanvas: JSON.parse(JSON.stringify(vegetablesOnCanvas)),
+            allFigures: JSON.parse(JSON.stringify(allFigures)),
+            currentPoints: JSON.parse(JSON.stringify(currentPoints))
+        };
+        
+        history.push(state);
         historyIndex = history.length - 1;
     }
 
     function undo() {
         if (historyIndex > 0) {
             historyIndex--;
-            ctx.putImageData(history[historyIndex], 0, 0);
+            restoreState(history[historyIndex]);
         }
     }
 
     function redo() {
         if (historyIndex < history.length - 1) {
             historyIndex++;
-            ctx.putImageData(history[historyIndex], 0, 0);
+            restoreState(history[historyIndex]);
+        }
+    }
+
+    function restoreState(state) {
+        // Restore canvas image
+        if (state.imageData) {
+            try {
+                ctx.putImageData(state.imageData, 0, 0);
+            } catch (error) {
+                console.warn('Pixel restore skipped due to canvas security restrictions:', error);
+            }
+        }
+        
+        // Restore all entity arrays
+        flowersOnCanvas = JSON.parse(JSON.stringify(state.flowersOnCanvas));
+        buildingsOnCanvas = JSON.parse(JSON.stringify(state.buildingsOnCanvas));
+        treesOnCanvas = JSON.parse(JSON.stringify(state.treesOnCanvas));
+        vegetablesOnCanvas = JSON.parse(JSON.stringify(state.vegetablesOnCanvas));
+        allFigures = JSON.parse(JSON.stringify(state.allFigures));
+        currentPoints = JSON.parse(JSON.stringify(state.currentPoints));
+
+        if (!state.imageData) {
+            redrawCanvas();
         }
     }
 
@@ -670,32 +1206,40 @@
 
     canvas.addEventListener("mousedown", (e) => {
         if (!canDraw) return;
+        if (e.button !== 0) return;
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
+        
         if (tool === "draw") {
             isDrawing = true;
-            [lastX, lastY] = [e.offsetX, e.offsetY];
+            [lastX, lastY] = [worldPos.x, worldPos.y];
             saveState();
         } else if (tool === "points") {
-            currentPoints.push({ x: e.offsetX, y: e.offsetY });
+            currentPoints.push({ x: worldPos.x, y: worldPos.y });
             redrawCanvas();
+            saveState();
         }
     });
 
     canvas.addEventListener("mousemove", (e) => {
         if (!canDraw) return;
         if (!isDrawing || tool !== 'draw') return;
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
 
+        setCanvasTransform();
         ctx.beginPath();
         ctx.strokeStyle = currentTexture;
         ctx.lineWidth = currentBrushSize;
         ctx.lineCap = 'round';
         ctx.moveTo(lastX, lastY);
-        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.lineTo(worldPos.x, worldPos.y);
         ctx.stroke();
-        [lastX, lastY] = [e.offsetX, e.offsetY];
+        restoreCanvasTransform();
+        [lastX, lastY] = [worldPos.x, worldPos.y];
     });
 
-    canvas.addEventListener("mouseup", () => {
+    canvas.addEventListener("mouseup", (e) => {
         if (!canDraw) return;
+        if (e.button !== 0) return;
         isDrawing = false;
         saveState();
     });
@@ -707,6 +1251,8 @@
             allFigures.push({ points: [...currentPoints], fill: null });
             currentFigureIndex = allFigures.length - 1;
             currentPoints = [];
+            saveState();
+            redrawCanvas();
             fillModal.classList.add('visible');
         }
     }
@@ -732,6 +1278,21 @@
         ctx.strokeStyle = "black";
         ctx.lineWidth = 2;
         ctx.stroke();
+
+        // Show segment lengths in meters while editing polygon points.
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#1f4c3a';
+        ctx.textAlign = 'center';
+        for (let i = 1; i < currentPoints.length; i++) {
+            const a = currentPoints[i - 1];
+            const b = currentPoints[i];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const segmentMeters = pixelsToMeters(Math.sqrt(dx * dx + dy * dy));
+            const midX = (a.x + b.x) / 2;
+            const midY = (a.y + b.y) / 2 - 8;
+            ctx.fillText(`${segmentMeters.toFixed(1)} м`, midX, midY);
+        }
     }
 
     function drawAllFigures() {
@@ -759,37 +1320,56 @@
         }
     }
 
+    function drawCompletedFigureLengths() {
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#1f4c3a';
+        ctx.textAlign = 'center';
+
+        for (let figure of allFigures) {
+            if (!figure || !Array.isArray(figure.points) || figure.points.length < 2) {
+                continue;
+            }
+
+            const points = figure.points;
+            for (let i = 0; i < points.length; i++) {
+                const a = points[i];
+                const b = points[(i + 1) % points.length];
+
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const segmentMeters = pixelsToMeters(Math.sqrt(dx * dx + dy * dy));
+
+                const midX = (a.x + b.x) / 2;
+                const midY = (a.y + b.y) / 2 - 8;
+
+                ctx.fillText(`${segmentMeters.toFixed(1)} м`, midX, midY);
+            }
+        }
+    }
+
     function redrawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        /*if (loadedBackgroundImage) {
-            // Малюємо фон з масштабуванням
-            ctx.drawImage(
-                loadedBackgroundImage,
-                0, 0,
-                loadedBackgroundImage.width, loadedBackgroundImage.height,
-                0, 0,
-                canvas.width, canvas.height
-            );
-        }*/
+        setCanvasTransform();
         drawAllFigures();
         drawCurrentFigure();
         drawAllFlowers();
         drawAllBuildings();
         drawAllTrees();
         drawAllVegetables();
+        restoreCanvasTransform();
     }
 
     function redrawCanvasWithLabels() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        /*if (loadedBackgroundImage) {
-            ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
-        }*/
+        setCanvasTransform();
         drawAllFigures();
+        drawCompletedFigureLengths();
         drawCurrentFigure();
         drawAllFlowersWithLabels();
         drawAllBuildingsWithLabels();
         drawAllTreesWithLabels();
         drawAllVegetablesWithLabels();
+        restoreCanvasTransform();
     }
 
     function applyFill() {
@@ -852,7 +1432,7 @@
         const user_id = await fetchUserData();
         // Збираємо всі дані для збереження
         const mapData = {
-            canvasImage: canvas.toDataURL(),
+            canvasImage: safeCanvasToDataURL(),
             flowers: flowersOnCanvas,
             buildings: buildingsOnCanvas,
             trees: treesOnCanvas,
@@ -884,7 +1464,7 @@
     async function updateMap() {
         // Збираємо всі дані для оновлення
         const mapData = {
-            canvasImage: canvas.toDataURL(),
+            canvasImage: safeCanvasToDataURL(),
             flowers: flowersOnCanvas,
             buildings: buildingsOnCanvas,
             trees: treesOnCanvas,
@@ -929,48 +1509,58 @@
     flowerImage.src = flowerImageURL;
 
     function drawFlowerImage(x, y, name) {
-        if (!flowerImage.complete || flowerImage.naturalWidth === 0) {
-            console.error("⚠️ Зображення квітки ще не завантажено або пошкоджене!");
-            return;
-        }
         const size = 50;
-        ctx.drawImage(flowerImage, x - size / 2, y - size / 2, size, size);
         flowersOnCanvas.push({ x, y, size, name });
+        redrawCanvas();
         console.log(`🌸 Квітка "${name}" додана в (${x}, ${y})`);
     }
 
     function drawAllFlowers() {
         flowersOnCanvas.forEach(flower => {
-            ctx.drawImage(flowerImage, flower.x - flower.size/2, flower.y - flower.size/2, flower.size, flower.size);
+            if (isImageDrawable(flowerImage)) {
+                ctx.drawImage(flowerImage, flower.x - flower.size / 2, flower.y - flower.size / 2, flower.size, flower.size);
+            } else {
+                drawFallbackMarker(flower.x, flower.y, flower.size, 'F');
+            }
         });
     }
 
     function drawAllFlowersWithLabels() {
         flowersOnCanvas.forEach(flower => {
-            ctx.drawImage(flowerImage, flower.x - flower.size/2, flower.y - flower.size/2, flower.size, flower.size);
+            if (isImageDrawable(flowerImage)) {
+                ctx.drawImage(flowerImage, flower.x - flower.size / 2, flower.y - flower.size / 2, flower.size, flower.size);
+            } else {
+                drawFallbackMarker(flower.x, flower.y, flower.size, 'F');
+            }
             ctx.font = '12px Arial';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
-            ctx.fillText(flower.name, flower.x, flower.y - flower.size/2 - 5);
+            ctx.fillText(flower.name, flower.x, flower.y - flower.size / 2 - 5);
         });
     }
 
     canvas.addEventListener("click", (e) => {
         if (!canDraw) return;
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
+        
         if (tool === "flower") {
+            if (!canPlaceEntityAt(worldPos.x, worldPos.y)) return;
             loadFlowerOptions();
-            pendingFlowerPosition = { x: e.offsetX, y: e.offsetY };
+            pendingFlowerPosition = { x: worldPos.x, y: worldPos.y };
             flowerModal.classList.add("visible");
         } else if (tool === "building") {
-            pendingBuildingPosition = { x: e.offsetX, y: e.offsetY };
+            if (!canPlaceEntityAt(worldPos.x, worldPos.y)) return;
+            pendingBuildingPosition = { x: worldPos.x, y: worldPos.y };
             showBuildingModal();
         } else if (tool === "tree") {
+            if (!canPlaceEntityAt(worldPos.x, worldPos.y)) return;
             loadTreeOptions();
-            pendingTreePosition = { x: e.offsetX, y: e.offsetY };
+            pendingTreePosition = { x: worldPos.x, y: worldPos.y };
             treeModal.classList.add("visible");
         } else if (tool === "vegetable") {
+            if (!canPlaceEntityAt(worldPos.x, worldPos.y)) return;
             loadVegetableOptions();
-            pendingVegetablePosition = { x: e.offsetX, y: e.offsetY };
+            pendingVegetablePosition = { x: worldPos.x, y: worldPos.y };
             vegetableModal.classList.add("visible");
         }
     });
@@ -984,8 +1574,14 @@
         }
 
         if (pendingFlowerPosition) {
+            if (!canPlaceEntityAt(pendingFlowerPosition.x, pendingFlowerPosition.y)) {
+                pendingFlowerPosition = null;
+                flowerModal.classList.remove("visible");
+                return;
+            }
             const selectedFlowerName = flowerTypeSelect.value;
             drawFlowerImage(pendingFlowerPosition.x, pendingFlowerPosition.y, selectedFlowerName);
+            saveState();
             pendingFlowerPosition = null;
         }
 
@@ -1043,7 +1639,7 @@
     let vegetableImage = new Image();
     let allVegetables = [];
     let vegetablesOnCanvas = [];
-    let pendingVegatablePosition = null;
+    let pendingVegetablePosition = null;
 
     const vegetableModal = document.getElementById("vegetableModal");
     const vegetableTypeSelect = document.getElementById("vegetableTypeSelect");
@@ -1051,16 +1647,6 @@
 
     const vegetableImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%BE%D0%B2%D0%BE%D1%87.png";
     vegetableImage.src = vegetableImageURL;
-
-    // Відкриваємо модалку при кліку на canvas
-    canvas.addEventListener("click", (e) => {
-        if (!canDraw) return;
-        if (tool === "vegetable") {
-            pendingVegetablePosition = { x: e.offsetX, y: e.offsetY };
-            loadVegetableOptions();
-            vegetableModal.classList.add("visible");
-        }
-    });
 
     // Завантаження овочів та їх сортів
     async function loadVegetableOptions() {
@@ -1226,9 +1812,22 @@
 
         // Знаходимо вибраний овоч і сорт
         const selectedVegetable = allVegetables.find(vegetable => vegetable.idVeg == selectedVegetableId);
+        if (!selectedVegetable || !Array.isArray(selectedVegetable.sortsVeg)) {
+            showAlert("❌ Не вдалося знайти вибраний овоч.");
+            return;
+        }
         const selectedSortVeg = selectedVegetable.sortsVeg.find(sortVeg => sortVeg.idSort == selectedSortVegId);
+        if (!selectedSortVeg) {
+            showAlert("❌ Не вдалося знайти вибраний сорт овочу.");
+            return;
+        }
 
         if (pendingVegetablePosition) {
+            if (!canPlaceEntityAt(pendingVegetablePosition.x, pendingVegetablePosition.y)) {
+                pendingVegetablePosition = null;
+                vegetableModal.classList.remove("visible");
+                return;
+            }
             drawVegetableImage(
                 pendingVegetablePosition.x,
                 pendingVegetablePosition.y,
@@ -1237,6 +1836,7 @@
                 selectedVegetable.idVeg,
                 selectedSortVeg.idSort
             );
+            saveState();
             pendingVegetablePosition = null;
         }
 
@@ -1251,12 +1851,7 @@
 
     // Малювання овоча
     function drawVegetableImage(x, y, vegetableName, sortVegName, vegetableId, sortVegId) {
-        if (!vegetableImage.complete || vegetableImage.naturalWidth === 0) {
-            console.error("⚠️ Зображення овоча ще не завантажено або пошкоджене!");
-            return;
-        }
         const size = 50;
-        ctx.drawImage(vegetableImage, x - size / 2, y - size / 2, size, size);
         vegetablesOnCanvas.push({
             x,
             y,
@@ -1266,20 +1861,29 @@
             vegetableId,
             sortVegId
         });
+        redrawCanvas();
         console.log(`овоч "${vegetableName}" (${sortVegName}) додано в (${x}, ${y})`);
     }
 
     // Малювання всіх овочів на canvas
     function drawAllVegetables() {
         vegetablesOnCanvas.forEach(vegetable => {
-            ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
+            if (isImageDrawable(vegetableImage)) {
+                ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
+            } else {
+                drawFallbackMarker(vegetable.x, vegetable.y, vegetable.size, 'V');
+            }
         });
     }
 
     // Малювання овоча із написами
     function drawAllVegetablesWithLabels() {
         vegetablesOnCanvas.forEach(vegetable => {
-            ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
+            if (isImageDrawable(vegetableImage)) {
+                ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
+            } else {
+                drawFallbackMarker(vegetable.x, vegetable.y, vegetable.size, 'V');
+            }
             ctx.font = '12px Arial';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
@@ -1288,6 +1892,7 @@
     }
     // === ДЕРЕВА ===
     let treeImage = new Image();
+    const treeImageCache = new Map();
     let allTrees = []; // [{ name: "Яблуня", sorts: ["Айдаред", "Гала"] }, ...]
     let treesOnCanvas = [];
     let pendingTreePosition = null;
@@ -1298,6 +1903,15 @@
 
     const treeImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/3/%D0%94%D0%B5%D1%80%D0%B5%D0%B2%D0%BE.png";
     treeImage.src = treeImageURL;
+
+    function getTreeImageFromCache(url) {
+        if (!treeImageCache.has(url)) {
+            const img = new Image();
+            img.src = url;
+            treeImageCache.set(url, img);
+        }
+        return treeImageCache.get(url);
+    }
 
     function getTreeImageByType(treeName) {
         const lowerName = treeName.toLowerCase();
@@ -1316,16 +1930,6 @@
             return treeImageURL; // Стандартне фото для інших дерев
         }
     }
-    // Відкриваємо модалку при кліку на canvas
-    canvas.addEventListener("click", (e) => {
-        if (!canDraw) return;
-        if (tool === "tree") {
-            pendingTreePosition = { x: e.offsetX, y: e.offsetY };
-            loadTreeOptions();
-            treeModal.classList.add("visible");
-        }
-    });
-
     // Завантаження дерев та їх сортів
     async function loadTreeOptions() {
         try {
@@ -1501,6 +2105,11 @@
         }
 
         if (pendingTreePosition) {
+            if (!canPlaceEntityAt(pendingTreePosition.x, pendingTreePosition.y)) {
+                pendingTreePosition = null;
+                treeModal.classList.remove("visible");
+                return;
+            }
             drawTreeImage(
                 pendingTreePosition.x,
                 pendingTreePosition.y,
@@ -1523,75 +2132,59 @@
 
     // Малювання дерева
     function drawTreeImage(x, y, treeName, sortName, treeId, sortId) {
-        const treeImageToDraw = new Image();
-        treeImageToDraw.src = getTreeImageByType(treeName);
-
-        treeImageToDraw.onload = function() {
-            const size = 50;
-            ctx.drawImage(treeImageToDraw, x - size / 2, y - size / 2, size, size);
+        const treeSpecificUrl = getTreeImageByType(treeName);
+        const addTreeToCanvas = (imageUrl) => {
             treesOnCanvas.push({
                 x,
                 y,
-                size,
+                size: 50,
                 treeName,
                 sortName,
                 treeId,
                 sortId,
-                imageUrl: treeImageToDraw.src // Зберігаємо URL для подальшого використання
+                imageUrl
             });
-            //console.log(`🌳 Дерево "${treeName}" (${sortName}) додано в (${x}, ${y})`);
+            redrawCanvas();
+            saveState();
         };
 
-        treeImageToDraw.onerror = function() {
+        const img = getTreeImageFromCache(treeSpecificUrl);
+        if (img.complete && img.naturalWidth > 0) {
+            addTreeToCanvas(treeSpecificUrl);
+            return;
+        }
+
+        img.addEventListener('load', () => addTreeToCanvas(treeSpecificUrl), { once: true });
+        img.addEventListener('error', () => {
             console.error("⚠️ Помилка завантаження зображення дерева!");
-            // Використовуємо стандартне зображення у разі помилки
-            const size = 50;
-            ctx.drawImage(treeImage, x - size / 2, y - size / 2, size, size);
-            treesOnCanvas.push({
-                x,
-                y,
-                size,
-                treeName,
-                sortName,
-                treeId,
-                sortId,
-                imageUrl: treeImageURL
-            });
-        };
+            addTreeToCanvas(treeImageURL);
+        }, { once: true });
     }
 
     // Малювання всіх дерев на canvas
     function drawAllTrees() {
         treesOnCanvas.forEach(tree => {
-            const img = new Image();
-            img.src = tree.imageUrl || treeImageURL;
-            img.onload = function() {
+            const img = getTreeImageFromCache(tree.imageUrl || treeImageURL);
+            if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
-            };
-            img.onerror = function() {
-                ctx.drawImage(treeImage, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
-            };
+            } else {
+                drawFallbackMarker(tree.x, tree.y, tree.size, 'T');
+            }
         });
     }
     // Малювання всіх дерев з написами
     function drawAllTreesWithLabels() {
         treesOnCanvas.forEach(tree => {
-            const img = new Image();
-            img.src = tree.imageUrl || treeImageURL;
-            img.onload = function() {
+            const img = getTreeImageFromCache(tree.imageUrl || treeImageURL);
+            if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
-                ctx.font = '12px Arial';
-                ctx.fillStyle = 'black';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${tree.treeName} (${tree.sortName})`, tree.x, tree.y - tree.size / 2 - 5);
-            };
-            img.onerror = function() {
-                ctx.drawImage(treeImage, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
-                ctx.font = '12px Arial';
-                ctx.fillStyle = 'black';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${tree.treeName} (${tree.sortName})`, tree.x, tree.y - tree.size / 2 - 5);
-            };
+            } else {
+                drawFallbackMarker(tree.x, tree.y, tree.size, 'T');
+            }
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${tree.treeName} (${tree.sortName})`, tree.x, tree.y - tree.size / 2 - 5);
         });
     }
 
@@ -1604,29 +2197,33 @@
     buildingImage.src = buildingImageURL;
 
     function drawBuildingImage(x, y, name) {
-        if (!buildingImage.complete || buildingImage.naturalWidth === 0) {
-            console.error("⚠️ Зображення будівлі ще не завантажено або пошкоджене!");
-            return;
-        }
         const size = 60;
-        ctx.drawImage(buildingImage, x - size / 2, y - size / 2, size, size);
         buildingsOnCanvas.push({ x, y, size, name });
+        redrawCanvas();
         console.log(`🏠 Будівля "${name}" додана в (${x}, ${y})`);
     }
 
     function drawAllBuildings() {
         buildingsOnCanvas.forEach(building => {
-            ctx.drawImage(buildingImage, building.x - building.size/2, building.y - building.size/2, building.size, building.size);
+            if (isImageDrawable(buildingImage)) {
+                ctx.drawImage(buildingImage, building.x - building.size / 2, building.y - building.size / 2, building.size, building.size);
+            } else {
+                drawFallbackMarker(building.x, building.y, building.size, 'B');
+            }
         });
     }
 
     function drawAllBuildingsWithLabels() {
         buildingsOnCanvas.forEach(building => {
-            ctx.drawImage(buildingImage, building.x - building.size/2, building.y - building.size/2, building.size, building.size);
+            if (isImageDrawable(buildingImage)) {
+                ctx.drawImage(buildingImage, building.x - building.size / 2, building.y - building.size / 2, building.size, building.size);
+            } else {
+                drawFallbackMarker(building.x, building.y, building.size, 'B');
+            }
             ctx.font = '12px Arial';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
-            ctx.fillText(building.name, building.x, building.y - building.size/2 - 5);
+            ctx.fillText(building.name, building.x, building.y - building.size / 2 - 5);
         });
     }
 
@@ -1645,7 +2242,13 @@
         }
 
         if (pendingBuildingPosition) {
+            if (!canPlaceEntityAt(pendingBuildingPosition.x, pendingBuildingPosition.y)) {
+                pendingBuildingPosition = null;
+                buildingModal.classList.remove("visible");
+                return;
+            }
             drawBuildingImage(pendingBuildingPosition.x, pendingBuildingPosition.y, buildingName);
+            saveState();
             pendingBuildingPosition = null;
         }
 
@@ -1659,8 +2262,10 @@
 
     // Перевірка наведення на об'єкти
     function checkHoverObjects(event) {
-        const mouseX = event.offsetX;
-        const mouseY = event.offsetY;
+        const worldPos = screenToWorld(event.offsetX, event.offsetY);
+        const mouseX = worldPos.x;
+        const mouseY = worldPos.y;
+        coordsLabel.textContent = `X: ${pixelsToMeters(mouseX).toFixed(1)} m, Y: ${pixelsToMeters(mouseY).toFixed(1)} m`;
         let found = false;
 
         // Перевіряємо квітки
@@ -1669,7 +2274,7 @@
             if (distance < flower.size / 2) {
                 tooltip.textContent = flower.name;
                 tooltip.style.display = "block";
-                positionTooltip(mouseX, mouseY);
+                positionTooltip(event.offsetX, event.offsetY);
                 found = true;
                 break;
             }
@@ -1682,7 +2287,7 @@
                 if (distance < building.size / 2) {
                     tooltip.textContent = building.name;
                     tooltip.style.display = "block";
-                    positionTooltip(mouseX, mouseY);
+                    positionTooltip(event.offsetX, event.offsetY);
                     found = true;
                     break;
                 }
@@ -1695,7 +2300,7 @@
                 if (distance < tree.size / 2) {
                     tooltip.textContent = `${tree.treeName} (${tree.sortName})`; // Показуємо назву і сорт
                     tooltip.style.display = "block";
-                    positionTooltip(mouseX, mouseY);
+                    positionTooltip(event.offsetX, event.offsetY);
                     found = true;
                     break;
                 }
@@ -1708,7 +2313,7 @@
                 if (distance < vegetable.size / 2) {
                     tooltip.textContent = `${vegetable.vegetableName} (${vegetable.sortVegName})`; // Показуємо назву і сорт
                     tooltip.style.display = "block";
-                    positionTooltip(mouseX, mouseY);
+                    positionTooltip(event.offsetX, event.offsetY);
                     found = true;
                     break;
                 }

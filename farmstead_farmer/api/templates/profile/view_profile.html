@@ -427,10 +427,12 @@
             // Відображаємо кнопку тільки якщо show_map === true
             if (data.show_map) {
                 mapButtonContainer.innerHTML = `
-                    <div style="justify-content: center; display: flex;">
-                        <button onclick="location.href='/map/get-map/{{ user.id }}'" class="map-button">
-                            Інтерактивна мапа
-                        </button>
+                    <div class="profile-map-section">
+                        <div class="profile-map-actions">
+                            <button onclick="location.href='/map/interactive-map/?owner_id={{ user.id }}'" class="map-button">
+                                Інтерактивна мапа
+                            </button>
+                        </div>
                     </div>
                 `;
             } else {

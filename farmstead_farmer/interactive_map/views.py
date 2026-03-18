@@ -21,7 +21,32 @@ def map_overview(request):
 
 
 def map_view(request):
-    return render(request, 'map_canvas.html')
+    owner_id_param = request.GET.get('owner_id')
+    owner_id = None
+
+    if owner_id_param:
+        try:
+            owner_id = int(owner_id_param)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Invalid owner_id'}, status=400)
+    elif getattr(request, 'user', None) and request.user.is_authenticated:
+        owner_id = request.user.id
+
+    map_data = None
+    if owner_id is not None:
+        snapshot = map_use_case.get_map(owner_id)
+        map_data = snapshot.get('map_data')
+        if map_data is not None and not isinstance(map_data, str):
+            map_data = json.dumps(map_data, ensure_ascii=False)
+
+    return render(
+        request,
+        'map_canvas.html',
+        {
+            'owner_id': owner_id or '',
+            'map_data': map_data,
+        },
+    )
 
 
 @throttle_classes([MapTrottle])

@@ -246,7 +246,7 @@ window.addEventListener('pageshow', function(event) {
                 if (!token) {
                     window.location.href = "/login/";
                 } else if(not_first_map === true){
-                    window.location.href = `/map/get-map/${user_id}/`;
+                    window.location.href = `/map/interactive-map/?owner_id=${user_id}`;
                 }else if(not_first_map === false){
                     window.location.href = "/map/interactive-map/";
                 }
