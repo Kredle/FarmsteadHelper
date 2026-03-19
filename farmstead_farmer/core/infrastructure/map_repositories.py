@@ -9,6 +9,7 @@ from django.db import connection
 from interactive_map.models import Map
 
 from core.infrastructure.incompatibility_parser import IncompatibilityParserUA
+from core.infrastructure.soil_parser import SoilTypeParserUA
 
 
 ALLOWED_ENTITY_TERRAINS = {'grass', 'dirt', 'mud'}
@@ -204,9 +205,50 @@ class DjangoMapRepository(MapRepository):
 
         return list({*tree_names, *vegetable_names})
 
+    def _build_soil_index(self) -> dict:
+        parser = SoilTypeParserUA()
+        unique_soils: set[str] = set()
+
+        tree_sort_soils: dict[str, list[str]] = {}
+        vegetable_sort_soils: dict[str, list[str]] = {}
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                '''
+                SELECT idsort, ground_type
+                FROM sorts
+                '''
+            )
+            tree_rows = cursor.fetchall()
+
+            cursor.execute(
+                '''
+                SELECT "idSort", "Name"
+                FROM sorts_veg
+                '''
+            )
+            vegetable_rows = cursor.fetchall()
+
+        for sort_id, raw_ground in tree_rows:
+            soils = parser.parse(str(raw_ground or ''))
+            tree_sort_soils[str(sort_id)] = soils
+            unique_soils.update(soils)
+
+        # Vegetables table in current schema does not contain dedicated ground_type.
+        # Keep explicit empty lists for predictable API contract.
+        for veg_sort_id, _veg_sort_name in vegetable_rows:
+            vegetable_sort_soils[str(veg_sort_id)] = []
+
+        return {
+            'soil_types': sorted(unique_soils),
+            'tree_sort_soils': tree_sort_soils,
+            'vegetable_sort_soils': vegetable_sort_soils,
+        }
+
     def _build_compatibility_index(self) -> dict:
         known_species = self._fetch_known_species_names()
         parser = IncompatibilityParserUA(known_species)
+        soil_index = self._build_soil_index()
 
         trees: dict[str, dict] = {}
         vegetables: dict[str, dict] = {}
@@ -265,6 +307,7 @@ class DjangoMapRepository(MapRepository):
         return {
             'trees': trees,
             'vegetables': vegetables,
+            'soil_types': soil_index.get('soil_types', []),
         }
 
     def get_compatibility_index(self) -> dict:
@@ -273,6 +316,8 @@ class DjangoMapRepository(MapRepository):
     def get_tree_sorts(self) -> list[dict]:
         compatibility_index = self._build_compatibility_index()
         tree_compatibility = compatibility_index.get('trees', {})
+        soil_index = self._build_soil_index()
+        tree_sort_soils = soil_index.get('tree_sort_soils', {})
 
         with connection.cursor() as cursor:
             cursor.execute(
@@ -281,7 +326,8 @@ class DjangoMapRepository(MapRepository):
                     t.idtree,
                     t."Name",
                     s.idsort,
-                    s.sort
+                    s.sort,
+                    s.ground_type
                 FROM tree t
                 LEFT JOIN sorts s ON s.tree_idtree = t.idtree
                 ORDER BY t."Name", s.sort
@@ -290,7 +336,7 @@ class DjangoMapRepository(MapRepository):
             rows = cursor.fetchall()
 
         trees_by_id: dict[int, dict] = {}
-        for tree_id, tree_name, sort_id, sort_name in rows:
+        for tree_id, tree_name, sort_id, sort_name, sort_ground_type in rows:
             if tree_id not in trees_by_id:
                 compatibility = tree_compatibility.get(str(tree_id), {})
                 trees_by_id[tree_id] = {
@@ -309,6 +355,8 @@ class DjangoMapRepository(MapRepository):
                     {
                         "id": sort_id,
                         "sort": sort_name,
+                        "ground_type_raw": sort_ground_type,
+                        "allowed_soils": tree_sort_soils.get(str(sort_id), []),
                     }
                 )
 
@@ -317,6 +365,8 @@ class DjangoMapRepository(MapRepository):
     def get_vegetable_sorts(self) -> list[dict]:
         compatibility_index = self._build_compatibility_index()
         vegetable_compatibility = compatibility_index.get('vegetables', {})
+        soil_index = self._build_soil_index()
+        vegetable_sort_soils = soil_index.get('vegetable_sort_soils', {})
 
         with connection.cursor() as cursor:
             cursor.execute(
@@ -353,6 +403,7 @@ class DjangoMapRepository(MapRepository):
                     {
                         "idSort": sort_id,
                         "Name": sort_name,
+                        "allowed_soils": vegetable_sort_soils.get(str(sort_id), []),
                     }
                 )
 
