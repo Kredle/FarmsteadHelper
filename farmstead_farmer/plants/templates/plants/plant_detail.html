@@ -270,7 +270,7 @@
             <a href="/feedback/">Форма зворотного зв’язку</a>
         </div>
         <div class="copyright">
-            &copy; 2024 FarmsteadHelper. Усі права захищено.
+            &copy; <span class="current-year"></span> FarmsteadHelper. Усі права захищено.
         </div>
     </footer>
     <script>
@@ -421,6 +421,11 @@
         function closeAlert() {
             document.getElementById('customAlert').style.display = 'none';
         }
+    </script>
+    <script>
+        document.querySelectorAll('.current-year').forEach((el) => {
+            el.textContent = new Date().getFullYear();
+        });
     </script>
 </body>
 </html>

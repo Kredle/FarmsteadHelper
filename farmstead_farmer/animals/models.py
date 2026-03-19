@@ -1,9 +1,9 @@
 from django.db import models
 
 class Animal_main(models.Model):
-    idAni = models.AutoField(primary_key=True)
-    Name = models.CharField(max_length=150, null=True, blank=True)
-    Image = models.TextField(null=True, blank=True)
+    idAni = models.AutoField(primary_key=True, db_column='idani')
+    Name = models.CharField(max_length=150, null=True, blank=True, db_column='name')
+    Image = models.TextField(null=True, blank=True, db_column='image')
     
     class Meta:
         managed = False

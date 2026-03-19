@@ -9,5 +9,6 @@ urlpatterns = [
     path('get-map/<int:user_id>/', get_map, name='get-map'),
     path('update-interactive-map/', update_map, name='update-map'),
     path('get_tree_sorts/', get_tree_sorts, name='get_tree_sorts'),
-    path('get_vegetable_sorts/', get_vegetable_sorts, name='get_vegetable_sorts')
+    path('get_vegetable_sorts/', get_vegetable_sorts, name='get_vegetable_sorts'),
+    path('compatibility-index/', get_compatibility_index, name='map_compatibility_index'),
 ]

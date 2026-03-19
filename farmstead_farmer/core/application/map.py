@@ -35,3 +35,6 @@ class MapUseCase:
 
     def vegetable_sorts(self) -> list[dict]:
         return self.repository.get_vegetable_sorts()
+
+    def compatibility_index(self) -> dict:
+        return self.repository.get_compatibility_index()

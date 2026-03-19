@@ -637,6 +637,8 @@
     canvas.height = window.innerHeight;
 
     document.addEventListener('DOMContentLoaded', async function() {
+        await loadCompatibilityIndex();
+
         if (mapData && mapData !== 'None') {
             try {
                 const parsedData = JSON.parse(mapData);
@@ -672,6 +674,8 @@
                     vegetablesOnCanvas = parsedData.vegetables;
                 }
 
+                rebuildCompatibilityGrid();
+
                 // Відновлюємо фігури
                 if (parsedData.figures) {
                     allFigures = cloneFiguresWithoutRuntimeFill(parsedData.figures);
@@ -698,6 +702,8 @@
                 img.src = mapData;
             }
         }
+
+        rebuildCompatibilityGrid();
         user_id = await fetchUserData();
         if(user_id){
             const not_first_map = await checkMap(user_id);
@@ -799,6 +805,26 @@
         }
     }
 
+    async function loadCompatibilityIndex() {
+        try {
+            const response = await fetch('/map/compatibility-index/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Compatibility API status: ${response.status}`);
+            }
+
+            compatibilityIndex = await response.json();
+        } catch (error) {
+            console.error('❌ Не вдалося завантажити індекс сумісності:', error);
+            compatibilityIndex = { trees: {}, vegetables: {} };
+        }
+    }
+
     let tool = 'draw';
     let currentPoints = [];
     let allFigures = [];
@@ -818,6 +844,13 @@
     let isShiftPressed = false;
     const ALLOWED_ENTITY_TERRAINS = new Set(['grass', 'dirt', 'mud']);
     const BLOCKED_ENTITY_TERRAINS = new Set(['water']);
+    const TREE_DEFAULT_RADIUS = 140;
+    const VEGETABLE_DEFAULT_RADIUS = 90;
+
+    let compatibilityIndex = { trees: {}, vegetables: {} };
+    let selectedCompatibilityTarget = null;
+    let dragEntityState = null;
+    let dragConflictTarget = null;
     const texturePatternCache = new Map();
     const STROKE_POINT_MIN_DISTANCE = 0.8;
     const STROKE_SIMPLIFY_TOLERANCE = 1.5;
@@ -1329,6 +1362,216 @@
         return null;
     }
 
+    class SpatialHashGrid {
+        constructor(cellSize = 120) {
+            this.cellSize = cellSize;
+            this.cells = new Map();
+        }
+
+        _key(cx, cy) {
+            return `${cx}:${cy}`;
+        }
+
+        _keysForCircle(x, y, radius) {
+            const minX = Math.floor((x - radius) / this.cellSize);
+            const maxX = Math.floor((x + radius) / this.cellSize);
+            const minY = Math.floor((y - radius) / this.cellSize);
+            const maxY = Math.floor((y + radius) / this.cellSize);
+            const keys = [];
+            for (let cx = minX; cx <= maxX; cx++) {
+                for (let cy = minY; cy <= maxY; cy++) {
+                    keys.push(this._key(cx, cy));
+                }
+            }
+            return keys;
+        }
+
+        clear() {
+            this.cells.clear();
+        }
+
+        insert(entity) {
+            const radius = Number(entity.radius) || 0;
+            const keys = this._keysForCircle(entity.x, entity.y, radius);
+            entity._gridKeys = keys;
+
+            keys.forEach((key) => {
+                if (!this.cells.has(key)) {
+                    this.cells.set(key, new Set());
+                }
+                this.cells.get(key).add(entity._entityUid);
+            });
+        }
+
+        queryCircle(x, y, radius, entityIndex) {
+            const ids = new Set();
+            this._keysForCircle(x, y, radius).forEach((key) => {
+                const bucket = this.cells.get(key);
+                if (!bucket) {
+                    return;
+                }
+                bucket.forEach((id) => ids.add(id));
+            });
+
+            const out = [];
+            ids.forEach((id) => {
+                const item = entityIndex.get(id);
+                if (!item) {
+                    return;
+                }
+                const dx = item.x - x;
+                const dy = item.y - y;
+                const rr = radius + (Number(item.radius) || 0);
+                if ((dx * dx + dy * dy) <= rr * rr) {
+                    out.push(item);
+                }
+            });
+            return out;
+        }
+    }
+
+    const compatibilityGrid = new SpatialHashGrid(120);
+    const compatibilityEntityByUid = new Map();
+
+    function normalizeTextId(value) {
+        return String(value || '')
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-zа-щьюяґєії0-9_\-]/g, '');
+    }
+
+    function getCompatibilityPayloadByEntity(entityType, entityId) {
+        if (entityType === 'tree') {
+            return compatibilityIndex.trees?.[String(entityId)] || null;
+        }
+        if (entityType === 'vegetable') {
+            return compatibilityIndex.vegetables?.[String(entityId)] || null;
+        }
+        return null;
+    }
+
+    function enrichEntityCompatibility(entity, entityType) {
+        if (!entity || (entityType !== 'tree' && entityType !== 'vegetable')) {
+            return entity;
+        }
+
+        const idKey = entityType === 'tree' ? entity.treeId : entity.vegetableId;
+        const payload = getCompatibilityPayloadByEntity(entityType, idKey);
+
+        const defaultRadius = entityType === 'tree' ? TREE_DEFAULT_RADIUS : VEGETABLE_DEFAULT_RADIUS;
+        entity.radius = Number(entity.radius || payload?.radius || defaultRadius);
+        entity.speciesId = entity.speciesId || payload?.species_id || normalizeTextId(entityType === 'tree' ? entity.treeName : entity.vegetableName);
+        entity.baseSpeciesId = entity.baseSpeciesId || payload?.base_species_id || entity.speciesId.split('_')[0];
+        entity.categoryIds = Array.isArray(entity.categoryIds) ? entity.categoryIds : (payload?.category_ids || [entityType]);
+        entity.incompatibleSpeciesIds = Array.isArray(entity.incompatibleSpeciesIds)
+            ? entity.incompatibleSpeciesIds
+            : (payload?.incompatible_species_ids || []);
+        entity.incompatibleCategoryIds = Array.isArray(entity.incompatibleCategoryIds)
+            ? entity.incompatibleCategoryIds
+            : (payload?.incompatible_categories || []);
+
+        if (!entity._entityUid) {
+            entity._entityUid = `${entityType}-${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+        }
+        entity._entityType = entityType;
+        return entity;
+    }
+
+    function speciesRuleMatches(ruleSpeciesId, plant) {
+        if (!ruleSpeciesId || !plant) {
+            return false;
+        }
+        const rule = String(ruleSpeciesId);
+        const species = String(plant.speciesId || '');
+        const base = String(plant.baseSpeciesId || '');
+        return rule === species || rule === base || species.startsWith(`${rule}_`) || base.startsWith(`${rule}_`);
+    }
+
+    function rebuildCompatibilityGrid() {
+        compatibilityGrid.clear();
+        compatibilityEntityByUid.clear();
+
+        treesOnCanvas.forEach((tree) => {
+            enrichEntityCompatibility(tree, 'tree');
+            compatibilityEntityByUid.set(tree._entityUid, tree);
+            compatibilityGrid.insert(tree);
+        });
+
+        vegetablesOnCanvas.forEach((vegetable) => {
+            enrichEntityCompatibility(vegetable, 'vegetable');
+            compatibilityEntityByUid.set(vegetable._entityUid, vegetable);
+            compatibilityGrid.insert(vegetable);
+        });
+    }
+
+    function checkCompatibility(movingPlant, existingPlant) {
+        const dx = movingPlant.x - existingPlant.x;
+        const dy = movingPlant.y - existingPlant.y;
+        const minDist = (Number(movingPlant.radius) || 0) + (Number(existingPlant.radius) || 0);
+        if ((dx * dx + dy * dy) > (minDist * minDist)) {
+            return { ok: true, reason: null };
+        }
+
+        const movingSpecies = new Set(movingPlant.incompatibleSpeciesIds || []);
+        const movingCategories = new Set(movingPlant.incompatibleCategoryIds || []);
+        const existingSpecies = new Set(existingPlant.incompatibleSpeciesIds || []);
+        const existingCategories = new Set(existingPlant.incompatibleCategoryIds || []);
+
+        const existingPlantCategories = new Set(existingPlant.categoryIds || []);
+        const movingPlantCategories = new Set(movingPlant.categoryIds || []);
+
+        const movingVsExisting =
+            [...movingSpecies].some((ruleId) => speciesRuleMatches(ruleId, existingPlant)) ||
+            [...movingCategories].some((cat) => existingPlantCategories.has(cat));
+
+        const existingVsMoving =
+            [...existingSpecies].some((ruleId) => speciesRuleMatches(ruleId, movingPlant)) ||
+            [...existingCategories].some((cat) => movingPlantCategories.has(cat));
+
+        if (movingVsExisting || existingVsMoving) {
+            return { ok: false, reason: 'incompatible_in_radius' };
+        }
+
+        return { ok: true, reason: null };
+    }
+
+    function validateCompatibilityAtPosition(candidateEntity, x, y, options = {}) {
+        const { ignoreUid = null, silent = false } = options;
+        candidateEntity.x = x;
+        candidateEntity.y = y;
+
+        const terrainType = getTerrainAtPoint(x, y);
+        if (!(terrainType && ALLOWED_ENTITY_TERRAINS.has(terrainType))) {
+            if (!silent) {
+                if (terrainType && BLOCKED_ENTITY_TERRAINS.has(terrainType)) {
+                    showAlert('❌ Об’єкти можна ставити лише на траву або землю. На воді розміщення заборонено.');
+                } else {
+                    showAlert('❌ Об’єкти можна ставити лише в межах намальованої території (трава/земля), а не у порожнечу.');
+                }
+            }
+            return { ok: false, reason: 'terrain', conflictTarget: null };
+        }
+
+        const searchRadius = (Number(candidateEntity.radius) || 0) + Math.max(TREE_DEFAULT_RADIUS, VEGETABLE_DEFAULT_RADIUS);
+        const nearby = compatibilityGrid.queryCircle(x, y, searchRadius, compatibilityEntityByUid);
+
+        for (const existing of nearby) {
+            if (!existing || (ignoreUid && existing._entityUid === ignoreUid)) {
+                continue;
+            }
+            const result = checkCompatibility(candidateEntity, existing);
+            if (!result.ok) {
+                if (!silent) {
+                    showAlert('❌ Несумісне розміщення: зона впливу перетинається з несумісною рослиною.');
+                }
+                return { ok: false, reason: result.reason, conflictTarget: existing };
+            }
+        }
+
+        return { ok: true, reason: null, conflictTarget: null };
+    }
+
     function canPlaceEntityAt(x, y) {
         const terrainType = getTerrainAtPoint(x, y);
 
@@ -1524,6 +1767,10 @@
         hydrateFigureTextures(allFigures);
         brushStrokes = JSON.parse(JSON.stringify(state.brushStrokes || []));
         currentPoints = JSON.parse(JSON.stringify(state.currentPoints));
+        selectedCompatibilityTarget = null;
+        dragEntityState = null;
+        dragConflictTarget = null;
+        rebuildCompatibilityGrid();
         redrawCanvas();
     }
 
@@ -1551,6 +1798,24 @@
         if (!canDraw) return;
         if (e.button !== 0) return;
         const worldPos = screenToWorld(e.offsetX, e.offsetY);
+
+        if (tool === 'tree' || tool === 'vegetable') {
+            const hit = getMovablePlantAtPoint(worldPos.x, worldPos.y);
+            if (hit && hit.entity) {
+                enrichEntityCompatibility(hit.entity, hit.entityType);
+                dragEntityState = {
+                    entityType: hit.entityType,
+                    index: hit.index,
+                    entity: hit.entity,
+                    originalX: hit.entity.x,
+                    originalY: hit.entity.y,
+                };
+                selectedCompatibilityTarget = hit.entity;
+                dragConflictTarget = null;
+                saveState();
+                return;
+            }
+        }
         
         if (tool === "draw") {
             isDrawing = true;
@@ -1573,8 +1838,24 @@
 
     canvas.addEventListener("mousemove", (e) => {
         if (!canDraw) return;
-        if (!isDrawing || (tool !== 'draw' && tool !== 'erase')) return;
         const worldPos = screenToWorld(e.offsetX, e.offsetY);
+
+        if (dragEntityState && dragEntityState.entity) {
+            dragEntityState.entity.x = worldPos.x;
+            dragEntityState.entity.y = worldPos.y;
+            const validation = validateCompatibilityAtPosition(
+                dragEntityState.entity,
+                worldPos.x,
+                worldPos.y,
+                { ignoreUid: dragEntityState.entity._entityUid, silent: true }
+            );
+            dragConflictTarget = validation.ok ? null : validation.conflictTarget;
+            canvas.style.cursor = validation.ok ? 'grabbing' : 'not-allowed';
+            redrawCanvas();
+            return;
+        }
+
+        if (!isDrawing || (tool !== 'draw' && tool !== 'erase')) return;
 
         if (tool === 'erase') {
             if (eraseBrushStrokesAlongPath(lastX, lastY, worldPos.x, worldPos.y, getEraserRadius())) {
@@ -1605,6 +1886,32 @@
     canvas.addEventListener("mouseup", (e) => {
         if (!canDraw) return;
         if (e.button !== 0) return;
+
+        if (dragEntityState && dragEntityState.entity) {
+            const entity = dragEntityState.entity;
+            const validation = validateCompatibilityAtPosition(
+                entity,
+                entity.x,
+                entity.y,
+                { ignoreUid: entity._entityUid, silent: true }
+            );
+
+            if (!validation.ok) {
+                entity.x = dragEntityState.originalX;
+                entity.y = dragEntityState.originalY;
+                showAlert('❌ Неможливо перемістити рослину в цю зону через несумісність або обмеження території.');
+            }
+
+            rebuildCompatibilityGrid();
+            dragEntityState = null;
+            dragConflictTarget = null;
+            selectedCompatibilityTarget = null;
+            canvas.style.cursor = 'crosshair';
+            redrawCanvas();
+            saveState();
+            return;
+        }
+
         if (tool === 'draw') {
             commitCurrentStroke();
         } else if (tool === 'erase' && isDrawing) {
@@ -1614,6 +1921,18 @@
     });
 
     canvas.addEventListener("mouseout", () => {
+        if (dragEntityState && dragEntityState.entity) {
+            dragEntityState.entity.x = dragEntityState.originalX;
+            dragEntityState.entity.y = dragEntityState.originalY;
+            dragEntityState = null;
+            dragConflictTarget = null;
+            selectedCompatibilityTarget = null;
+            canvas.style.cursor = 'crosshair';
+            rebuildCompatibilityGrid();
+            redrawCanvas();
+            return;
+        }
+
         if (tool === 'draw') {
             commitCurrentStroke();
         } else if (tool === 'erase' && isDrawing) {
@@ -1832,6 +2151,22 @@
         return (dx * dx + dy * dy) <= hitRadius * hitRadius;
     }
 
+    function getMovablePlantAtPoint(x, y) {
+        for (let i = vegetablesOnCanvas.length - 1; i >= 0; i--) {
+            if (isPointNearEntity(vegetablesOnCanvas[i], x, y, 0)) {
+                return { entityType: 'vegetable', index: i, entity: vegetablesOnCanvas[i] };
+            }
+        }
+
+        for (let i = treesOnCanvas.length - 1; i >= 0; i--) {
+            if (isPointNearEntity(treesOnCanvas[i], x, y, 0)) {
+                return { entityType: 'tree', index: i, entity: treesOnCanvas[i] };
+            }
+        }
+
+        return null;
+    }
+
     const contextDeletePopup = document.getElementById('contextDeletePopup');
     const contextDeleteTitle = document.getElementById('contextDeleteTitle');
     const contextDeleteDescription = document.getElementById('contextDeleteDescription');
@@ -1919,10 +2254,14 @@
         if (target.type === 'entity') {
             if (target.entityType === 'vegetable' && vegetablesOnCanvas[target.index]) {
                 vegetablesOnCanvas.splice(target.index, 1);
+                rebuildCompatibilityGrid();
+                selectedCompatibilityTarget = null;
                 return true;
             }
             if (target.entityType === 'tree' && treesOnCanvas[target.index]) {
                 treesOnCanvas.splice(target.index, 1);
+                rebuildCompatibilityGrid();
+                selectedCompatibilityTarget = null;
                 return true;
             }
             if (target.entityType === 'building' && buildingsOnCanvas[target.index]) {
@@ -1947,6 +2286,14 @@
     function showContextDeletePopup(screenX, screenY, target) {
         currentDeleteTarget = target;
 
+        if (target.type === 'entity' && target.entityType === 'tree') {
+            selectedCompatibilityTarget = treesOnCanvas[target.index] || null;
+        } else if (target.type === 'entity' && target.entityType === 'vegetable') {
+            selectedCompatibilityTarget = vegetablesOnCanvas[target.index] || null;
+        } else {
+            selectedCompatibilityTarget = null;
+        }
+
         contextDeleteTitle.textContent = target.type === 'field' ? 'Ділянка' : 'Об’єкт';
         contextDeleteDescription.textContent = target.label;
 
@@ -1966,11 +2313,14 @@
         contextDeletePopup.style.left = `${left}px`;
         contextDeletePopup.style.top = `${top}px`;
         contextDeletePopup.style.display = 'block';
+        redrawCanvas();
     }
 
     function hideContextDeletePopup() {
         currentDeleteTarget = null;
         contextDeletePopup.style.display = 'none';
+        selectedCompatibilityTarget = null;
+        redrawCanvas();
     }
 
     contextDeleteConfirmBtn.addEventListener('click', (e) => {
@@ -2050,6 +2400,7 @@
         drawAllBuildings();
         drawAllTrees();
         drawAllVegetables();
+        drawCompatibilityHighlights();
         restoreCanvasTransform();
     }
 
@@ -2067,7 +2418,38 @@
         drawAllBuildingsWithLabels();
         drawAllTreesWithLabels();
         drawAllVegetablesWithLabels();
+        drawCompatibilityHighlights();
         restoreCanvasTransform();
+    }
+
+    function drawCompatibilityCircle(entity, color) {
+        if (!entity || !entity.radius) {
+            return;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(entity.x, entity.y, Number(entity.radius), 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = color.replace('0.18', '0.8').replace('0.22', '0.8');
+        ctx.lineWidth = 2 / Math.max(zoomLevel, 0.001);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawCompatibilityHighlights() {
+        if (selectedCompatibilityTarget) {
+            drawCompatibilityCircle(selectedCompatibilityTarget, 'rgba(255, 193, 7, 0.22)');
+        }
+
+        if (dragEntityState) {
+            drawCompatibilityCircle(dragEntityState, dragConflictTarget ? 'rgba(220, 53, 69, 0.22)' : 'rgba(56, 142, 60, 0.18)');
+        }
+
+        if (dragConflictTarget) {
+            drawCompatibilityCircle(dragConflictTarget, 'rgba(220, 53, 69, 0.22)');
+        }
     }
 
     function applyFill() {
@@ -2523,18 +2905,46 @@
         }
 
         if (pendingVegetablePosition) {
-            if (!canPlaceEntityAt(pendingVegetablePosition.x, pendingVegetablePosition.y)) {
+            const vegetableCandidate = enrichEntityCompatibility({
+                x: pendingVegetablePosition.x,
+                y: pendingVegetablePosition.y,
+                vegetableId: selectedVegetable.idVeg,
+                vegetableName: selectedVegetable.Name,
+                sortVegName: selectedSortVeg.Name,
+                radius: selectedVegetable.radius,
+                speciesId: selectedVegetable.species_id,
+                categoryIds: selectedVegetable.category_ids,
+                incompatibleSpeciesIds: selectedVegetable.incompatible_species_ids,
+                incompatibleCategoryIds: selectedVegetable.incompatible_categories,
+            }, 'vegetable');
+
+            const validation = validateCompatibilityAtPosition(
+                vegetableCandidate,
+                pendingVegetablePosition.x,
+                pendingVegetablePosition.y
+            );
+
+            if (!validation.ok) {
                 pendingVegetablePosition = null;
                 vegetableModal.classList.remove("visible");
                 return;
             }
+
             drawVegetableImage(
                 pendingVegetablePosition.x,
                 pendingVegetablePosition.y,
                 selectedVegetable.Name,
                 selectedSortVeg.Name,
                 selectedVegetable.idVeg,
-                selectedSortVeg.idSort
+                selectedSortVeg.idSort,
+                {
+                    radius: selectedVegetable.radius,
+                    speciesId: selectedVegetable.species_id,
+                    baseSpeciesId: selectedVegetable.base_species_id,
+                    categoryIds: selectedVegetable.category_ids,
+                    incompatibleSpeciesIds: selectedVegetable.incompatible_species_ids,
+                    incompatibleCategoryIds: selectedVegetable.incompatible_categories,
+                }
             );
             saveState();
             pendingVegetablePosition = null;
@@ -2550,17 +2960,28 @@
     }
 
     // Малювання овоча
-    function drawVegetableImage(x, y, vegetableName, sortVegName, vegetableId, sortVegId) {
+    function drawVegetableImage(x, y, vegetableName, sortVegName, vegetableId, sortVegId, compatibility = null) {
         const size = 50;
-        vegetablesOnCanvas.push({
+        const newVegetable = {
             x,
             y,
             size,
             vegetableName,
             sortVegName,
             vegetableId,
-            sortVegId
-        });
+            sortVegId,
+            radius: compatibility?.radius || VEGETABLE_DEFAULT_RADIUS,
+            speciesId: compatibility?.speciesId || normalizeTextId(vegetableName),
+            baseSpeciesId: compatibility?.baseSpeciesId || normalizeTextId(vegetableName).split('_')[0],
+            categoryIds: compatibility?.categoryIds || ['vegetable'],
+            incompatibleSpeciesIds: compatibility?.incompatibleSpeciesIds || [],
+            incompatibleCategoryIds: compatibility?.incompatibleCategoryIds || [],
+        };
+
+        enrichEntityCompatibility(newVegetable, 'vegetable');
+        vegetablesOnCanvas.push(newVegetable);
+        rebuildCompatibilityGrid();
+
         redrawCanvas();
         console.log(`овоч "${vegetableName}" (${sortVegName}) додано в (${x}, ${y})`);
     }
@@ -2596,6 +3017,8 @@
     let allTrees = []; // [{ name: "Яблуня", sorts: ["Айдаред", "Гала"] }, ...]
     let treesOnCanvas = [];
     let pendingTreePosition = null;
+    let treeOptionsLoaded = false;
+    let treeOptionsLoadingPromise = null;
 
     const treeModal = document.getElementById("treeModal");
     const treeTypeSelect = document.getElementById("treeTypeSelect");
@@ -2632,26 +3055,42 @@
     }
     // Завантаження дерев та їх сортів
     async function loadTreeOptions() {
+        if (treeOptionsLoaded) {
+            updateTreeTypeSelect(allTrees, 1);
+            return;
+        }
+
+        if (treeOptionsLoadingPromise) {
+            await treeOptionsLoadingPromise;
+            updateTreeTypeSelect(allTrees, 1);
+            return;
+        }
+
         try {
-            const response = await fetch("/map/get_tree_sorts/", {
+            treeOptionsLoadingPromise = fetch("/map/get_tree_sorts/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     'X-CSRFToken': getCookie('csrftoken'),
                 },
                 body: JSON.stringify({ category: "дерева" })
+            })
+            .then((response) => {
+                if (!response.ok) throw new Error(`Помилка при запиті: ${response.status}`);
+                return response.json();
+            })
+            .then((data) => {
+                allTrees = data; // Очікується формат [{ name: "Яблуня", sorts: ["Айдаред", "Гала"] }, ...]
+                treeOptionsLoaded = true;
             });
 
-            if (!response.ok) throw new Error(`Помилка при запиті: ${response.status}`);
-
-            const data = await response.json();
-            //console.log("🌳 Отримані дерева:", data);
-
-            allTrees = data; // Очікується формат [{ name: "Яблуня", sorts: ["Айдаред", "Гала"] }, ...]
+            await treeOptionsLoadingPromise;
             updateTreeTypeSelect(allTrees, 1);
 
         } catch (error) {
             console.error("❌ Помилка при завантаженні дерев:", error);
+        } finally {
+            treeOptionsLoadingPromise = null;
         }
     }
 
@@ -2805,18 +3244,41 @@
         }
 
         if (pendingTreePosition) {
-            if (!canPlaceEntityAt(pendingTreePosition.x, pendingTreePosition.y)) {
+            const treeCandidate = enrichEntityCompatibility({
+                x: pendingTreePosition.x,
+                y: pendingTreePosition.y,
+                treeId: selectedTree.id,
+                treeName: selectedTree.name,
+                sortName: selectedSort.sort,
+                radius: selectedTree.radius,
+                speciesId: selectedTree.species_id,
+                categoryIds: selectedTree.category_ids,
+                incompatibleSpeciesIds: selectedTree.incompatible_species_ids,
+                incompatibleCategoryIds: selectedTree.incompatible_categories,
+            }, 'tree');
+
+            const validation = validateCompatibilityAtPosition(treeCandidate, pendingTreePosition.x, pendingTreePosition.y);
+            if (!validation.ok) {
                 pendingTreePosition = null;
                 treeModal.classList.remove("visible");
                 return;
             }
+
             drawTreeImage(
                 pendingTreePosition.x,
                 pendingTreePosition.y,
                 selectedTree.name,
                 selectedSort.sort,
                 selectedTree.id,
-                selectedSort.id
+                selectedSort.id,
+                {
+                    radius: selectedTree.radius,
+                    speciesId: selectedTree.species_id,
+                    baseSpeciesId: selectedTree.base_species_id,
+                    categoryIds: selectedTree.category_ids,
+                    incompatibleSpeciesIds: selectedTree.incompatible_species_ids,
+                    incompatibleCategoryIds: selectedTree.incompatible_categories,
+                }
             );
             pendingTreePosition = null;
         }
@@ -2831,34 +3293,40 @@
     }
 
     // Малювання дерева
-    function drawTreeImage(x, y, treeName, sortName, treeId, sortId) {
+    function drawTreeImage(x, y, treeName, sortName, treeId, sortId, compatibility = null) {
         const treeSpecificUrl = getTreeImageByType(treeName);
-        const addTreeToCanvas = (imageUrl) => {
-            treesOnCanvas.push({
-                x,
-                y,
-                size: 50,
-                treeName,
-                sortName,
-                treeId,
-                sortId,
-                imageUrl
-            });
-            redrawCanvas();
-            saveState();
+        const newTree = {
+            x,
+            y,
+            size: 50,
+            treeName,
+            sortName,
+            treeId,
+            sortId,
+            imageUrl: treeSpecificUrl,
+            radius: compatibility?.radius || TREE_DEFAULT_RADIUS,
+            speciesId: compatibility?.speciesId || normalizeTextId(treeName),
+            baseSpeciesId: compatibility?.baseSpeciesId || normalizeTextId(treeName).split('_')[0],
+            categoryIds: compatibility?.categoryIds || ['tree'],
+            incompatibleSpeciesIds: compatibility?.incompatibleSpeciesIds || [],
+            incompatibleCategoryIds: compatibility?.incompatibleCategoryIds || [],
         };
 
-        const img = getTreeImageFromCache(treeSpecificUrl);
-        if (img.complete && img.naturalWidth > 0) {
-            addTreeToCanvas(treeSpecificUrl);
-            return;
-        }
+        enrichEntityCompatibility(newTree, 'tree');
+        treesOnCanvas.push(newTree);
+        rebuildCompatibilityGrid();
 
-        img.addEventListener('load', () => addTreeToCanvas(treeSpecificUrl), { once: true });
-        img.addEventListener('error', () => {
-            console.error("⚠️ Помилка завантаження зображення дерева!");
-            addTreeToCanvas(treeImageURL);
-        }, { once: true });
+        redrawCanvas();
+        saveState();
+
+        const img = getTreeImageFromCache(treeSpecificUrl);
+        if (!img.complete || img.naturalWidth === 0) {
+            img.addEventListener('load', () => redrawCanvas(), { once: true });
+            img.addEventListener('error', () => {
+                console.error("⚠️ Помилка завантаження зображення дерева!");
+                redrawCanvas();
+            }, { once: true });
+        }
     }
 
     // Малювання всіх дерев на canvas

@@ -21,10 +21,10 @@ def sort_detail(request, tree_id, sort_id):
     return render(request, 'trees/sort_detail.html', {
         'tree': tree,
         'sort': sort,
-        'cutting': cutting,
-        'fertilizer': fertilizer,
-        'disease': disease,
-        'planting': planting,
+        'cuttings': cutting,
+        'fertilizers': fertilizer,
+        'diseases': disease,
+        'plantings': planting,
     })
 
 

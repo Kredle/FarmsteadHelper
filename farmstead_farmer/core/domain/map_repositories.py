@@ -26,3 +26,7 @@ class MapRepository(ABC):
     @abstractmethod
     def get_vegetable_sorts(self) -> list[dict]:
         raise NotImplementedError
+
+    @abstractmethod
+    def get_compatibility_index(self) -> dict:
+        raise NotImplementedError

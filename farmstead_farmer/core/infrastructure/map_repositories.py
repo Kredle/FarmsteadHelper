@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any
 
 from api.models import CustomUser
@@ -7,8 +8,59 @@ from core.domain.map_repositories import MapRepository
 from django.db import connection
 from interactive_map.models import Map
 
+from core.infrastructure.incompatibility_parser import IncompatibilityParserUA
+
 
 ALLOWED_ENTITY_TERRAINS = {'grass', 'dirt', 'mud'}
+
+
+TREE_DEFAULT_RADIUS = 140
+VEGETABLE_DEFAULT_RADIUS = 90
+BASE_SPECIES_OVERRIDES = {
+    'яблуня': ['груша'],
+    'груша': ['яблуня'],
+}
+
+
+def _slugify_species_id(name: str) -> str:
+    value = str(name or '').strip().lower()
+    value = re.sub(r'\s+', '_', value)
+    value = re.sub(r'[^a-zа-щьюяґєії0-9_\-]', '', value)
+    return value
+
+
+def _base_species_id(name: str) -> str:
+    normalized = str(name or '').strip().lower()
+    if not normalized:
+        return ''
+    head = normalized.split()[0]
+    return _slugify_species_id(head)
+
+
+def _guess_tree_categories(name: str) -> list[str]:
+    n = str(name or '').lower()
+    categories = ['tree']
+
+    if any(token in n for token in ('слив', 'персик', 'абрикос', 'вишн', 'черешн')):
+        categories.append('кісточкові')
+    if any(token in n for token in ('яблун', 'груш')):
+        categories.append('зерняткові')
+
+    return sorted(set(categories))
+
+
+def _guess_vegetable_categories(name: str) -> list[str]:
+    n = str(name or '').lower()
+    categories = ['vegetable']
+
+    if any(token in n for token in ('гарбуз', 'огір', 'кабач', 'дин', 'кавун')):
+        categories.append('гарбузові')
+    if any(token in n for token in ('помідор', 'перець', 'баклаж')):
+        categories.append('пасльонові')
+    if any(token in n for token in ('моркв', 'петруш', 'селера', 'кріп')):
+        categories.append('зонтичні')
+
+    return sorted(set(categories))
 
 
 def _is_point_on_segment(px: float, py: float, ax: float, ay: float, bx: float, by: float) -> bool:
@@ -142,7 +194,86 @@ class DjangoMapRepository(MapRepository):
             return MapSnapshot(exists=False, owner_id=author.id, map_data=None).as_dict()
         return MapSnapshot(exists=True, owner_id=author.id, map_data=map_obj.data).as_dict()
 
+    def _fetch_known_species_names(self) -> list[str]:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT "Name" FROM tree WHERE "Name" IS NOT NULL')
+            tree_names = [str(row[0]).strip().lower() for row in cursor.fetchall() if row and row[0]]
+
+            cursor.execute('SELECT "Name" FROM vegetables WHERE "Name" IS NOT NULL')
+            vegetable_names = [str(row[0]).strip().lower() for row in cursor.fetchall() if row and row[0]]
+
+        return list({*tree_names, *vegetable_names})
+
+    def _build_compatibility_index(self) -> dict:
+        known_species = self._fetch_known_species_names()
+        parser = IncompatibilityParserUA(known_species)
+
+        trees: dict[str, dict] = {}
+        vegetables: dict[str, dict] = {}
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                '''
+                SELECT idtree, "Name", incompatible
+                FROM tree
+                '''
+            )
+            tree_rows = cursor.fetchall()
+
+            cursor.execute(
+                '''
+                SELECT "idVeg", "Name", "Incompatible"
+                FROM vegetables
+                '''
+            )
+            vegetable_rows = cursor.fetchall()
+
+        for tree_id, tree_name, raw_incompatible in tree_rows:
+            parsed = parser.parse(str(raw_incompatible or ''))
+            species_name = str(tree_name or '').strip().lower()
+            base_species = _base_species_id(species_name)
+            incompatible_ids = [_slugify_species_id(item) for item in parsed.incompatible_species_names]
+            incompatible_ids.extend(BASE_SPECIES_OVERRIDES.get(base_species, []))
+            trees[str(tree_id)] = {
+                'species_name': species_name,
+                'species_id': _slugify_species_id(species_name),
+                'base_species_id': base_species,
+                'category_ids': _guess_tree_categories(species_name),
+                'radius': TREE_DEFAULT_RADIUS,
+                'incompatible_species_names': parsed.incompatible_species_names,
+                'incompatible_species_ids': sorted(set(filter(None, incompatible_ids))),
+                'incompatible_categories': parsed.incompatible_categories,
+            }
+
+        for vegetable_id, vegetable_name, raw_incompatible in vegetable_rows:
+            parsed = parser.parse(str(raw_incompatible or ''))
+            species_name = str(vegetable_name or '').strip().lower()
+            base_species = _base_species_id(species_name)
+            incompatible_ids = [_slugify_species_id(item) for item in parsed.incompatible_species_names]
+            incompatible_ids.extend(BASE_SPECIES_OVERRIDES.get(base_species, []))
+            vegetables[str(vegetable_id)] = {
+                'species_name': species_name,
+                'species_id': _slugify_species_id(species_name),
+                'base_species_id': base_species,
+                'category_ids': _guess_vegetable_categories(species_name),
+                'radius': VEGETABLE_DEFAULT_RADIUS,
+                'incompatible_species_names': parsed.incompatible_species_names,
+                'incompatible_species_ids': sorted(set(filter(None, incompatible_ids))),
+                'incompatible_categories': parsed.incompatible_categories,
+            }
+
+        return {
+            'trees': trees,
+            'vegetables': vegetables,
+        }
+
+    def get_compatibility_index(self) -> dict:
+        return self._build_compatibility_index()
+
     def get_tree_sorts(self) -> list[dict]:
+        compatibility_index = self._build_compatibility_index()
+        tree_compatibility = compatibility_index.get('trees', {})
+
         with connection.cursor() as cursor:
             cursor.execute(
                 '''
@@ -161,9 +292,16 @@ class DjangoMapRepository(MapRepository):
         trees_by_id: dict[int, dict] = {}
         for tree_id, tree_name, sort_id, sort_name in rows:
             if tree_id not in trees_by_id:
+                compatibility = tree_compatibility.get(str(tree_id), {})
                 trees_by_id[tree_id] = {
                     "id": tree_id,
                     "name": tree_name,
+                    "species_id": compatibility.get('species_id', _slugify_species_id(tree_name)),
+                    "base_species_id": compatibility.get('base_species_id', _base_species_id(tree_name)),
+                    "category_ids": compatibility.get('category_ids', ['tree']),
+                    "radius": compatibility.get('radius', TREE_DEFAULT_RADIUS),
+                    "incompatible_species_ids": compatibility.get('incompatible_species_ids', []),
+                    "incompatible_categories": compatibility.get('incompatible_categories', []),
                     "sorts": [],
                 }
             if sort_id is not None:
@@ -177,6 +315,9 @@ class DjangoMapRepository(MapRepository):
         return list(trees_by_id.values())
 
     def get_vegetable_sorts(self) -> list[dict]:
+        compatibility_index = self._build_compatibility_index()
+        vegetable_compatibility = compatibility_index.get('vegetables', {})
+
         with connection.cursor() as cursor:
             cursor.execute(
                 '''
@@ -195,9 +336,16 @@ class DjangoMapRepository(MapRepository):
         vegetables_by_id: dict[int, dict] = {}
         for vegetable_id, vegetable_name, sort_id, sort_name in rows:
             if vegetable_id not in vegetables_by_id:
+                compatibility = vegetable_compatibility.get(str(vegetable_id), {})
                 vegetables_by_id[vegetable_id] = {
                     "idVeg": vegetable_id,
                     "Name": vegetable_name,
+                    "species_id": compatibility.get('species_id', _slugify_species_id(vegetable_name)),
+                    "base_species_id": compatibility.get('base_species_id', _base_species_id(vegetable_name)),
+                    "category_ids": compatibility.get('category_ids', ['vegetable']),
+                    "radius": compatibility.get('radius', VEGETABLE_DEFAULT_RADIUS),
+                    "incompatible_species_ids": compatibility.get('incompatible_species_ids', []),
+                    "incompatible_categories": compatibility.get('incompatible_categories', []),
                     "sortsVeg": [],
                 }
             if sort_id is not None:

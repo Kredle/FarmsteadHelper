@@ -145,3 +145,14 @@ def get_vegetable_sorts(request):
         return JsonResponse(map_use_case.vegetable_sorts(), safe=False)
     except Exception as error:
         return JsonResponse({'error': f'Помилка при обробці запиту: {str(error)}'}, status=500)
+
+
+@throttle_classes([MapTrottle])
+def get_compatibility_index(request):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Метод не дозволено'}, status=405)
+
+    try:
+        return JsonResponse(map_use_case.compatibility_index(), safe=False)
+    except Exception as error:
+        return JsonResponse({'error': f'Помилка при обробці запиту: {str(error)}'}, status=500)

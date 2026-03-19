@@ -1,7 +1,7 @@
 from django.db import models
 
 class id_tree(models.Model):
-    id = models.AutoField(primary_key=True, db_column = 'idTree')
+    id = models.AutoField(primary_key=True, db_column='idtree')
 
     class Meta:
         managed = False
@@ -15,7 +15,7 @@ class id_vegetable(models.Model):
         db_table = 'vegetables'
 
 class id_animal(models.Model):
-    id = models.AutoField(primary_key=True, db_column = 'idAni')
+    id = models.AutoField(primary_key=True, db_column='idani')
 
     class Meta:
         managed = False
@@ -54,10 +54,10 @@ class Vegetable(models.Model):
         db_table = 'sorts_veg'
 
 class Tree(models.Model):
-    sort_id = models.AutoField(primary_key=True, db_column = 'idSort')
-    common_name = models.CharField(max_length=100, db_column = 'Sort')
-    image_url = models.TextField(verbose_name="Зображення плоду", null=True, blank=True , db_column = 'Image_fruit')
-    tree = models.ForeignKey(id_tree, on_delete=models.CASCADE, related_name="sorts", verbose_name="Дерево",db_column='tree_idTree')
+    sort_id = models.AutoField(primary_key=True, db_column='idsort')
+    common_name = models.CharField(max_length=100, db_column='sort')
+    image_url = models.TextField(verbose_name="Зображення плоду", null=True, blank=True, db_column='image_fruit')
+    tree = models.ForeignKey(id_tree, on_delete=models.CASCADE, related_name="sorts", verbose_name="Дерево", db_column='tree_idtree')
     category = 'trees'
 
     class Meta:
@@ -65,9 +65,9 @@ class Tree(models.Model):
         db_table = 'sorts'
 
 class FindTree(models.Model):
-    idTree = models.IntegerField(primary_key=True, db_column = 'idTree')
+    idTree = models.IntegerField(primary_key=True, db_column='idtree')
     common_name2 = models.CharField(max_length=100, db_column = 'Name')
-    image_url = models.TextField(verbose_name="Зображення плоду", null=True, blank=True , db_column = 'Image_tree')
+    image_url = models.TextField(verbose_name="Зображення плоду", null=True, blank=True, db_column='image_tree')
 
     class Meta:
         managed = False
@@ -92,10 +92,10 @@ class FindVeg_sort(models.Model):
         db_table = 'sorts_veg'
 
 class FindTree_sort(models.Model):
-    idTree_sort = models.IntegerField(primary_key=True, db_column = 'idSort')
-    common_name = models.CharField(max_length=100, db_column = 'Sort')
-    image_url = models.TextField(verbose_name="Зображення плоду", null=True, blank=True , db_column = 'Image_fruit')
-    idTree = models.IntegerField(db_column = 'tree_idTree')
+    idTree_sort = models.IntegerField(primary_key=True, db_column='idsort')
+    common_name = models.CharField(max_length=100, db_column='sort')
+    image_url = models.TextField(verbose_name="Зображення плоду", null=True, blank=True, db_column='image_fruit')
+    idTree = models.IntegerField(db_column='tree_idtree')
     class Meta:
         managed = False
         db_table = 'sorts'
