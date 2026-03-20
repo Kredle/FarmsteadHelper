@@ -18,8 +18,8 @@ ALLOWED_ENTITY_TERRAINS = {'grass', 'dirt', 'mud'}
 TREE_DEFAULT_RADIUS = 140
 VEGETABLE_DEFAULT_RADIUS = 90
 BASE_SPECIES_OVERRIDES = {
-    'яблуня': ['груша'],
-    'груша': ['яблуня'],
+    # Keep empty by default.
+    # Compatibility should come from DB text parsing, not hardcoded overrides.
 }
 
 
@@ -158,28 +158,32 @@ class DjangoMapRepository(MapRepository):
         last_map = Map.objects.order_by('-id').first()
         return 1 if last_map is None else int(last_map.id) + 1
 
-    def save_map(self, user_id: int, content):
+    def save_map(self, user_id: int, content, map_name: str | None = None):
         _validate_entity_placement(content)
         author = self._get_user(user_id)
         author.has_map = True
         author.save()
-        map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content))
+        normalized_name = str(map_name or '').strip() or None
+        map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content), map_name=normalized_name)
         map_obj.save()
         return map_obj.id
 
-    def update_map(self, user_id: int, content, map_id: int | None = None):
+    def update_map(self, user_id: int, content, map_id: int | None = None, map_name: str | None = None):
         _validate_entity_placement(content)
         author = self._get_user(user_id)
         author.has_map = True
         author.save()
+        normalized_name = str(map_name or '').strip() or None
         if map_id is not None:
             map_obj = Map.objects.filter(User_id=author, id=map_id).first()
         else:
             map_obj = Map.objects.filter(User_id=author).order_by('-id').first()
         if map_obj is None:
-            map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content))
+            map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content), map_name=normalized_name)
         else:
             map_obj.data = json.dumps(content)
+            if normalized_name is not None:
+                map_obj.map_name = normalized_name
         map_obj.save()
         return map_obj.id
 
@@ -194,8 +198,40 @@ class DjangoMapRepository(MapRepository):
         else:
             map_obj = Map.objects.filter(User_id=author).order_by('-id').first()
         if map_obj is None:
-            return MapSnapshot(exists=False, owner_id=author.id, map_id=None, map_data=None).as_dict()
-        return MapSnapshot(exists=True, owner_id=author.id, map_id=int(map_obj.id), map_data=map_obj.data).as_dict()
+            return MapSnapshot(exists=False, owner_id=author.id, map_id=None, map_name=None, map_data=None).as_dict()
+
+        raw_data = map_obj.data
+        parsed_name = str(getattr(map_obj, 'map_name', '') or '').strip() or None
+        if parsed_name is None:
+            try:
+                parsed = raw_data if isinstance(raw_data, dict) else json.loads(raw_data)
+                if isinstance(parsed, dict):
+                    fallback_name = str(parsed.get('mapName') or '').strip()
+                    parsed_name = fallback_name or None
+            except Exception:
+                pass
+
+        return MapSnapshot(
+            exists=True,
+            owner_id=author.id,
+            map_id=int(map_obj.id),
+            map_name=parsed_name,
+            map_data=raw_data,
+        ).as_dict()
+
+    def list_maps(self, user_id: int) -> list[dict]:
+        author = self._get_user(user_id)
+        maps = Map.objects.filter(User_id=author).order_by('-id')
+        payload: list[dict] = []
+        for map_obj in maps:
+            map_name = str(getattr(map_obj, 'map_name', '') or '').strip()
+            if not map_name:
+                map_name = f'Мапа #{int(map_obj.id)}'
+            payload.append({
+                'map_id': int(map_obj.id),
+                'map_name': map_name,
+            })
+        return payload
 
     def _fetch_known_species_names(self) -> list[str]:
         with connection.cursor() as cursor:
@@ -276,7 +312,14 @@ class DjangoMapRepository(MapRepository):
             parsed = parser.parse(str(raw_incompatible or ''))
             species_name = str(tree_name or '').strip().lower()
             base_species = _base_species_id(species_name)
-            incompatible_ids = [_slugify_species_id(item) for item in parsed.incompatible_species_names]
+            incompatible_ids: list[str] = []
+            for item in parsed.incompatible_species_names:
+                species_id = _slugify_species_id(item)
+                base_id = _base_species_id(item)
+                if species_id:
+                    incompatible_ids.append(species_id)
+                if base_id:
+                    incompatible_ids.append(base_id)
             incompatible_ids.extend(BASE_SPECIES_OVERRIDES.get(base_species, []))
             trees[str(tree_id)] = {
                 'species_name': species_name,
@@ -293,7 +336,14 @@ class DjangoMapRepository(MapRepository):
             parsed = parser.parse(str(raw_incompatible or ''))
             species_name = str(vegetable_name or '').strip().lower()
             base_species = _base_species_id(species_name)
-            incompatible_ids = [_slugify_species_id(item) for item in parsed.incompatible_species_names]
+            incompatible_ids: list[str] = []
+            for item in parsed.incompatible_species_names:
+                species_id = _slugify_species_id(item)
+                base_id = _base_species_id(item)
+                if species_id:
+                    incompatible_ids.append(species_id)
+                if base_id:
+                    incompatible_ids.append(base_id)
             incompatible_ids.extend(BASE_SPECIES_OVERRIDES.get(base_species, []))
             vegetables[str(vegetable_id)] = {
                 'species_name': species_name,

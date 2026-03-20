@@ -7,6 +7,7 @@ urlpatterns = [
     path('interactive-map/', map_view, name='interactive-map'),
     path('save-interactive-map/', save_map, name='save-map'),
     path('check-map/', check_map, name='check-map'),
+    path('list-maps/', list_maps, name='list-maps'),
     path('get-map/<int:user_id>/', get_map, name='get-map'),
     path('update-interactive-map/', update_map, name='update-map'),
     path('get_tree_sorts/', get_tree_sorts, name='get_tree_sorts'),

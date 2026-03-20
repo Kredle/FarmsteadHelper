@@ -6,6 +6,9 @@
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Інтерактивна мапа</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             display: flex;
@@ -233,30 +236,55 @@
     </div>
 </div>
 <body>
-<div class="toolbar" id = "mainToolbar">
-    <h3>Інструменти</h3>
-    <button onclick="setTool('draw')" title="Малювати">✎</button>
-    <button onclick="setTool('erase')" title="Гумка">⌫</button>
-    <button onclick="setTool('points')" title="Точки і лінії">☉ ‧ ‧ ‧ •</button>
-    <button onclick="setTool('flower')" title="Квітка">✿</button>
-    <button onclick="setTool('tree')" title="Дерево">↟</button>
-    <button onclick="setTool('vegetable')" title="Овоч">⸙</button>
-    <button onclick="setTool('building')" title="">🏠︎</button>
-    <button onclick="undo()" title="Ctrl+Z">↺</button>
-    <button onclick="redo()" title="Ctrl+Shift+Z">↻</button>
-    <button onclick="handleSaveMap()" title="Зберегти">🖫</button>
-    <button onclick="createNewMap()" title="Нова мапа">➕</button>
-    <button onclick="window.location.href='/map/subscription/'" title="Передплата">💳</button>
+<div class="global-actions-bar" id="globalActionsBar">
+    <div class="global-actions-left">
+        <div class="map-brand-dot"></div>
+        <div>
+            <div class="global-title">FarmsteadHelper</div>
+            <div class="global-subtitle">Інтерактивна мапа</div>
+        </div>
+    </div>
+    <div class="global-actions-right">
+        <button class="global-btn" onclick="undo()" title="Скасувати (Ctrl+Z)">↺ Скасувати</button>
+        <button class="global-btn" onclick="redo()" title="Повернути (Ctrl+Shift+Z)">↻ Повернути</button>
+        <button class="global-btn global-btn--accent" onclick="handleSaveMap()" title="Зберегти мапу">🖫 Зберегти</button>
+        <button class="global-btn" id="subscriptionOrSwitchBtn" onclick="handleSubscriptionOrSwitch()" title="Передплата">💳 Передплата</button>
+    </div>
+</div>
+
+<button type="button" id="viewSwitchMapBtn" class="view-switch-map-btn" onclick="openMapSwitcher()" style="display:none;">
+    🗺 Зміна мапи
+</button>
+
+<div class="toolbar" id="mainToolbar">
+    <div class="tool-section-label">Малювання</div>
+    <button class="tool-btn" data-tool="draw" onclick="setTool('draw')" title="Олівець">✎</button>
+    <button class="tool-btn" data-tool="erase" onclick="setTool('erase')" title="Гумка">
+        <img class="tool-icon-image" src="https://cdn-icons-png.flaticon.com/512/77/77705.png" alt="Гумка">
+    </button>
+    <button class="tool-btn" data-tool="points" onclick="setTool('points')" title="Точки і лінії">◌</button>
+
+    <div class="tool-divider"></div>
+    <div class="tool-section-label">Обʼєкти</div>
+    <button class="tool-btn" data-tool="flower" onclick="setTool('flower')" title="Квітка">✿</button>
+    <button class="tool-btn" data-tool="flowerbed" onclick="setTool('flowerbed')" title="Клумба">✾</button>
+    <button class="tool-btn" data-tool="tree" onclick="setTool('tree')" title="Дерево">↟</button>
+    <button class="tool-btn" data-tool="vegetable" onclick="setTool('vegetable')" title="Овоч">⸙</button>
+    <button class="tool-btn" data-tool="building" onclick="setTool('building')" title="Будівля">🏠︎</button>
+
+    <div class="help-icon" id="help-icon">?</div>
 </div>
 
 <div class="modal" id="buildingModal">
-    <h3>Введіть назву будівлі</h3>
+    <button type="button" class="modal-close" onclick="cancelBuilding()" aria-label="Закрити">&times;</button>
+    <h3>Додати будівлю</h3>
     <input type="text" id="buildingNameInput" placeholder="Назва будівлі..." required>
     <button onclick="confirmBuilding()">Додати</button>
     <button onclick="cancelBuilding()">Скасувати</button>
 </div>
 
 <div id="treeModal" class="modal">
+  <button type="button" class="modal-close" onclick="cancelTree()" aria-label="Закрити">&times;</button>
   <h2>Додати дерево</h2>
   <input type="text" id="treeSearch" placeholder="🔍 Пошук дерева..." oninput="filterTrees()">
   <label for="treeTypeSelect">Оберіть дерево:</label>
@@ -272,6 +300,7 @@
 </div>
 
 <div id="vegetableModal" class="modal">
+    <button type="button" class="modal-close" onclick="cancelVegetable()" aria-label="Закрити">&times;</button>
     <h2>Додати Овоч</h2>
     <input type="text" id="vegetableSearch" placeholder="🔍 Пошук овоча..." oninput="filterVegetables()">
     <label for="vegetableTypeSelect">Оберіть Овоч:</label>
@@ -309,6 +338,7 @@
 </div>
 
 <div class="modal" id="fillModal">
+    <button type="button" class="modal-close" onclick="cancelFill()" aria-label="Закрити">&times;</button>
     <h3>Виберіть заповнення</h3>
     <select id="fillTextureSelect">
         <option value="none">Без заповнення</option>
@@ -326,21 +356,52 @@
 </div>
 
 <div class="modal" id="flowerModal">
+    <button type="button" class="modal-close" onclick="cancelFlower()" aria-label="Закрити">&times;</button>
     <h3>Виберіть квітку</h3>
     <input type="text" id="flowerSearch" placeholder="🔍 Пошук квітки..." oninput="filterFlowers()">
     <select id="flowerTypeSelect"></select>
     <button onclick="confirmFlower()">Додати</button>
     <button onclick="cancelFlower()">Скасувати</button>
 </div>
-<div class="help-icon" id="help-icon">?</div>
 
+<div class="modal" id="flowerbedModal">
+    <button type="button" class="modal-close" onclick="cancelFlowerbed()" aria-label="Закрити">&times;</button>
+    <h3>Створити клумбу</h3>
+    <p style="margin: 0 0 8px 0; color:#4a5f54; font-size:13px;">Оберіть сорт квіток для виділеної ділянки:</p>
+    <select id="flowerbedSortSelect"></select>
+    <button onclick="confirmFlowerbed()">Підтвердити</button>
+    <button onclick="cancelFlowerbed()">Скасувати</button>
+</div>
+
+<div class="modal" id="mapNameModal">
+    <button type="button" class="modal-close" onclick="cancelMapNameInput()" aria-label="Закрити">&times;</button>
+    <h3>Назва мапи</h3>
+    <input type="text" id="mapNameInput" placeholder="Введіть назву мапи" maxlength="255" required>
+    <div class="modal-buttons">
+        <button type="button" onclick="confirmMapNameInput()">Підтвердити</button>
+        <button type="button" onclick="cancelMapNameInput()">Скасувати</button>
+    </div>
+</div>
+
+<div class="modal" id="mapSwitcherModal">
+    <button type="button" class="modal-close" onclick="closeMapSwitcher()" aria-label="Закрити">&times;</button>
+    <h3>Зміна мапи</h3>
+    <label for="mapSwitcherSelect">Оберіть мапу:</label>
+    <select id="mapSwitcherSelect"></select>
+    <div class="modal-buttons">
+        <button type="button" onclick="openSelectedMapFromModal()">Відкрити</button>
+        <button type="button" id="createMapFromSwitcherBtn" onclick="createNewMapFromModal()">Створити мапу</button>
+    </div>
+</div>
 <div class="zoom-controls hidden" id="zoomControls">
     <div class="zoom-controls-title">Масштаб карти</div>
+    <div class="zoom-controls-row">
+        <div class="zoom-display" id="zoomDisplay">100%</div>
+    </div>
     <div class="zoom-slider-wrap">
         <input type="range" id="zoomSlider" min="50" max="400" step="1" value="100" aria-label="Масштаб карти">
     </div>
     <div class="zoom-controls-row">
-        <div class="zoom-display" id="zoomDisplay">100%</div>
         <button onclick="resetZoom()" title="Скинути масштаб">Скинути</button>
     </div>
 </div>
@@ -369,9 +430,10 @@
 </div>
 <style>
     .help-icon {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
         width: 40px;
         height: 40px;
         background-color: #2c3e50;
@@ -383,7 +445,7 @@
         line-height: 40px;
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
+        z-index: 2;
         transition: background-color 0.3s;
     }
     .help-icon:hover {
@@ -393,9 +455,9 @@
     .help-popup {
         display: none;
         position: fixed;
-        bottom: 70px;
-        left: 20px;
-        width: 300px;
+        bottom: 20px;
+        left: 112px;
+        width: 320px;
         background-color: #fdfdfd;
         border: 1px solid #ccc;
         padding: 16px;
@@ -588,6 +650,468 @@
         color: #2d4c40;
         white-space: nowrap;
     }
+
+    :root {
+        --bg-page: #f2f1ea;
+        --panel: #33413c;
+        --panel-soft: #3d4d47;
+        --panel-line: #53645d;
+        --text-main: #eef5f2;
+        --text-muted: #b8c6bf;
+        --accent: #9ec6af;
+        --accent-strong: #d9c28b;
+        --canvas-bg: #f8f7f2;
+        --danger: #ad3f3f;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        display: block;
+        font-family: 'Inter', sans-serif;
+        background: radial-gradient(circle at 20% 10%, #f9f8f2, #ece9dd);
+        color: #233029;
+    }
+
+    .global-actions-bar {
+        position: fixed;
+        top: 16px;
+        left: 20px;
+        right: 20px;
+        height: 64px;
+        background: linear-gradient(180deg, #43534c, #36453f);
+        border: 1px solid var(--panel-line);
+        border-radius: 14px;
+        box-shadow: 0 12px 26px rgba(17, 31, 26, 0.25);
+        z-index: 1200;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        gap: 14px;
+    }
+
+    .global-actions-bar.hidden {
+        display: none;
+    }
+
+    .view-switch-map-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1200;
+        width: auto;
+        margin: 0;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(179, 205, 192, 0.35);
+        background: linear-gradient(180deg, #4f6159, #41524b);
+        color: #e8f1ed;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .view-switch-map-btn:hover {
+        background: linear-gradient(180deg, #5b7067, #4a5f56);
+    }
+
+    .global-actions-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .map-brand-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 35% 35%, #f6e6bf, #bca066);
+        box-shadow: 0 0 0 2px rgba(243, 220, 168, 0.15);
+    }
+
+    .global-title {
+        color: #f4f8f6;
+        font-weight: 700;
+        line-height: 1.1;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+    }
+
+    .global-subtitle {
+        color: var(--text-muted);
+        font-size: 12px;
+        line-height: 1.1;
+    }
+
+    .global-actions-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .global-btn,
+    .toolbar button,
+    .zoom-controls button,
+    .custom-alert-btn,
+    .context-popup-actions button,
+    .modal button {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        font-weight: 600;
+    }
+
+    .global-btn {
+        margin: 0;
+        width: auto;
+        padding: 8px 12px;
+        color: #e8f1ed;
+        background: linear-gradient(180deg, #4f6159, #41524b);
+        border-color: rgba(179, 205, 192, 0.3);
+        font-size: 13px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+    }
+
+    .global-btn:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(180deg, #5b7067, #4a5f56);
+    }
+
+    .global-btn--accent {
+        background: linear-gradient(180deg, #8cab9a, #799b89);
+        color: #17241f;
+        border-color: #9dc4af;
+    }
+
+    .toolbar {
+        position: fixed;
+        top: 96px;
+        left: 20px;
+        width: 82px;
+        height: calc(100vh - 116px);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #37463f, #2f3c37);
+        border: 1px solid #4f625a;
+        box-shadow: 0 14px 28px rgba(17, 31, 26, 0.26);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-start;
+        padding: 14px 10px;
+        z-index: 1150;
+    }
+
+    .panel-title {
+        color: #eef5f1;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 2px;
+    }
+
+    .tool-section-label {
+        color: #9fb3aa;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-top: 2px;
+    }
+
+    .tool-divider {
+        width: 64px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #5f746b, transparent);
+        margin: 2px 0;
+    }
+
+    .tool-btn {
+        width: 52px;
+        height: 46px;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(180deg, var(--panel-soft), #2f3a35);
+        border: 1px solid #556860;
+        color: #edf3ef;
+        font-size: 20px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .tool-icon-image {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        display: block;
+        pointer-events: none;
+        filter: invert(1);
+    }
+
+    .tool-btn:hover {
+        background: linear-gradient(180deg, #495b54, #3a4b44);
+        transform: translateY(-1px);
+    }
+
+    .tool-btn.tool-active {
+        border-color: var(--accent-strong);
+        background: linear-gradient(180deg, #47574f, #334038);
+        box-shadow: inset 0 0 0 1px rgba(239, 222, 173, 0.55), inset 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(235, 213, 162, 0.5);
+        color: #fff5de;
+    }
+
+    .canvas-container {
+        margin-top: 0;
+        padding-top: 0;
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        bottom: 0;
+    }
+
+    canvas {
+        width: 100%;
+        height: 100%;
+        background: var(--canvas-bg);
+    }
+
+    .top-toolbar {
+        top: 96px;
+        right: 20px;
+        border-radius: 12px;
+        border: 1px solid #4d5f58;
+        background: linear-gradient(180deg, #42544c, #36463f);
+        color: #e8f1ed;
+        box-shadow: 0 10px 22px rgba(15, 29, 24, 0.26);
+        padding: 10px 12px;
+    }
+
+    .top-toolbar select,
+    .top-toolbar input[type="range"],
+    .modal input[type="text"],
+    .modal select {
+        border-radius: 10px;
+        border: 1px solid #adbcaf;
+        background: #f4f8f5;
+        color: #1f2d27;
+        font-family: inherit;
+    }
+
+    .modal {
+        width: min(440px, 92vw);
+        border-radius: 16px;
+        border: 1px solid #cfddd5;
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+        padding: 18px;
+        animation: modalIn 0.2s ease;
+    }
+
+    .modal.visible {
+        display: block;
+    }
+
+    .modal h2,
+    .modal h3 {
+        margin: 4px 0 14px;
+        font-weight: 700;
+        color: #22372f;
+    }
+
+    .modal-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+
+    .modal-buttons button {
+        width: auto;
+        margin: 0;
+        padding: 9px 14px;
+    }
+
+    #mapSwitcherSelect,
+    #mapNameInput {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        color: #111 !important;
+        margin: 0;
+        padding: 0;
+        font-size: 28px !important;
+        line-height: 1;
+        box-shadow: none !important;
+    }
+
+    .modal-close:hover {
+        background: transparent !important;
+        color: #000 !important;
+        transform: none !important;
+    }
+
+    #customAlert {
+        background: rgba(16, 24, 21, 0.52);
+        backdrop-filter: blur(2px);
+        z-index: 2000;
+    }
+
+    #customAlertBox {
+        position: relative;
+        width: min(420px, 92vw);
+        max-width: none;
+        border-radius: 14px;
+        border: 1px solid #cb8585;
+        background: linear-gradient(180deg, #fff6f6, #ffecec);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+        padding: 18px 18px 16px;
+        text-align: left;
+    }
+
+    #customAlertTitle {
+        margin: 0 0 10px;
+        font-size: 18px;
+        color: #6f2e2e;
+        text-align: center;
+    }
+
+    #customAlertMessage {
+        margin: 0 0 14px;
+        color: #5a2c2c;
+        line-height: 1.45;
+        font-size: 14px;
+    }
+
+    .custom-alert-btn {
+        margin: 0 auto;
+        display: block;
+        width: min(260px, 100%);
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #4f675c;
+        background: linear-gradient(180deg, #5f7a6d, #4a6258);
+        color: #fff;
+    }
+
+    #customAlertBox.alert-error .custom-alert-btn {
+        border-color: #915252;
+        background: linear-gradient(180deg, #bc4f4f, #a84242);
+    }
+
+    #customAlertBox.alert-info .custom-alert-btn {
+        border-color: #4f675c;
+        background: linear-gradient(180deg, #5f7a6d, #4a6258);
+    }
+
+    .zoom-controls {
+        background: linear-gradient(180deg, rgba(246, 250, 247, 0.98), rgba(228, 239, 233, 0.98));
+        border: 1px solid #adc6ba;
+        border-radius: 14px;
+        box-shadow: 0 12px 26px rgba(31, 60, 49, 0.22);
+        width: 132px;
+    }
+
+    .zoom-controls-title {
+        color: #264739;
+        font-weight: 700;
+    }
+
+    #zoomSlider {
+        appearance: none;
+        width: 138px;
+        height: 6px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #9fbcaf, #5d7f6f);
+    }
+
+    #zoomSlider::-webkit-slider-thumb {
+        appearance: none;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        border: 2px solid #335245;
+        background: #f3faf6;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .zoom-controls button {
+        background: linear-gradient(180deg, #4f675c, #3f554b);
+        border: 1px solid #597469;
+        border-radius: 10px;
+        color: #f2f8f5;
+        height: 30px;
+    }
+
+    .zoom-display {
+        font-size: 13px;
+        color: #1f4234;
+    }
+
+    .scale-indicator {
+        background: rgba(250, 251, 248, 0.94);
+        border: 1px solid #cedbd3;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .help-icon {
+        background: linear-gradient(180deg, #41524c, #33433d);
+        border: 1px solid #5b7066;
+    }
+
+    .help-popup {
+        border: 1px solid #ccd8d1;
+        border-radius: 14px;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .map-tool-draw { cursor: crosshair; }
+    .map-tool-erase { cursor: cell; }
+    .map-tool-points { cursor: crosshair; }
+    .map-tool-tree,
+    .map-tool-flower,
+    .map-tool-flowerbed,
+    .map-tool-vegetable,
+    .map-tool-building { cursor: copy; }
+    .map-tool-view { cursor: default; }
+
+    @keyframes modalIn {
+        from { opacity: 0; transform: translate(-50%, -46%) scale(0.97); }
+        to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @media (max-width: 1300px) {
+        .global-actions-right {
+            gap: 6px;
+        }
+
+        .global-btn {
+            padding: 7px 10px;
+            font-size: 12px;
+        }
+    }
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -598,7 +1122,7 @@
         const zoomControls = document.getElementById('zoomControls');
 
         helpIcon.addEventListener('click', () => {
-            helpPopup.style.display = 'block';
+            helpPopup.style.display = helpPopup.style.display === 'block' ? 'none' : 'block';
         });
 
         mapControlsIcon.addEventListener('click', (e) => {
@@ -623,8 +1147,9 @@
 </script>
 <div id="customAlert" style="display: none;">
     <div id="customAlertBox">
+        <h4 id="customAlertTitle">Повідомлення</h4>
         <p id="customAlertMessage"></p>
-        <button onclick="closeAlert()">OK</button>
+        <button class="custom-alert-btn" onclick="closeAlert()">OK</button>
     </div>
 </div>
 <script>
@@ -634,9 +1159,14 @@
     let user_id = null;
     let owner_id = "{{owner_id}}"
     let current_map_id = "{{ current_map_id }}" || null;
+    const current_map_name_from_server = "{{ current_map_name|default:''|escapejs }}";
     const hasActiveSubscription = "{{ has_active_subscription|yesno:'true,false' }}" === 'true';
+    const ownerHasActiveSubscription = "{{ owner_has_active_subscription|yesno:'true,false' }}" === 'true';
+    const ownerMapCount = Number("{{ owner_map_count|default:0 }}") || 0;
     let loadedBackgroundImage = null;
     let persistedCanvasImageData = null;
+    let currentMapName = current_map_name_from_server || '';
+    let mapNameModalResolver = null;
     const mapData = "{{ map_data|escapejs }}";
     const token = localStorage.getItem("authToken");
     const canvas = document.getElementById("mapCanvas");
@@ -660,6 +1190,10 @@
                         saveState();
                     };
                     img.src = parsedData.canvasImage;
+                }
+
+                if (typeof parsedData.mapName === 'string' && parsedData.mapName.trim()) {
+                    currentMapName = parsedData.mapName.trim();
                 }
 
                 // Відновлюємо квітки
@@ -721,6 +1255,11 @@
         if(!token || owner_id != user_id){
             canDraw = false;
             document.getElementById('mainToolbar').classList.add('hidden');
+            const globalActionsBar = document.getElementById('globalActionsBar');
+            if (globalActionsBar) {
+                globalActionsBar.classList.add('hidden');
+            }
+            updateCanvasCursor(true);
 
             const infoBanner = document.createElement('div');
             infoBanner.innerText = "Перегляд мапи. Редагування недоступне.";
@@ -738,6 +1277,11 @@
             infoBanner.style.pointerEvents = 'none';
 
             document.body.appendChild(infoBanner);
+
+            const viewSwitchMapBtn = document.getElementById('viewSwitchMapBtn');
+            if (viewSwitchMapBtn && ownerHasActiveSubscription && ownerMapCount > 1) {
+                viewSwitchMapBtn.style.display = 'inline-flex';
+            }
             //document.getElementById('canvasContainer').classList.add('full-width');
             const oldImage = new Image();
             const previewData = safeCanvasToDataURL();
@@ -758,7 +1302,183 @@
 
         }
         //console.log(user_id);
+
+        updateActiveToolButtons();
+        if (canDraw) {
+            updateCanvasCursor(false);
+        }
+
+        updateSubscriptionOrSwitchButton();
     });
+
+    function handleSubscriptionOrSwitch() {
+        if (hasActiveSubscription) {
+            openMapSwitcher();
+            return;
+        }
+        window.location.href = '/map/subscription/';
+    }
+
+    async function fetchUserMaps() {
+        const requestedOwner = canDraw ? await fetchUserData() : Number(owner_id || 0);
+        if (!requestedOwner) {
+            throw new Error('Не вдалося визначити користувача мапи.');
+        }
+
+        const response = await fetch('/map/list-maps/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                Author: requestedOwner,
+            }),
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || 'Не вдалося завантажити список мап.');
+        }
+
+        return payload.maps || [];
+    }
+
+    async function openMapSwitcher() {
+        try {
+            const maps = await fetchUserMaps();
+            const modal = document.getElementById('mapSwitcherModal');
+            const select = document.getElementById('mapSwitcherSelect');
+            const createBtn = document.getElementById('createMapFromSwitcherBtn');
+            if (!modal || !select) {
+                return;
+            }
+
+            if (createBtn) {
+                createBtn.style.display = canDraw ? 'inline-flex' : 'none';
+            }
+
+            select.innerHTML = '';
+            maps.forEach((item) => {
+                const opt = document.createElement('option');
+                opt.value = String(item.map_id);
+                opt.textContent = String(item.map_name || `Мапа #${item.map_id}`);
+                if (current_map_id && String(current_map_id) === String(item.map_id)) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+
+            if (!maps.length) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'Немає збережених мап';
+                opt.selected = true;
+                select.appendChild(opt);
+            }
+
+            modal.classList.add('visible');
+        } catch (error) {
+            showAlert(error.message || 'Не вдалося відкрити список мап.');
+        }
+    }
+
+    function closeMapSwitcher() {
+        const modal = document.getElementById('mapSwitcherModal');
+        if (modal) {
+            modal.classList.remove('visible');
+        }
+    }
+
+    async function openSelectedMapFromModal() {
+        const select = document.getElementById('mapSwitcherSelect');
+        if (!select || !select.value) {
+            showAlert('Оберіть мапу зі списку.');
+            return;
+        }
+
+        const targetOwner = canDraw ? await fetchUserData() : Number(owner_id || 0);
+        if (!targetOwner) {
+            showAlert('Не вдалося визначити власника мапи.');
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('owner_id', String(targetOwner));
+        params.set('map_id', String(select.value));
+        if (token) {
+            params.set('token', token);
+        }
+        window.location.href = `${window.location.pathname}?${params.toString()}`;
+    }
+
+    async function createNewMapFromModal() {
+        closeMapSwitcher();
+        await createNewMap();
+    }
+
+    function updateSubscriptionOrSwitchButton() {
+        const actionBtn = document.getElementById('subscriptionOrSwitchBtn');
+        if (!actionBtn) {
+            return;
+        }
+
+        if (hasActiveSubscription) {
+            actionBtn.textContent = '🗺 Зміна мапи';
+            actionBtn.title = 'Змінити мапу';
+        } else {
+            actionBtn.textContent = '💳 Передплата';
+            actionBtn.title = 'Передплата';
+        }
+    }
+
+    function openMapNameModal(initialValue = '') {
+        const modal = document.getElementById('mapNameModal');
+        const input = document.getElementById('mapNameInput');
+        if (!modal || !input) {
+            return Promise.resolve(null);
+        }
+
+        input.value = String(initialValue || '');
+        modal.classList.add('visible');
+        setTimeout(() => input.focus(), 0);
+
+        return new Promise((resolve) => {
+            mapNameModalResolver = resolve;
+        });
+    }
+
+    function confirmMapNameInput() {
+        const modal = document.getElementById('mapNameModal');
+        const input = document.getElementById('mapNameInput');
+        if (!modal || !input) {
+            return;
+        }
+
+        const value = input.value.trim();
+        if (!value) {
+            showAlert('❌ Вкажіть назву мапи.');
+            input.focus();
+            return;
+        }
+
+        modal.classList.remove('visible');
+        if (mapNameModalResolver) {
+            mapNameModalResolver(value);
+            mapNameModalResolver = null;
+        }
+    }
+
+    function cancelMapNameInput() {
+        const modal = document.getElementById('mapNameModal');
+        if (modal) {
+            modal.classList.remove('visible');
+        }
+        if (mapNameModalResolver) {
+            mapNameModalResolver(null);
+            mapNameModalResolver = null;
+        }
+    }
 
     /*if (!token) {
         window.location.href = "/login/";
@@ -838,6 +1558,7 @@
     let tool = 'draw';
     let currentPoints = [];
     let allFigures = [];
+    let currentFigureIndex = null;
     let brushStrokes = [];
     let activeStrokePoints = [];
     let isDrawing = false;
@@ -876,11 +1597,65 @@
     let isPanning = false;
     let panStartX = 0;
     let panStartY = 0;
+    let isRightMouseDown = false;
+    let rightDownOffsetX = 0;
+    let rightDownOffsetY = 0;
+    let rightDownClientX = 0;
+    let rightDownClientY = 0;
+    let rightDownDeletionTarget = null;
+    let rightDragTriggered = false;
+    const RIGHT_DRAG_THRESHOLD = 6;
     const PIXELS_PER_METER = 20;
     const coordsLabel = document.getElementById('coordsLabel');
     const scaleBar = document.getElementById('scaleBar');
     const scaleLabel = document.getElementById('scaleLabel');
     const zoomSlider = document.getElementById('zoomSlider');
+
+    const TOOL_CURSOR_CLASS_MAP = {
+        draw: 'map-tool-draw',
+        erase: 'map-tool-erase',
+        points: 'map-tool-points',
+        tree: 'map-tool-tree',
+        flower: 'map-tool-flower',
+        flowerbed: 'map-tool-flowerbed',
+        vegetable: 'map-tool-vegetable',
+        building: 'map-tool-building',
+    };
+
+    function updateActiveToolButtons() {
+        document.querySelectorAll('.tool-btn[data-tool]').forEach((btn) => {
+            const isActive = btn.dataset.tool === tool;
+            btn.classList.toggle('tool-active', isActive);
+            if (isActive) {
+                btn.setAttribute('aria-pressed', 'true');
+            } else {
+                btn.removeAttribute('aria-pressed');
+            }
+        });
+    }
+
+    function updateCanvasCursor(forceView = false) {
+        if (isPanning) {
+            canvas.style.cursor = 'grabbing';
+            return;
+        }
+
+        Object.values(TOOL_CURSOR_CLASS_MAP).forEach((className) => canvas.classList.remove(className));
+        canvas.classList.add(forceView ? 'map-tool-view' : (TOOL_CURSOR_CLASS_MAP[tool] || 'map-tool-view'));
+
+        if (forceView) {
+            canvas.style.cursor = 'default';
+            return;
+        }
+
+        if (tool === 'erase') {
+            canvas.style.cursor = 'cell';
+        } else if (tool === 'tree' || tool === 'flower' || tool === 'flowerbed' || tool === 'vegetable' || tool === 'building') {
+            canvas.style.cursor = 'copy';
+        } else {
+            canvas.style.cursor = 'crosshair';
+        }
+    }
 
     function pixelsToMeters(pixelDistance) {
         return pixelDistance / PIXELS_PER_METER;
@@ -1242,8 +2017,6 @@
 
     // === MOUSE WHEEL ZOOM ===
     canvas.addEventListener('wheel', (e) => {
-        if (!canDraw && zoomLevel === 1) return; // Allow zoom even in view mode
-        
         e.preventDefault();
         
         const mouseScreen = { x: e.offsetX, y: e.offsetY };
@@ -1251,24 +2024,24 @@
         setZoomLevel(nextZoom, mouseScreen.x, mouseScreen.y);
     }, { passive: false });
 
-    // === PAN WITH MIDDLE MOUSE BUTTON ===
+    // === RIGHT CLICK: click => context popup, hold+drag => pan ===
     canvas.addEventListener('mousedown', (e) => {
-        if (e.button === 2) { // Right click
+        if (e.button === 2) {
+            hideContextDeletePopup();
+
+            isRightMouseDown = true;
+            rightDragTriggered = false;
+            rightDownOffsetX = e.offsetX;
+            rightDownOffsetY = e.offsetY;
+            rightDownClientX = e.clientX;
+            rightDownClientY = e.clientY;
+            rightDownDeletionTarget = null;
+
             if (canDraw) {
                 const worldPos = screenToWorld(e.offsetX, e.offsetY);
-                const deletionTarget = getDeletionTargetAtPoint(worldPos.x, worldPos.y);
-                if (deletionTarget) {
-                    showContextDeletePopup(e.clientX, e.clientY, deletionTarget);
-                    e.preventDefault();
-                    return;
-                }
+                rightDownDeletionTarget = getDeletionTargetAtPoint(worldPos.x, worldPos.y);
             }
 
-            hideContextDeletePopup();
-            isPanning = true;
-            panStartX = e.offsetX - panX;
-            panStartY = e.offsetY - panY;
-            canvas.style.cursor = 'grabbing';
             e.preventDefault();
         }
     });
@@ -1278,13 +2051,48 @@
             panX = e.offsetX - panStartX;
             panY = e.offsetY - panStartY;
             redrawCanvas();
+            return;
+        }
+
+        if (isRightMouseDown && !rightDragTriggered) {
+            const dx = e.offsetX - rightDownOffsetX;
+            const dy = e.offsetY - rightDownOffsetY;
+            const movedEnough = Math.sqrt(dx * dx + dy * dy) >= RIGHT_DRAG_THRESHOLD;
+
+            if (movedEnough) {
+                rightDragTriggered = true;
+                isPanning = true;
+                panStartX = e.offsetX - panX;
+                panStartY = e.offsetY - panY;
+                canvas.style.cursor = 'grabbing';
+            }
         }
     });
 
     canvas.addEventListener('mouseup', (e) => {
         if (e.button === 2) {
+            const shouldOpenPopup = isRightMouseDown && !rightDragTriggered && canDraw && !!rightDownDeletionTarget;
+
+            if (shouldOpenPopup) {
+                showContextDeletePopup(rightDownClientX, rightDownClientY, rightDownDeletionTarget);
+            }
+
             isPanning = false;
-            canvas.style.cursor = 'crosshair';
+            isRightMouseDown = false;
+            rightDragTriggered = false;
+            rightDownDeletionTarget = null;
+            updateCanvasCursor(!canDraw);
+            e.preventDefault();
+        }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        if (isRightMouseDown || isPanning) {
+            isPanning = false;
+            isRightMouseDown = false;
+            rightDragTriggered = false;
+            rightDownDeletionTarget = null;
+            updateCanvasCursor(!canDraw);
         }
     });
 
@@ -1542,19 +2350,21 @@
         const payload = getCompatibilityPayloadByEntity(entityType, idKey);
 
         const defaultRadius = entityType === 'tree' ? TREE_DEFAULT_RADIUS : VEGETABLE_DEFAULT_RADIUS;
-        entity.radius = Number(entity.radius || payload?.radius || defaultRadius);
-        entity.speciesId = entity.speciesId || payload?.species_id || normalizeTextId(entityType === 'tree' ? entity.treeName : entity.vegetableName);
-        entity.baseSpeciesId = entity.baseSpeciesId || payload?.base_species_id || entity.speciesId.split('_')[0];
-        entity.categoryIds = Array.isArray(entity.categoryIds) ? entity.categoryIds : (payload?.category_ids || [entityType]);
-        entity.incompatibleSpeciesIds = Array.isArray(entity.incompatibleSpeciesIds)
-            ? entity.incompatibleSpeciesIds
-            : (payload?.incompatible_species_ids || []);
-        entity.incompatibleCategoryIds = Array.isArray(entity.incompatibleCategoryIds)
-            ? entity.incompatibleCategoryIds
-            : (payload?.incompatible_categories || []);
-        entity.allowedSoils = Array.isArray(entity.allowedSoils)
-            ? entity.allowedSoils
-            : (payload?.allowed_soils || []);
+        entity.radius = Number(payload?.radius || entity.radius || defaultRadius);
+        entity.speciesId = payload?.species_id || entity.speciesId || normalizeTextId(entityType === 'tree' ? entity.treeName : entity.vegetableName);
+        entity.baseSpeciesId = payload?.base_species_id || entity.baseSpeciesId || entity.speciesId.split('_')[0];
+        entity.categoryIds = Array.isArray(payload?.category_ids)
+            ? payload.category_ids
+            : (Array.isArray(entity.categoryIds) ? entity.categoryIds : [entityType]);
+        entity.incompatibleSpeciesIds = Array.isArray(payload?.incompatible_species_ids)
+            ? payload.incompatible_species_ids
+            : (Array.isArray(entity.incompatibleSpeciesIds) ? entity.incompatibleSpeciesIds : []);
+        entity.incompatibleCategoryIds = Array.isArray(payload?.incompatible_categories)
+            ? payload.incompatible_categories
+            : (Array.isArray(entity.incompatibleCategoryIds) ? entity.incompatibleCategoryIds : []);
+        entity.allowedSoils = Array.isArray(payload?.allowed_soils)
+            ? payload.allowed_soils
+            : (Array.isArray(entity.allowedSoils) ? entity.allowedSoils : []);
 
         if (!entity._entityUid) {
             entity._entityUid = `${entityType}-${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
@@ -1685,8 +2495,14 @@
     function setTool(selectedTool) {
         tool = selectedTool;
         currentPoints = [];
+        if (selectedTool !== 'flowerbed') {
+            pendingFlowerbedFigureIndex = null;
+            flowerbedModal.classList.remove('visible');
+        }
         topToolbar.classList.toggle('visible', tool === 'draw' || tool === 'erase');
         applyButton.classList.toggle('visible', tool === 'points');
+        updateActiveToolButtons();
+        updateCanvasCursor(!canDraw);
     }
 
     function getTexturePattern(type) {
@@ -1734,50 +2550,59 @@
     function createTexture(type) {
         const canvasTexture = document.createElement('canvas');
         const ctxTexture = canvasTexture.getContext('2d');
-        canvasTexture.width = 20;
-        canvasTexture.height = 20;
+        canvasTexture.width = 28;
+        canvasTexture.height = 28;
 
-        ctxTexture.fillStyle = '#ffffff';
-        ctxTexture.fillRect(0, 0, 20, 20);
+        ctxTexture.fillStyle = '#f6f4ec';
+        ctxTexture.fillRect(0, 0, 28, 28);
 
         switch (type) {
             case 'grass':
-                ctxTexture.fillStyle = '#70c35d';
-                ctxTexture.fillRect(0, 0, 20, 20);
-                ctxTexture.strokeStyle = '#509444';
+                ctxTexture.fillStyle = '#89a888';
+                ctxTexture.fillRect(0, 0, 28, 28);
+                ctxTexture.fillStyle = 'rgba(52, 83, 62, 0.28)';
+                for (let i = 0; i < 24; i++) {
+                    const x = Math.random() * 28;
+                    const y = Math.random() * 28;
+                    ctxTexture.fillRect(x, y, 1.2, 1.2);
+                }
+                ctxTexture.strokeStyle = 'rgba(220, 233, 214, 0.26)';
+                ctxTexture.lineWidth = 0.8;
                 ctxTexture.beginPath();
-                ctxTexture.moveTo(0, 10);
-                ctxTexture.lineTo(20, 10);
-                ctxTexture.moveTo(10, 0);
-                ctxTexture.lineTo(10, 20);
+                ctxTexture.moveTo(2, 20);
+                ctxTexture.quadraticCurveTo(11, 14, 24, 18);
+                ctxTexture.moveTo(4, 8);
+                ctxTexture.quadraticCurveTo(13, 3, 26, 10);
                 ctxTexture.stroke();
                 break;
             case 'water':
-                ctxTexture.fillStyle = '#4d8be5';
-                ctxTexture.fillRect(0, 0, 20, 20);
-                ctxTexture.strokeStyle = '#3a6db0';
+                ctxTexture.fillStyle = '#7fa2ba';
+                ctxTexture.fillRect(0, 0, 28, 28);
+                ctxTexture.strokeStyle = 'rgba(227, 241, 248, 0.55)';
+                ctxTexture.lineWidth = 1;
                 ctxTexture.beginPath();
-                ctxTexture.arc(5, 5, 3, 0, Math.PI * 2);
-                ctxTexture.arc(15, 15, 3, 0, Math.PI * 2);
+                ctxTexture.moveTo(0, 9);
+                ctxTexture.bezierCurveTo(7, 4, 14, 14, 28, 8);
+                ctxTexture.moveTo(0, 19);
+                ctxTexture.bezierCurveTo(8, 14, 16, 24, 28, 18);
                 ctxTexture.stroke();
                 break;
             case 'dirt':
-                ctxTexture.fillStyle = '#8b4513';
-                ctxTexture.fillRect(0, 0, 20, 20);
-                ctxTexture.fillStyle = '#5a2d0a';
-                const dirtDots = [
-                    [3, 4], [7, 12], [11, 5], [15, 15], [18, 8],
-                    [5, 17], [9, 2], [13, 10], [2, 14], [17, 3]
-                ];
-                for (const dot of dirtDots) {
+                ctxTexture.fillStyle = '#8a7357';
+                ctxTexture.fillRect(0, 0, 28, 28);
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.random() * 28;
+                    const y = Math.random() * 28;
+                    const r = 0.6 + Math.random() * 0.9;
+                    ctxTexture.fillStyle = i % 2 ? 'rgba(104, 79, 56, 0.34)' : 'rgba(168, 137, 108, 0.26)';
                     ctxTexture.beginPath();
-                    ctxTexture.arc(dot[0], dot[1], 1, 0, Math.PI * 2);
+                    ctxTexture.arc(x, y, r, 0, Math.PI * 2);
                     ctxTexture.fill();
                 }
                 break;
             default:
-                ctxTexture.fillStyle = '#000000';
-                ctxTexture.fillRect(0, 0, 20, 20);
+                ctxTexture.fillStyle = '#36413c';
+                ctxTexture.fillRect(0, 0, 28, 28);
         }
 
         return ctx.createPattern(canvasTexture, 'repeat');
@@ -2016,7 +2841,7 @@
             dragEntityState = null;
             dragConflictTarget = null;
             selectedCompatibilityTarget = null;
-            canvas.style.cursor = 'crosshair';
+            updateCanvasCursor(!canDraw);
             redrawCanvas();
             saveState();
             return;
@@ -2037,7 +2862,7 @@
             dragEntityState = null;
             dragConflictTarget = null;
             selectedCompatibilityTarget = null;
-            canvas.style.cursor = 'crosshair';
+            updateCanvasCursor(!canDraw);
             rebuildCompatibilityGrid();
             redrawCanvas();
             return;
@@ -2110,7 +2935,8 @@
     }
 
     function drawAllFigures() {
-        for (let figure of allFigures) {
+        for (let i = 0; i < allFigures.length; i++) {
+            const figure = allFigures[i];
             if (figure.fillType && !figure.fill) {
                 figure.fill = getTexturePattern(figure.fillType);
             }
@@ -2135,7 +2961,126 @@
             }
             ctx.closePath();
             ctx.stroke();
+
+            drawFigureFlowerbed(figure);
+
+            if (pendingFlowerbedFigureIndex === i && tool === 'flowerbed') {
+                drawPendingFlowerbedOutline(figure);
+            }
         }
+    }
+
+    function getFigureBounds(figure) {
+        const xs = figure.points.map(p => p.x);
+        const ys = figure.points.map(p => p.y);
+        return {
+            minX: Math.min(...xs),
+            maxX: Math.max(...xs),
+            minY: Math.min(...ys),
+            maxY: Math.max(...ys)
+        };
+    }
+
+    function getFigureCentroid(figure) {
+        const bounds = getFigureBounds(figure);
+        return {
+            x: (bounds.minX + bounds.maxX) / 2,
+            y: (bounds.minY + bounds.maxY) / 2
+        };
+    }
+
+    function buildFigurePath(figure) {
+        if (!figure || !Array.isArray(figure.points) || figure.points.length < 3) {
+            return;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(figure.points[0].x, figure.points[0].y);
+        for (let i = 1; i < figure.points.length; i++) {
+            ctx.lineTo(figure.points[i].x, figure.points[i].y);
+        }
+        ctx.closePath();
+    }
+
+    function drawFigureFlowerbed(figure) {
+        if (!figure || !figure.flowerbedSort || !Array.isArray(figure.points) || figure.points.length < 3) {
+            return;
+        }
+
+        ctx.save();
+        buildFigurePath(figure);
+        ctx.clip();
+
+        ctx.fillStyle = 'rgba(238, 120, 164, 0.18)';
+        buildFigurePath(figure);
+        ctx.fill();
+
+        const bounds = getFigureBounds(figure);
+        const step = 34;
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = 'rgba(171, 37, 93, 0.68)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let y = bounds.minY + 10; y <= bounds.maxY; y += step) {
+            for (let x = bounds.minX + 10; x <= bounds.maxX; x += step) {
+                if (isPointInsidePolygon({ x, y }, figure.points)) {
+                    ctx.fillText('✿', x, y);
+                }
+            }
+        }
+
+        if (isShiftPressed) {
+            drawFlowerbedShiftLabel(figure);
+        }
+        ctx.restore();
+    }
+
+    function drawFlowerbedShiftLabel(figure) {
+        if (!figure || !figure.flowerbedSort || !Array.isArray(figure.points) || figure.points.length < 3) {
+            return;
+        }
+
+        const label = `Клумба: ${figure.flowerbedSort}`;
+        const bounds = getFigureBounds(figure);
+        const centroid = getFigureCentroid(figure);
+        const availableWidth = Math.max(24, (bounds.maxX - bounds.minX) * 0.86);
+        const availableHeight = Math.max(14, (bounds.maxY - bounds.minY) * 0.45);
+
+        let fontSize = Math.min(26, Math.max(8, availableHeight));
+        const fontFamily = 'Inter, Arial, sans-serif';
+        while (fontSize > 8) {
+            ctx.font = `700 ${fontSize}px ${fontFamily}`;
+            const textWidth = ctx.measureText(label).width;
+            const textHeight = fontSize * 1.12;
+            if (textWidth <= availableWidth && textHeight <= availableHeight) {
+                break;
+            }
+            fontSize -= 1;
+        }
+
+        ctx.font = `700 ${fontSize}px ${fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(84, 32, 52, 0.95)';
+        ctx.strokeStyle = 'rgba(255, 244, 249, 0.92)';
+        ctx.lineWidth = Math.max(1, fontSize * 0.16);
+        ctx.strokeText(label, centroid.x, centroid.y);
+        ctx.fillText(label, centroid.x, centroid.y);
+    }
+
+    function drawPendingFlowerbedOutline(figure) {
+        if (!figure || !Array.isArray(figure.points) || figure.points.length < 3) {
+            return;
+        }
+
+        ctx.save();
+        ctx.setLineDash([8, 5]);
+        ctx.strokeStyle = 'rgba(190, 43, 102, 0.95)';
+        ctx.lineWidth = 2;
+        buildFigurePath(figure);
+        ctx.stroke();
+        ctx.restore();
     }
 
     function drawAllBrushStrokes() {
@@ -2317,7 +3262,10 @@
             mud: 'мул'
         };
         const type = String(figure.fillType || 'невідомо').toLowerCase();
-        const base = `Ділянка (${typeLabelMap[type] || type})`;
+        let base = `Ділянка (${typeLabelMap[type] || type})`;
+        if (figure.flowerbedSort) {
+            base += ` • Клумба: ${figure.flowerbedSort}`;
+        }
         const soilType = normalizeSoilType(figure.soilType);
         if ((type === 'grass' || type === 'dirt' || type === 'mud') && soilType) {
             return `${base} • Ґрунт: ${soilType}`;
@@ -2517,8 +3465,8 @@
         if (isImageDrawable(loadedBackgroundImage)) {
             ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
         }
-        drawAllBrushStrokes();
         drawAllFigures();
+        drawAllBrushStrokes();
         drawCurrentFigure();
         drawAllFlowers();
         drawAllBuildings();
@@ -2534,8 +3482,8 @@
         if (isImageDrawable(loadedBackgroundImage)) {
             ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
         }
-        drawAllBrushStrokes();
         drawAllFigures();
+        drawAllBrushStrokes();
         drawCompletedFigureLengths();
         drawCurrentFigure();
         drawAllFlowersWithLabels();
@@ -2610,6 +3558,18 @@
         const user_id = await fetchUserData();
         try {
             if(first_map === true || !current_map_id){
+                const enteredName = await openMapNameModal(currentMapName || '');
+                if (enteredName === null) {
+                    return;
+                }
+
+                const normalizedName = enteredName.trim();
+                if (!normalizedName) {
+                    showAlert('❌ Вкажіть назву мапи перед першим збереженням.');
+                    return;
+                }
+
+                currentMapName = normalizedName;
                 const result = await saveMap();
                 if (result && result.map_id) {
                     current_map_id = String(result.map_id);
@@ -2690,6 +3650,7 @@
 
         clearMapWorkspace();
         current_map_id = null;
+        currentMapName = '';
         first_map = true;
 
         const params = new URLSearchParams(window.location.search);
@@ -2706,6 +3667,7 @@
         const user_id = await fetchUserData();
         // Збираємо всі дані для збереження
         const mapData = {
+            mapName: currentMapName,
             canvasImage: persistedCanvasImageData,
             flowers: flowersOnCanvas,
             buildings: buildingsOnCanvas,
@@ -2724,6 +3686,7 @@
             body: JSON.stringify({
                 Content: mapData, // Серіалізуємо всі дані в JSON
                 Author: user_id,
+                MapName: currentMapName,
             }),
         });
 
@@ -2746,6 +3709,7 @@
     async function updateMap() {
         // Збираємо всі дані для оновлення
         const mapData = {
+            mapName: currentMapName,
             canvasImage: persistedCanvasImageData,
             flowers: flowersOnCanvas,
             buildings: buildingsOnCanvas,
@@ -2767,6 +3731,7 @@
                 Content: mapData, // Серіалізуємо всі дані в JSON
                 Author: user_id,
                 MapId: current_map_id,
+                MapName: currentMapName,
             }),
         });
 
@@ -2792,9 +3757,12 @@
     let allFlowers = [];
     let flowersOnCanvas = [];
     let pendingFlowerPosition = null;
+    let pendingFlowerbedFigureIndex = null;
     const tooltip = document.getElementById("flowerTooltip");
     const flowerModal = document.getElementById("flowerModal");
+    const flowerbedModal = document.getElementById("flowerbedModal");
     const flowerTypeSelect = document.getElementById("flowerTypeSelect");
+    const flowerbedSortSelect = document.getElementById('flowerbedSortSelect');
 
     const flowerImageURL = "https://farmsteadhelper.pythonanywhere.com/media/avatars/3/d059944f4fa40714.png";
     flowerImage.src = flowerImageURL;
@@ -2806,8 +3774,20 @@
         console.log(`🌸 Квітка "${name}" додана в (${x}, ${y})`);
     }
 
+    function drawEntityShadow(x, y, size) {
+        const shadowWidth = size * 0.52;
+        const shadowHeight = size * 0.18;
+        ctx.save();
+        ctx.fillStyle = 'rgba(24, 36, 30, 0.18)';
+        ctx.beginPath();
+        ctx.ellipse(x, y + (size * 0.32), shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     function drawAllFlowers() {
         flowersOnCanvas.forEach(flower => {
+            drawEntityShadow(flower.x, flower.y, flower.size);
             if (isImageDrawable(flowerImage)) {
                 ctx.drawImage(flowerImage, flower.x - flower.size / 2, flower.y - flower.size / 2, flower.size, flower.size);
             } else {
@@ -2818,12 +3798,13 @@
 
     function drawAllFlowersWithLabels() {
         flowersOnCanvas.forEach(flower => {
+            drawEntityShadow(flower.x, flower.y, flower.size);
             if (isImageDrawable(flowerImage)) {
                 ctx.drawImage(flowerImage, flower.x - flower.size / 2, flower.y - flower.size / 2, flower.size, flower.size);
             } else {
                 drawFallbackMarker(flower.x, flower.y, flower.size, 'F');
             }
-            ctx.font = '12px Arial';
+            ctx.font = '500 12px Inter';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
             ctx.fillText(flower.name, flower.x, flower.y - flower.size / 2 - 5);
@@ -2839,6 +3820,14 @@
             loadFlowerOptions();
             pendingFlowerPosition = { x: worldPos.x, y: worldPos.y };
             flowerModal.classList.add("visible");
+        } else if (tool === 'flowerbed') {
+            const fieldTarget = getTopFieldTargetAtPoint(worldPos.x, worldPos.y);
+            if (!fieldTarget) {
+                showAlert('❌ Для створення клумби спочатку натисніть всередині намальованої ділянки.');
+                return;
+            }
+            pendingFlowerbedFigureIndex = fieldTarget.index;
+            openFlowerbedModal();
         } else if (tool === "building") {
             if (!canPlaceEntityAt(worldPos.x, worldPos.y)) return;
             pendingBuildingPosition = { x: worldPos.x, y: worldPos.y };
@@ -2902,9 +3891,12 @@
 
             allFlowers = data;
             updateFlowerList(data);
+            updateFlowerbedSortList(data);
+            return data;
 
         } catch (error) {
             console.error("❌ Помилка API:", error);
+            return [];
         }
     }
 
@@ -2918,6 +3910,71 @@
             option.textContent = flowerName;
             flowerSelect.appendChild(option);
         });
+    }
+
+    function updateFlowerbedSortList(flowers) {
+        if (!flowerbedSortSelect) {
+            return;
+        }
+
+        flowerbedSortSelect.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Оберіть сорт квіток';
+        flowerbedSortSelect.appendChild(placeholder);
+
+        (flowers || []).forEach((flowerName) => {
+            const option = document.createElement('option');
+            option.value = flowerName;
+            option.textContent = flowerName;
+            flowerbedSortSelect.appendChild(option);
+        });
+    }
+
+    async function openFlowerbedModal() {
+        if (pendingFlowerbedFigureIndex === null || !allFigures[pendingFlowerbedFigureIndex]) {
+            showAlert('❌ Не вдалося визначити ділянку для клумби.');
+            return;
+        }
+
+        if (!Array.isArray(allFlowers) || allFlowers.length === 0) {
+            await loadFlowerOptions();
+        } else {
+            updateFlowerbedSortList(allFlowers);
+        }
+
+        const selectedFigure = allFigures[pendingFlowerbedFigureIndex];
+        const currentSort = String(selectedFigure?.flowerbedSort || '').trim();
+        flowerbedSortSelect.value = currentSort;
+        flowerbedModal.classList.add('visible');
+        redrawCanvas();
+    }
+
+    function confirmFlowerbed() {
+        if (pendingFlowerbedFigureIndex === null || !allFigures[pendingFlowerbedFigureIndex]) {
+            showAlert('❌ Ділянку для клумби не знайдено.');
+            return;
+        }
+
+        const selectedSort = String(flowerbedSortSelect?.value || '').trim();
+        if (!selectedSort) {
+            showAlert('❌ Оберіть сорт квіток для клумби.');
+            return;
+        }
+
+        const figure = allFigures[pendingFlowerbedFigureIndex];
+        figure.flowerbedSort = selectedSort;
+        saveState();
+        flowerbedModal.classList.remove('visible');
+        pendingFlowerbedFigureIndex = null;
+        redrawCanvas();
+    }
+
+    function cancelFlowerbed() {
+        flowerbedModal.classList.remove('visible');
+        pendingFlowerbedFigureIndex = null;
+        redrawCanvas();
     }
 
     function filterFlowers() {
@@ -3201,6 +4258,7 @@
     // Малювання всіх овочів на canvas
     function drawAllVegetables() {
         vegetablesOnCanvas.forEach(vegetable => {
+            drawEntityShadow(vegetable.x, vegetable.y, vegetable.size);
             if (isImageDrawable(vegetableImage)) {
                 ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
             } else {
@@ -3212,12 +4270,13 @@
     // Малювання овоча із написами
     function drawAllVegetablesWithLabels() {
         vegetablesOnCanvas.forEach(vegetable => {
+            drawEntityShadow(vegetable.x, vegetable.y, vegetable.size);
             if (isImageDrawable(vegetableImage)) {
                 ctx.drawImage(vegetableImage, vegetable.x - vegetable.size / 2, vegetable.y - vegetable.size / 2, vegetable.size, vegetable.size);
             } else {
                 drawFallbackMarker(vegetable.x, vegetable.y, vegetable.size, 'V');
             }
-            ctx.font = '12px Arial';
+            ctx.font = '500 12px Inter';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
             ctx.fillText(`${vegetable.vegetableName} (${vegetable.sortVegName})`, vegetable.x, vegetable.y - vegetable.size / 2 - 5);
@@ -3547,6 +4606,7 @@
     // Малювання всіх дерев на canvas
     function drawAllTrees() {
         treesOnCanvas.forEach(tree => {
+            drawEntityShadow(tree.x, tree.y, tree.size);
             const img = getTreeImageFromCache(tree.imageUrl || treeImageURL);
             if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
@@ -3558,13 +4618,14 @@
     // Малювання всіх дерев з написами
     function drawAllTreesWithLabels() {
         treesOnCanvas.forEach(tree => {
+            drawEntityShadow(tree.x, tree.y, tree.size);
             const img = getTreeImageFromCache(tree.imageUrl || treeImageURL);
             if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, tree.x - tree.size / 2, tree.y - tree.size / 2, tree.size, tree.size);
             } else {
                 drawFallbackMarker(tree.x, tree.y, tree.size, 'T');
             }
-            ctx.font = '12px Arial';
+            ctx.font = '500 12px Inter';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
             ctx.fillText(`${tree.treeName} (${tree.sortName})`, tree.x, tree.y - tree.size / 2 - 5);
@@ -3588,6 +4649,7 @@
 
     function drawAllBuildings() {
         buildingsOnCanvas.forEach(building => {
+            drawEntityShadow(building.x, building.y, building.size);
             if (isImageDrawable(buildingImage)) {
                 ctx.drawImage(buildingImage, building.x - building.size / 2, building.y - building.size / 2, building.size, building.size);
             } else {
@@ -3598,12 +4660,13 @@
 
     function drawAllBuildingsWithLabels() {
         buildingsOnCanvas.forEach(building => {
+            drawEntityShadow(building.x, building.y, building.size);
             if (isImageDrawable(buildingImage)) {
                 ctx.drawImage(buildingImage, building.x - building.size / 2, building.y - building.size / 2, building.size, building.size);
             } else {
                 drawFallbackMarker(building.x, building.y, building.size, 'B');
             }
-            ctx.font = '12px Arial';
+            ctx.font = '500 12px Inter';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
             ctx.fillText(building.name, building.x, building.y - building.size / 2 - 5);
@@ -3704,6 +4767,17 @@
         }
 
         if (!found) {
+            const topField = getTopFieldTargetAtPoint(mouseX, mouseY);
+            const figure = topField && allFigures[topField.index] ? allFigures[topField.index] : null;
+            if (figure && figure.flowerbedSort) {
+                tooltip.textContent = `Клумба (${figure.flowerbedSort})`;
+                tooltip.style.display = "block";
+                positionTooltip(event.offsetX, event.offsetY);
+                found = true;
+            }
+        }
+
+        if (!found) {
             tooltip.style.display = "none";
         }
     }
@@ -3730,13 +4804,35 @@
 </script>
 <script>
     function showAlert(message) {
-        document.getElementById('customAlertMessage').textContent = message;
+        const normalized = String(message || '').trim();
+        const isError = normalized.includes('❌') || /помил|не вдалося|заборонено/i.test(normalized);
+        const alertBox = document.getElementById('customAlertBox');
+
+        const cleanMessage = normalized.replace(/^❌\s*/u, '');
+        document.getElementById('customAlertMessage').textContent = cleanMessage || 'Виконано.';
+        document.getElementById('customAlertTitle').textContent = isError ? 'Помилка' : 'Повідомлення';
+        if (alertBox) {
+            alertBox.classList.toggle('alert-error', isError);
+            alertBox.classList.toggle('alert-info', !isError);
+        }
         document.getElementById('customAlert').style.display = 'flex';
     }
 
     function closeAlert() {
         document.getElementById('customAlert').style.display = 'none';
     }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeAlert();
+        }
+    });
+
+    document.getElementById('customAlert').addEventListener('click', (event) => {
+        if (event.target && event.target.id === 'customAlert') {
+            closeAlert();
+        }
+    });
 </script>
 </body>
 </html>
