@@ -50,6 +50,7 @@ ALLOWED_PATHS = [
 
     # Paths from interactive_map/
     "/map/",
+    "/map/subscription/",
     "/map/interactive-map/",
     "/map/save-interactive-map/",
     "/map/check-map/",
@@ -90,6 +91,10 @@ ALLOWED_PATHS = [
     "/api/check_profile/",
     "/api/is_favorite_private_change/",
     "/api/is_map_private_change/",
+    "/api/subscription-status/",
+    "/api/stripe/create-checkout-session/",
+    "/api/stripe/sync-subscription/",
+    "/api/stripe/webhook/",
     "/api/set_moderation/",
     "/api/verify_moderation/",
     "/api/report/",

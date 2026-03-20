@@ -10,10 +10,33 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+
+def _load_env_file(path: Path) -> None:
+    if not path.exists() or not path.is_file():
+        return
+    try:
+        for raw_line in path.read_text(encoding='utf-8').splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+    except Exception:
+        # Keep startup resilient even if .env is malformed.
+        pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load env values from both project-level and workspace-level .env files.
+_load_env_file(BASE_DIR / '.env')
+_load_env_file(BASE_DIR.parent / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -241,3 +264,9 @@ AUTHENTICATION_BACKENDS = [
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
+
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+STRIPE_MONTHLY_PRICE_ID = os.getenv('STRIPE_MONTHLY_PRICE_ID', '')
+STRIPE_ANNUAL_PRICE_ID = os.getenv('STRIPE_ANNUAL_PRICE_ID', '')

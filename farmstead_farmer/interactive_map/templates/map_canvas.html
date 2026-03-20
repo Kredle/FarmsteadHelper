@@ -245,6 +245,8 @@
     <button onclick="undo()" title="Ctrl+Z">↺</button>
     <button onclick="redo()" title="Ctrl+Shift+Z">↻</button>
     <button onclick="handleSaveMap()" title="Зберегти">🖫</button>
+    <button onclick="createNewMap()" title="Нова мапа">➕</button>
+    <button onclick="window.location.href='/map/subscription/'" title="Передплата">💳</button>
 </div>
 
 <div class="modal" id="buildingModal">
@@ -631,6 +633,8 @@
     let user = null;
     let user_id = null;
     let owner_id = "{{owner_id}}"
+    let current_map_id = "{{ current_map_id }}" || null;
+    const hasActiveSubscription = "{{ has_active_subscription|yesno:'true,false' }}" === 'true';
     let loadedBackgroundImage = null;
     let persistedCanvasImageData = null;
     const mapData = "{{ map_data|escapejs }}";
@@ -710,11 +714,7 @@
         rebuildCompatibilityGrid();
         user_id = await fetchUserData();
         if(user_id){
-            const not_first_map = await checkMap(user_id);
-            if(not_first_map === true){
-                first_map=false;
-                //showAlert("У вас вже є карта. Нову карту збережено не буде.")
-            }
+            first_map = !current_map_id;
         }
 
         if(owner_id =="") owner_id = user_id;
@@ -2609,18 +2609,28 @@
     async function handleSaveMap() {
         const user_id = await fetchUserData();
         try {
-            if(first_map === true){
-                await saveMap();
+            if(first_map === true || !current_map_id){
+                const result = await saveMap();
+                if (result && result.map_id) {
+                    current_map_id = String(result.map_id);
+                    first_map = false;
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('owner_id', String(user_id));
+                    params.set('map_id', String(result.map_id));
+                    if (token) {
+                        params.set('token', token);
+                    }
+                    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+                }
                 showAlert("Мапа збережена!");
-            }
-            else{
+            } else {
                 await updateMap();
                 saveState();
                 showAlert("Мапа збережена!");
             }
         } catch (error) {
             console.error("Помилка при збереженні мапи:", error);
-            showAlert("Сталася помилка при збереженні мапи.");
+            showAlert(error.message || "Сталася помилка при збереженні мапи.");
         }
     }
 
@@ -2639,8 +2649,57 @@
         if (!response.ok) {
             throw new Error(`Статус помилки: ${response.status}`);
         }
-        const first_map = await response.json();
-        return first_map.exists;
+        const payload = await response.json();
+        return payload;
+    }
+
+    function clearMapWorkspace() {
+        loadedBackgroundImage = null;
+        persistedCanvasImageData = null;
+        flowersOnCanvas = [];
+        buildingsOnCanvas = [];
+        treesOnCanvas = [];
+        vegetablesOnCanvas = [];
+        allFigures = [];
+        brushStrokes = [];
+        currentPoints = [];
+        activeStrokePoints = [];
+        hideContextDeletePopup();
+        rebuildCompatibilityGrid();
+        redrawCanvas();
+        saveState();
+    }
+
+    async function createNewMap() {
+        if (!canDraw) {
+            showAlert('У режимі перегляду створення нової мапи недоступне.');
+            return;
+        }
+
+        const uid = await fetchUserData();
+        if (!uid) {
+            showAlert('Потрібно увійти в акаунт.');
+            return;
+        }
+
+        const mapInfo = await checkMap(uid);
+        if (!hasActiveSubscription && Number(mapInfo.count || 0) >= 1) {
+            showAlert('Без активної передплати можна мати лише одну мапу.');
+            return;
+        }
+
+        clearMapWorkspace();
+        current_map_id = null;
+        first_map = true;
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('owner_id', String(uid));
+        params.delete('map_id');
+        if (token) {
+            params.set('token', token);
+        }
+        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        showAlert('Створено нову мапу. Збережіть її, щоб вона з’явилася у вашому акаунті.');
     }
 
     async function saveMap() {
@@ -2669,7 +2728,14 @@
         });
 
         if (!response.ok) {
-            throw new Error(`Статус помилки: ${response.status}`);
+            let errorMessage = `Статус помилки: ${response.status}`;
+            try {
+                const payload = await response.json();
+                if (payload.error) {
+                    errorMessage = payload.error;
+                }
+            } catch (_) {}
+            throw new Error(errorMessage);
         }
 
         const result = await response.json();
@@ -2700,11 +2766,19 @@
             body: JSON.stringify({
                 Content: mapData, // Серіалізуємо всі дані в JSON
                 Author: user_id,
+                MapId: current_map_id,
             }),
         });
 
         if (!response.ok) {
-            throw new Error(`Статус помилки: ${response.status}`);
+            let errorMessage = `Статус помилки: ${response.status}`;
+            try {
+                const payload = await response.json();
+                if (payload.error) {
+                    errorMessage = payload.error;
+                }
+            } catch (_) {}
+            throw new Error(errorMessage);
         }
 
         const result = await response.json();

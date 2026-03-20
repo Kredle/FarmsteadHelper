@@ -8,7 +8,7 @@ class MapRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def update_map(self, user_id: int, content: Any) -> int:
+    def update_map(self, user_id: int, content: Any, map_id: int | None = None) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -16,7 +16,7 @@ class MapRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_map(self, user_id: int) -> dict:
+    def get_map(self, user_id: int, map_id: int | None = None) -> dict:
         raise NotImplementedError
 
     @abstractmethod

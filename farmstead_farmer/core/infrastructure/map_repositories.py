@@ -163,20 +163,19 @@ class DjangoMapRepository(MapRepository):
         author = self._get_user(user_id)
         author.has_map = True
         author.save()
-        map_obj = Map.objects.filter(User_id=author).first()
-        if map_obj is None:
-            map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content))
-        else:
-            map_obj.data = json.dumps(content)
+        map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content))
         map_obj.save()
         return map_obj.id
 
-    def update_map(self, user_id: int, content):
+    def update_map(self, user_id: int, content, map_id: int | None = None):
         _validate_entity_placement(content)
         author = self._get_user(user_id)
         author.has_map = True
         author.save()
-        map_obj = Map.objects.filter(User_id=author).first()
+        if map_id is not None:
+            map_obj = Map.objects.filter(User_id=author, id=map_id).first()
+        else:
+            map_obj = Map.objects.filter(User_id=author).order_by('-id').first()
         if map_obj is None:
             map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content))
         else:
@@ -188,12 +187,15 @@ class DjangoMapRepository(MapRepository):
         author = self._get_user(user_id)
         return Map.objects.filter(User_id=author).exists()
 
-    def get_map(self, user_id: int) -> dict:
+    def get_map(self, user_id: int, map_id: int | None = None) -> dict:
         author = self._get_user(user_id)
-        map_obj = Map.objects.filter(User_id=author).first()
+        if map_id is not None:
+            map_obj = Map.objects.filter(User_id=author, id=map_id).first()
+        else:
+            map_obj = Map.objects.filter(User_id=author).order_by('-id').first()
         if map_obj is None:
-            return MapSnapshot(exists=False, owner_id=author.id, map_data=None).as_dict()
-        return MapSnapshot(exists=True, owner_id=author.id, map_data=map_obj.data).as_dict()
+            return MapSnapshot(exists=False, owner_id=author.id, map_id=None, map_data=None).as_dict()
+        return MapSnapshot(exists=True, owner_id=author.id, map_id=int(map_obj.id), map_data=map_obj.data).as_dict()
 
     def _fetch_known_species_names(self) -> list[str]:
         with connection.cursor() as cursor:

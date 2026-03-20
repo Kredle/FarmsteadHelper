@@ -16,9 +16,14 @@ class CustomUser(AbstractUser):
     is_favorite_private = models.BooleanField(default=False)
     has_map = models.BooleanField(default=False)
     is_map_private = models.BooleanField(default=False)
+    subscription_expires_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.username
+
+    @property
+    def has_active_subscription(self):
+        return bool(self.subscription_expires_at and self.subscription_expires_at > now())
     
     def get_avatar_url(self):
         if self.avatar:

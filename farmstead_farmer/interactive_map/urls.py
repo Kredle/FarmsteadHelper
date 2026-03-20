@@ -3,6 +3,7 @@ from .views import *
 
 urlpatterns = [
     path('', map_overview, name='map_overview'),
+    path('subscription/', map_subscription, name='map_subscription'),
     path('interactive-map/', map_view, name='interactive-map'),
     path('save-interactive-map/', save_map, name='save-map'),
     path('check-map/', check_map, name='check-map'),

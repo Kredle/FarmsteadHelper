@@ -4,6 +4,7 @@ from .views import register_view, login_view, RegisterView, LoginView, SendOTPVi
 from django.conf.urls.static import static
 from django.conf import settings
 from .views import update_author_name
+from .stripe_views import create_checkout_session, stripe_webhook, subscription_status, sync_subscription
 urlpatterns = [
     path('update-author-name/', update_author_name, name='update_author_name'),
     path('register/', register_view, name='register'),
@@ -46,4 +47,8 @@ urlpatterns = [
     path('api/report/', ReportView.as_view(), name='report-topic'),
     path('report/', ReportView.as_view(), name='report-topic'),
     path('api/comments/report/', CommentReportAPI.as_view(), name='comment-report'),
+    path('api/subscription-status/', subscription_status, name='subscription-status'),
+    path('api/stripe/create-checkout-session/', create_checkout_session, name='stripe-create-checkout-session'),
+    path('api/stripe/sync-subscription/', sync_subscription, name='stripe-sync-subscription'),
+    path('api/stripe/webhook/', stripe_webhook, name='stripe-webhook'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

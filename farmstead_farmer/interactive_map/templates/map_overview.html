@@ -202,6 +202,7 @@
         </p>
         <div class="button-container">
             <a class="button" id="map-button">Розпочати роботу</a>
+            <a class="button" href="/map/subscription/" style="margin-left: 10px;">Передплата</a>
         </div>
     </div>
 </div>
@@ -233,26 +234,32 @@ window.addEventListener('pageshow', function(event) {
         const button = document.querySelector(".button");
         const token = localStorage.getItem("authToken");
         user_id = await fetchUserData();
-        let not_first_map = false;
+        let mapInfo = { exists: false, latest_map_id: null };
         if(user_id){
-            not_first_map = await checkMap(user_id);
-            if (not_first_map && button) {
+            mapInfo = await checkMap(user_id);
+            if (mapInfo && mapInfo.exists && button) {
                 button.textContent = "Продовжити роботу";
             }
         }
         if (button) {
-            button.addEventListener("click", function (event) {
+            button.addEventListener("click", async function (event) {
                 event.preventDefault();
                 if (!token) {
                     window.location.href = "/login/";
-                } else if(not_first_map === true){
-                    window.location.href = `/map/interactive-map/?owner_id=${user_id}`;
-                }else if(not_first_map === false){
-                    window.location.href = "/map/interactive-map/";
+                    return;
+                }
+
+                const tokenParam = `token=${encodeURIComponent(token)}`;
+                if(mapInfo && mapInfo.exists){
+                    const mapIdPart = mapInfo.latest_map_id ? `&map_id=${mapInfo.latest_map_id}` : '';
+                    window.location.href = `/map/interactive-map/?owner_id=${user_id}${mapIdPart}&${tokenParam}`;
+                }else{
+                    window.location.href = `/map/interactive-map/?${tokenParam}`;
                 }
             });
         }
     });
+
     async function fetchUserData() {
         const token = localStorage.getItem('authToken');
         if (token) {
@@ -294,8 +301,7 @@ window.addEventListener('pageshow', function(event) {
         if (!response.ok) {
             throw new Error(`Статус помилки: ${response.status}`);
         }
-        const first_map = await response.json();
-        return first_map.exists;
+        return await response.json();
     }
     function getCookie(name) {
         let cookieValue = null;

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Передплата на інтерактивну мапу</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e8f4ed 0%, #f6f5cb 100%);
+            color: #1f3d2f;
+            min-height: 100vh;
+        }
+        .page_container {
+            min-height: calc(100vh - 220px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 980px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 12px 30px rgba(22, 53, 40, 0.15);
+            padding: 30px;
+        }
+        h1 {
+            margin-top: 0;
+            text-align: center;
+            color: #245843;
+        }
+        .subtitle {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #486a5b;
+        }
+        .notice {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .sub-status {
+            display: none;
+            margin: 0 auto 18px;
+            max-width: 520px;
+            border-radius: 12px;
+            border: 2px solid #2f8f6d;
+            background: #e9fff5;
+            text-align: center;
+            padding: 14px 16px;
+        }
+        .sub-status-title {
+            font-size: 14px;
+            color: #1f5a43;
+            margin-bottom: 6px;
+        }
+        .sub-status-date {
+            font-size: 24px;
+            font-weight: 800;
+            color: #146a4b;
+            letter-spacing: 0.2px;
+        }
+        .success { color: #237a3f; }
+        .cancel { color: #8f5f16; }
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+        .plan {
+            border: 1px solid #c5ddd1;
+            border-radius: 12px;
+            padding: 20px;
+            background: #f8fcfa;
+        }
+        .plan h3 { margin-top: 0; color: #1f5a43; }
+        .plan p { margin: 6px 0; color: #355e4c; }
+        .price {
+            font-size: 30px;
+            font-weight: bold;
+            color: #2d7a5a;
+            margin: 12px 0;
+        }
+        .plan button {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            background: #3b9173;
+            color: #fff;
+            transition: background 0.2s;
+        }
+        .plan button:hover { background: #4ab58f; }
+        .actions {
+            margin-top: 22px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .link-btn {
+            text-decoration: none;
+            background: #e4f1ea;
+            color: #2c5a46;
+            border: 1px solid #b9d5c8;
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">
+        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
+        <span>FarmsteadHelper</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-close">
+            <button id="close-menu">&times;</button>
+        </div>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+        <div class="auth-buttons" id="side-menu-auth">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/catalog">Каталог</a>
+        <a href="/forum">Форум</a>
+        <a href="/map">Інтерактивна мапа</a>
+        <a href="/calendar">Календар</a>
+    </nav>
+    <div class="auth">
+        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+        <div class="auth-menu">
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        </div>
+    </div>
+</header>
+
+<div class="page_container">
+<div class="container">
+    <h1>Передплата на інтерактивну мапу</h1>
+    <p class="subtitle">Передплата дає можливість створювати декілька мап.</p>
+
+    <div id="subscriptionStatus" class="sub-status">
+        <div class="sub-status-title">Передплата активна до:</div>
+        <div id="subscriptionExpiresAt" class="sub-status-date"></div>
+    </div>
+
+    {% if status == 'success' %}
+        <div class="notice success">Оплата успішна.</div>
+    {% elif status == 'cancel' %}
+        <div class="notice cancel">Оплату скасовано. Ви можете спробувати ще раз.</div>
+    {% endif %}
+
+    <div class="plans">
+        <div class="plan">
+            <h3>Місячний план</h3>
+            <div class="price">₴99<span style="font-size:14px;">/міс</span></div>
+            <button type="button" onclick="startCheckout('monthly')">Оформити місячну передплату</button>
+        </div>
+        <div class="plan">
+            <h3>Річний план</h3>
+            <div class="price">₴999<span style="font-size:14px;">/рік</span></div>
+            <button type="button" onclick="startCheckout('annual')">Оформити річну передплату</button>
+        </div>
+    </div>
+
+    <div class="actions">
+        <a class="link-btn" href="/map/">Повернутись на сторінку мапи</a>
+        <a class="link-btn" href="/">На головну</a>
+    </div>
+</div>
+</div>
+
+<footer>
+    <div class="legal-links">
+        <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+        <span>|</span>
+        <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+        <span>|</span>
+        <a href="/feedback/">Форма зворотного зв’язку</a>
+    </div>
+    <div class="copyright">
+        &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+    </div>
+</footer>
+
+<script>
+    document.getElementById("current-year").textContent = new Date().getFullYear();
+
+    const token = localStorage.getItem('authToken');
+    const authContainer = document.querySelector('.auth');
+    const sideMenuAuth = document.getElementById('side-menu-auth');
+
+    if (token) {
+        fetch('/api/user-data/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Помилка авторизації');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
+                authContainer.innerHTML = `
+                    <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
+                    <div class="auth-menu">
+                        <span>${data.username}</span>
+                        <a href="/profile/${data.username}">Профіль</a>
+                        <a href="/edit-profile/">Налаштування профілю</a>
+                        <a href="#" id="logout-btn">Вихід</a>
+                    </div>
+                `;
+
+                sideMenuAuth.innerHTML = `
+                    <a href="/profile/${data.username}">Профіль</a>
+                    <a href="/edit-profile">Налаштування профілю</a>
+                    <a href="#" id="side-menu-logout">Вихід</a>
+                `;
+
+                document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                document.getElementById('side-menu-logout').addEventListener('click', handleLogout);
+            })
+            .catch(() => resetAuthState());
+    } else {
+        resetAuthState();
+    }
+
+    function handleLogout() {
+        fetch('/api/logout/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token }),
+        })
+            .finally(() => {
+                localStorage.removeItem('authToken');
+                window.location.href = '/';
+            });
+    }
+
+    function resetAuthState() {
+        authContainer.innerHTML = `
+            <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+            <div class="auth-menu">
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            </div>
+        `;
+
+        sideMenuAuth.innerHTML = `
+            <a href="/login">Вхід</a>
+            <a href="/register">Реєстрація</a>
+        `;
+    }
+
+    const hamburger = document.getElementById('hamburger');
+    const sideMenu = document.getElementById('side-menu');
+    const closeMenu = document.getElementById('close-menu');
+    const nav = document.querySelector('nav');
+    const auth = document.querySelector('.auth');
+
+    hamburger.addEventListener('click', () => {
+        sideMenu.style.right = '0';
+    });
+
+    closeMenu.addEventListener('click', () => {
+        sideMenu.style.right = '-250px';
+    });
+
+    function checkMenuVisibility() {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (window.innerWidth < 900 || isMobileDevice) {
+            nav.style.display = 'none';
+            auth.style.display = 'none';
+            hamburger.style.display = 'flex';
+        } else {
+            nav.style.display = 'flex';
+            auth.style.display = 'block';
+            hamburger.style.display = 'none';
+        }
+    }
+
+    checkMenuVisibility();
+    window.addEventListener('resize', checkMenuVisibility);
+
+    function formatUADate(isoValue) {
+        if (!isoValue) {
+            return '';
+        }
+        const date = new Date(isoValue);
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+        return date.toLocaleString('uk-UA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    }
+
+    function renderSubscriptionStatus(payload) {
+        const statusWrap = document.getElementById('subscriptionStatus');
+        const expiresNode = document.getElementById('subscriptionExpiresAt');
+        if (!statusWrap || !expiresNode) {
+            return;
+        }
+
+        if (payload && payload.has_active_subscription && payload.subscription_expires_at) {
+            const formatted = formatUADate(payload.subscription_expires_at);
+            expiresNode.textContent = formatted || payload.subscription_expires_at;
+            statusWrap.style.display = 'block';
+        } else {
+            statusWrap.style.display = 'none';
+        }
+    }
+
+    async function syncSubscriptionAfterSuccess() {
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get('status');
+        const sessionId = params.get('session_id');
+        const token = localStorage.getItem('authToken');
+
+        if (!token) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stripe/sync-subscription/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token,
+                    session_id: status === 'success' ? sessionId : null,
+                }),
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Не вдалося синхронізувати передплату.');
+            }
+            renderSubscriptionStatus(payload);
+        } catch (error) {
+            console.error('Subscription sync error:', error);
+        }
+    }
+
+    syncSubscriptionAfterSuccess();
+
+    async function startCheckout(plan) {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = '/login/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stripe/create-checkout-session/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token, plan }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Помилка створення Stripe checkout.');
+            }
+
+            if (!data.url) {
+                throw new Error('Не вдалося отримати URL оплати.');
+            }
+
+            window.location.href = data.url;
+        } catch (error) {
+            alert(error.message || 'Помилка при оформленні передплати.');
+        }
+    }
+</script>
+</body>
+</html>

@@ -13,8 +13,8 @@ class MapUseCase:
             "map_id": map_id,
         }
 
-    def update_map(self, user_id: int, content) -> dict:
-        map_id = self.repository.update_map(user_id, content)
+    def update_map(self, user_id: int, content, map_id: int | None = None) -> dict:
+        map_id = self.repository.update_map(user_id, content, map_id)
         return {
             "status": "success",
             "message": "Map saved successfully",
@@ -27,8 +27,8 @@ class MapUseCase:
             "exists": self.repository.has_map(user_id),
         }
 
-    def get_map(self, user_id: int) -> dict:
-        return self.repository.get_map(user_id)
+    def get_map(self, user_id: int, map_id: int | None = None) -> dict:
+        return self.repository.get_map(user_id, map_id)
 
     def tree_sorts(self) -> list[dict]:
         return self.repository.get_tree_sorts()
