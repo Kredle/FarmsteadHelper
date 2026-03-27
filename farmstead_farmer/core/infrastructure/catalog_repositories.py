@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from animals.models import Animal_main, Animal as AnimalModel
-from catalog.models import Animal, Plant, FindVeg_sort, FindVeg, Vegetable
+from catalog.models import Animal, Plant, FindVeg_sort, FindVeg, Vegetable, FindTree, FindTree_sort
 from core.domain.catalog_entities import AnimalDetail, AnimalListItem, AnimalSortItem, CatalogCard
 from core.domain.catalog_repositories import CatalogRepository
 
@@ -19,35 +19,16 @@ class DjangoCatalogRepository(CatalogRepository):
         animals = Animal.objects.filter(Q(common_name__icontains=query))
         vegetables = FindVeg.objects.filter(Q(common_name2__icontains=query))
         veg_sorts = FindVeg_sort.objects.filter(Q(common_name__icontains=query))
-
-        with connection.cursor() as cursor:
-            cursor.execute(
-                '''
-                SELECT idtree, "Name", COALESCE(image_tree, '')
-                FROM tree
-                WHERE "Name" ILIKE %s
-                ''',
-                [f'%{query}%'],
-            )
-            tree_rows = cursor.fetchall()
-
-            cursor.execute(
-                '''
-                SELECT idsort, sort, COALESCE(image_fruit, ''), tree_idtree
-                FROM sorts
-                WHERE sort ILIKE %s
-                ''',
-                [f'%{query}%'],
-            )
-            tree_sort_rows = cursor.fetchall()
+        trees = FindTree.objects.filter(Q(common_name2__icontains=query))
+        tree_sorts = FindTree_sort.objects.filter(Q(common_name__icontains=query))
 
         results = []
-        for tree_id, tree_name, image_url in tree_rows:
+        for tree in trees:
             results.append({
                 "type": "Дерево",
-                "name": tree_name,
-                "image_url": image_url or "",
-                "url": f"/catalog/trees/{tree_id}",
+                "name": tree.common_name2,
+                "image_url": tree.image_url or "",
+                "url": f"/catalog/trees/{tree.idTree}",
             })
         for flower in flowers:
             results.append({
@@ -81,12 +62,12 @@ class DjangoCatalogRepository(CatalogRepository):
                 "image_url": veg_sort.image_url or "",
                 "url": f"/catalog/vegetables/{veg_sort.idVeg}/{veg_sort.idVeg_sort}",
             })
-        for sort_id, sort_name, image_url, tree_id in tree_sort_rows:
+        for sort in tree_sorts:
             results.append({
                 "type": "Дерево",
-                "name": sort_name,
-                "image_url": image_url or "",
-                "url": f"/catalog/trees/{tree_id}/{sort_id}",
+                "name": sort.common_name,
+                "image_url": sort.image_url or "",
+                "url": f"/catalog/trees/{sort.idTree}/{sort.idTree_sort}",
             })
 
         return results
@@ -136,23 +117,24 @@ class DjangoCatalogRepository(CatalogRepository):
                 )
 
         if "trees" in categories:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    '''
-                    SELECT idsort, sort, COALESCE(image_fruit, ''), tree_idtree
-                    FROM sorts
-                    WHERE tree_idtree IS NOT NULL
-                    '''
-                )
-                tree_rows = cursor.fetchall()
-
-            for sort_id, common_name, image_url, tree_id in tree_rows:
+            # Додаємо самі дерева (види)
+            for item in FindTree.objects.all():
                 cards.append(
                     CatalogCard(
                         "trees",
-                        common_name,
-                        image_url or "",
-                        f"/catalog/trees/{tree_id}/{sort_id}",
+                        item.common_name2,
+                        item.image_url or "",
+                        f"/catalog/trees/{item.idTree}/",
+                    ).as_dict()
+                )
+            # Додаємо сорти дерев (виключаючи ті, що не прив'язані до дерева)
+            for item in FindTree_sort.objects.exclude(idTree__isnull=True):
+                cards.append(
+                    CatalogCard(
+                        "trees",
+                        item.common_name,
+                        item.image_url or "",
+                        f"/catalog/trees/{item.idTree}/{item.idTree_sort}",
                     ).as_dict()
                 )
 
@@ -165,7 +147,9 @@ class DjangoCatalogRepository(CatalogRepository):
 
     def list_animal_sorts(self, animal_id: int) -> dict:
         animal = get_object_or_404(Animal_main, idAni=animal_id)
+        print(f"sorts",animal.sorts.all())
         sorts = [AnimalSortItem(s.id, s.common_name, s.image).as_dict() for s in animal.sorts.all()]
+        print(f"sorts", sorts)
         return {
             "animal": {
                 "id": animal.idAni,

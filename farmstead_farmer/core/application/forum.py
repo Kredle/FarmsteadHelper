@@ -57,10 +57,19 @@ class ForumUseCase:
 
     def create_comment(self, topic_id, content, author, date, time,
                        topics_id, receiver, is_answer, parent_id) -> dict:
-        return self.forum.create_comment(
+        result = self.forum.create_comment(
             topic_id, content, author, date, time,
             topics_id, receiver, is_answer, parent_id,
         )
+        
+        if receiver and receiver != author:
+            notif_link = f"/forum/topic/{topics_id}/#comment-{result['id']}"
+            self.forum.create_notification(
+                owner_username=receiver,
+                content=f"{author} відповів на ваше повідомлення",
+                link=notif_link
+            )
+        return result
 
     def update_comment(self, comment_id: int, content: str,
                        actor: Optional[str] = None) -> None:
@@ -74,6 +83,36 @@ class ForumUseCase:
         if user is None:
             raise InvalidTokenError('Invalid token')
         return self.forum.toggle_comment_reaction(comment_id, user.id, reaction)
+    # ------------------------------------------------------------------ notifications
+    def create_comment(self, topic_id, content, author, date, time,
+                   topics_id, receiver, is_answer, parent_id) -> dict:
+        # Створюємо коментар
+        result = self.forum.create_comment(
+            topic_id, content, author, date, time,
+            topics_id, receiver, is_answer, parent_id,
+        )
+        
+        # Створюємо сповіщення, якщо отримувач не є автором коментаря
+        if receiver and receiver != author:
+            short_content = content[:50] + "..." if len(content) > 50 else content
+            notif_link = f"/forum/topic/{topics_id}/#comment-{result['id']}"
+            self.forum.create_notification(
+                owner_username=receiver,
+                content=f"{author} відповів: {short_content}",
+                link=notif_link
+            )
+        return result
+
+    def fetch_notifications(self, token: str) -> list:
+        user = self.users.find_by_token(token)
+        if not user: raise InvalidTokenError()
+        self.forum.delete_old_notifications() # Очистка старих
+        return self.forum.get_notifications(user.username)
+
+    def mark_notification_read(self, token: str, notification_id: int) -> bool:
+        user = self.users.find_by_token(token)
+        if not user: raise InvalidTokenError()
+        return self.forum.mark_notification_as_read(notification_id, user.username)
 
     # ------------------------------------------------------------------ misc
 

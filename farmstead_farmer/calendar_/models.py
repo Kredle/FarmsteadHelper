@@ -46,8 +46,8 @@ class Tree(models.Model):
 
 class Sort_tree(models.Model):
     id = models.AutoField(primary_key=True,db_column='idSort')
-    Usage = models.CharField(max_length=100)
-    sort = models.CharField(max_length=150, verbose_name="Сорт", null=True, blank=True)
+    Usage = models.CharField(max_length=100,db_column='Usage')
+    sort = models.CharField(max_length=150, verbose_name="Сорт", null=True, blank=True,db_column='Sort')
     tree = models.ForeignKey(Tree, on_delete=models.CASCADE, related_name="sorts", verbose_name="Дерево",db_column='tree_idTree')
 
     class Meta:

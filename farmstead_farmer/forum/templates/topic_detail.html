@@ -1,195 +1,44 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ topic.Title }}{% endblock %}
+
+{% block extra_head %}
     <link rel="stylesheet" href="{% static 'detailstyles.css' %}">
-    <!--<script defer src="script.js"></script>-->
-    <title>{{ topic.Title }}</title>
-
-</head>
-<body>
-    <header style="flex-direction: column; align-items: stretch;">
-        <div class="line">
-            <div class="logo">
-                <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-                <span>FarmsteadHelper</span>
-            </div>
-            <div class="hamburger" id="hamburger">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-            <div class="side-menu" id="side-menu">
-                <div class="side-menu-close">
-                    <button id="close-menu">&times;</button>
-                </div>
-                <a href="/">Головна</a>
-                <a href="/catalog">Каталог</a>
-                <a href="/forum">Форум</a>
-                <a href="/map">Інтерактивна мапа</a>
-                <a href="/calendar">Календар</a>
-                <div class="auth-buttons" id="side-menu-auth">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            </div>
-            <nav>
-                <a href="/">Головна</a>
-                <a href="/catalog">Каталог</a>
-                <a href="/forum">Форум</a>
-                <a href="/map">Інтерактивна мапа</a>
-                <a href="/calendar">Календар</a>
-            </nav>
-            <div class="auth">
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            </div>
-
-
-    <script>
-
-    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('authToken');
-        const authContainer = document.querySelector('.auth');
-        const sideMenuAuth = document.getElementById('side-menu-auth');
-        let user;
-        let Is_superuser = false;
-        if (token) {
-            fetch('/api/user-data/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    user = data.username;
-                    Is_superuser = data.is_superuser;
-                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
-                    authContainer.innerHTML = `
-                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                        <div class="auth-menu">
-                            <span>${data.username}</span>
-                            <a href="/profile/${data.username}">Профіль</a>
-                            <a href="/edit-profile/">Налаштування профілю</a>
-                            <a href="#" id="logout-btn">Вихід</a>
-                        </div>
-                    `;
-
-                    sideMenuAuth.innerHTML = `
-                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                        <a href="/profile/${data.username}">Профіль</a>
-                        <a href="/edit-profile">Налаштування профілю</a>
-                        <a href="#" id="side-menu-logout">Вихід</a>
-                    `;
-
-                    document.getElementById('logout-btn').addEventListener('click', () => {
-                        handleLogout();
-                    });
-
-                    document.getElementById('side-menu-logout').addEventListener('click', () => {
-                        handleLogout();
-                    });
-                })
-                .catch(error => {
-                    console.error('Помилка при отриманні даних користувача:', error);
-                    resetAuthState();
-                });
-        } else {
-            resetAuthState();
+    <style>
+        .line_top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
         }
-
-        function handleLogout() {
-            fetch('/api/logout/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (response.ok) {
-                        localStorage.removeItem('authToken');
-                        window.location.href = '/';
-                    } else {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                })
-                .catch(error => console.error('Помилка при виході:', error));
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-
-        function resetAuthState() {
-            authContainer.innerHTML = `
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            `;
-
-            sideMenuAuth.innerHTML = `
-                <a href="/login">Вхід</a>
-                <a href="/register">Реєстрація</a>
-            `;
+        .page_container {
+            /* Резервний відступ, якщо JS не спрацює */
+            margin-top: 80px;
         }
-    });
-
-    const hamburger = document.getElementById('hamburger');
-    const sideMenu = document.getElementById('side-menu');
-    const closeMenu = document.getElementById('close-menu');
-    const nav = document.querySelector('nav');
-    const auth = document.querySelector('.auth');
-
-    hamburger.addEventListener('click', () => {
-        sideMenu.style.right = '0';
-    });
-
-    closeMenu.addEventListener('click', () => {
-        sideMenu.style.right = '-250px';
-    });
-
-    function checkMenuVisibility() {
-        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        if (window.innerWidth < 900 || isMobileDevice) {
-            nav.style.display = 'none';
-            auth.style.display = 'none';
-            hamburger.style.display = 'flex';
-        } else {
-            nav.style.display = 'flex';
-            auth.style.display = 'block';
-            hamburger.style.display = 'none';
+        .line {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            color: var(--textcolor_light);
+            padding-bottom: 10px;
         }
-    }
+        #title { margin: 0; }
+    </style>
+{% endblock %}
 
-    checkMenuVisibility();
-    window.addEventListener('resize', checkMenuVisibility);
-    </script>
-        </div>
-        <div class="line">
-            <h1 id = "title">{{ topic.Title }}</h1>
-        </div>
-    </header>
+{% block header_bottom %}
+    <div class="line">
+        <h1 id = "title">{{ topic.Title }}</h1>
+    </div>
+{% endblock %}
 
+{% block content %}
     <div class="topic-info">
         <p id="category" ><strong>Категорія:</strong> {{ topic.Category }}</p>
         <p><strong>Автор:</strong>
@@ -207,14 +56,14 @@
                 <button id="like-btn">👍 Лайк (<span id="likes-count">{{ topic.Likes }}</span>)</button>
                 <button id="dislike-btn">👎 Дизлайк (<span id="dislikes-count">{{ topic.Dislikes }}</span>)</button>
                 <button id="favorite-button" class="favorite-btn">Додати в обране</button>
-                <p><strong>Коментарі:</strong> {{ topic.Comments }}</p>
+                <p><strong>Коментарі:</strong> <span id="comments-count">{{ topic.Comments }}</span></p>
             </div>
             <div class="topic-actions">
                 <button class="actions-btn">...</button>
                 <div class="actions-menu" style="display: none;">
                      <!-- Кнопка скарги -->
                      <button id="report-btn" class="btn btn-sm btn-danger"
-                     data-topic-id="{{ topic.id }}">
+                     data-topic-id="{{ topic.idTopic }}">
                      <i class="fas fa-flag"></i> Поскаржитися
                      </button>
 
@@ -386,7 +235,7 @@
                          </script>
 
                     <button id="edit-btn" style="display: none;">Редагувати тему</button>
-                    <button id="delete-btn" style="display: none;" onclick="location.href='/forum/delete_topic/{{ topic.idTopic }}'">Видалити тему</button>
+                    <button id="delete-btn" style="display: none;">Видалити тему</button>
                 </div>
             </div>
         </div>
@@ -520,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showAlert('Не вдалося надіслати скаргу');
         }
     });
-
+});
 </script>
 
 <div id="customAlert" style="display: none;">
@@ -537,6 +386,42 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div class="back"><a class="link" href="/forum/">Повернутись до списку обговорень</a></div>
     <script>
+        // Повертаємо змінні, які раніше були в скрипті хедера, але використовуються тут
+        let user;
+        let Is_superuser = false;
+    </script>
+    <div id="customAlert" style="display: none;">
+        <div id="customAlertBox">
+            <p id="customAlertMessage"></p>
+            <button onclick="closeAlert()">OK</button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Примусово кидаємо користувача наверх сторінки
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+            window.scrollTo(0, 0);
+
+            // 2. Динамічно виставляємо відступ, щоб він ідеально підходив під висоту хедера
+            function adjustMargin() {
+                const headers = document.querySelectorAll('header');
+                let maxHeight = 0;
+                // Знаходимо найвищий хедер (через вкладеність у base.html)
+                headers.forEach(h => maxHeight = Math.max(maxHeight, h.offsetHeight));
+                
+                const pageContainer = document.querySelector('.page_container');
+                if (pageContainer) pageContainer.style.marginTop = maxHeight + 'px';
+            }
+            adjustMargin();
+            window.addEventListener('resize', adjustMargin);
+            window.addEventListener('load', adjustMargin); // Перерахунок після завантаження картинок
+        });
+
         //!!! Change links to ones on site by using profile to upload photos
         const categoryLinks = {
             'Овочі': 'https://farmsteadhelper.pythonanywhere.com/static/main_page/vegetables.png',
@@ -624,14 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
         }
+
         async function fetchUserData() {
             if (token) {
                 try {
                     const response = await fetch('/api/user-data/', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ token: token }),
                     });
                     if (!response.ok) {
@@ -639,7 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
                     }
                     const data = await response.json();
-                    user = data.username;
+                    user = data.username; // Оновлюємо глобальну змінну
+                    Is_superuser = data.is_superuser; // Оновлюємо глобальну змінну
                     //console.log('User:', user); // Значення user буде доступне тут
                     return user;
                 } catch (error) {
@@ -665,14 +550,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (!response.ok) {
+                    if (response.status === 404) {
+                        return "Коментар видалено";
+                    }
                     const errorData = await response.json();
-                    throw new Error(errorData.message || 'Помилка сервера');
+                    throw new Error(errorData.error || errorData.message || 'Помилка сервера');
                 }
 
                 const data = await response.json();
                 return data.Author || "Коментар видалено";
             } catch (error) {
-                console.error('Помилка отримання коментаря:', error);
                 return "Коментар видалено";
             }
         };
@@ -773,12 +660,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await response.json();
                 if (data.status === 'success') {
-                    const newComment = await createCommentElement(data);
+                    const commentData = {
+                        idComments: data.id,
+                        Content: content,
+                        Author: user,
+                        Date: createdDateInput,
+                        Time: createdTimeInput,
+                        Likes: 0,
+                        Dislikes: 0,
+                        ParentId: parentId
+                    };
+                    const newComment = await createCommentElement(commentData);
                     document.getElementById('comments-section').appendChild(newComment);
+                    handleCommentInteractions(newComment, user, user);
+
+                    // Оновлюємо лічильник коментарів при додаванні
+                    const currentCount = document.querySelectorAll('#comments-section .comment').length;
+                    updateStatsCounter(currentCount);
+
                     if (parentId) {
                         //highlightComment(parentId); // Підсвічуємо батьківський коментар
                     }
-                    location.reload(); // Оновлюємо сторінку для відображення нового коментаря
+                    //location.reload(); // Оновлюємо сторінку для відображення нового коментаря
                 }
             } catch (error) {
                 console.error('Помилка при створенні коментаря:', error);
@@ -901,9 +804,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user = await fetchUserData(); // Отримуємо користувача асинхронно
 
                 commentsSection.innerHTML = ''; // Clear previous comments
+                const comments = data.comments || [];
 
-                if (data.length > 0) {
-                    for (const comment of data) {
+                // Сортуємо коментарі від найстаріших до найновіших (за ID), щоб хронологія зберігалася
+                comments.sort((a, b) => a.idComments - b.idComments);
+
+                if (comments.length > 0) {
+                    for (const comment of comments) {
                         // Дочекаємося завершення створення елемента
                         const commentDiv = await createCommentElement(comment);
                         console.log(commentDiv);
@@ -921,30 +828,174 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Помилка стягування коментарів:', error);
             }
         };
+
+        let commentsPollingInterval;
+
+        async function pollNewComments() {
+            // Використовуємо глобальну змінну topicId, отриману з data-topic-id
+            try {
+                // Паралельний запит: коментарі (для списку) і теми (для лайків теми)
+                const [commentsResponse, topicsResponse] = await Promise.all([
+                    fetch(`/forum/topic/${topicId}/comments_list/`),
+                    fetch('/forum/get_topics')
+                ]);
+                
+                if (commentsResponse.ok) {
+                    const data = await commentsResponse.json();
+                const serverComments = data.comments || [];
+                const commentsSection = document.getElementById('comments-section');
+
+                // 1. Отримуємо ID всіх коментарів, які зараз відображені в браузері
+                const localCommentElements = Array.from(commentsSection.querySelectorAll('.comment'));
+                const serverIds = serverComments.map(c => String(c.idComments));
+
+                // --- ЛОГІКА ВИДАЛЕННЯ ---
+                // Перевіряємо кожен локальний коментар: якщо його ID немає в списку від сервера — видаляємо
+                localCommentElements.forEach(commentDiv => {
+                    const localId = commentDiv.getAttribute('data-comment-id');
+                    
+                    if (!serverIds.includes(localId)) {
+                        console.log(`Polling: коментар ${localId} видалено на сервері. Прибираємо з екрана.`);
+                        
+                        // Плавна анімація зникнення
+                        commentDiv.style.transition = "all 0.5s ease";
+                        commentDiv.style.opacity = "0";
+                        commentDiv.style.transform = "translateX(-20px)";
+                        
+                        setTimeout(() => {
+                            commentDiv.remove();
+                        }, 500);
+                    }
+                });
+
+                // --- ЛОГІКА ОНОВЛЕННЯ (ВІДПОВІДІ) ---
+                // Перевіряємо існуючі коментарі: якщо батьківський коментар зник, оновлюємо текст
+                // --- ЛОГІКА ОНОВЛЕННЯ (ВІДПОВІДІ ТА ЛАЙКИ) ---
+                localCommentElements.forEach(commentDiv => {
+                    const localId = commentDiv.getAttribute('data-comment-id');
+                    // Обробляємо тільки ті коментарі, які залишаються на сторінці
+                    if (serverIds.includes(localId)) {
+                        // Оновлюємо лайки та дизлайки коментаря
+                        const serverComment = serverComments.find(c => String(c.idComments) === localId);
+                        if (serverComment) {
+                            const likesSpan = commentDiv.querySelector('#comment-likes-count');
+                            const dislikesSpan = commentDiv.querySelector('#comment-dislikes-count');
+                            if (likesSpan) likesSpan.textContent = serverComment.Likes;
+                            if (dislikesSpan) dislikesSpan.textContent = serverComment.Dislikes;
+                        }
+
+                        // Оновлюємо текст відповіді, якщо батьківський коментар видалено
+                        const parentId = commentDiv.getAttribute('data-parent-id');
+                        if (parentId && parentId !== 'null') {
+                            // Якщо батьківського ID немає в списку актуальних (серверних) ID
+                            if (!serverIds.includes(parentId)) {
+                                const replyToElem = commentDiv.querySelector('.reply-to');
+                                if (replyToElem && !replyToElem.textContent.includes('Коментар видалено')) {
+                                    replyToElem.innerHTML = 'Відповідь на коментар: Коментар видалено';
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // --- ЛОГІКА ДОДАВАННЯ ---
+                // Відфільтровуємо лише ті коментарі від сервера, яких ще немає у нас в DOM
+                const existingLocalIds = localCommentElements.map(el => el.getAttribute('data-comment-id'));
+                const newCommentsData = serverComments.filter(c => !existingLocalIds.includes(String(c.idComments)));
+
+                // Сортуємо нові коментарі перед додаванням, щоб порядок був правильним (старі -> нові)
+                newCommentsData.sort((a, b) => a.idComments - b.idComments);
+
+                if (newCommentsData.length > 0) {
+                    console.log(`Polling: додаємо ${newCommentsData.length} нових повідомлень`);
+                    const user = await fetchUserData();
+
+                    for (const comment of newCommentsData) {
+                        const commentDiv = await createCommentElement(comment);
+                        // Додаємо в кінець секції коментарів
+                        commentsSection.appendChild(commentDiv);
+                        // "Оживляємо" кнопки лайків/редагування для нового елемента
+                        handleCommentInteractions(commentDiv, user, comment.Author);
+                    }
+                }
+
+                // Оновлюємо лічильник коментарів завжди, щоб синхронізувати з сервером
+                updateStatsCounter(serverComments.length);
+                }
+
+                // --- ОНОВЛЕННЯ ЛАЙКІВ ТЕМИ ---
+                if (topicsResponse.ok) {
+                    const topicsData = await topicsResponse.json();
+                    const topics = Array.isArray(topicsData) ? topicsData : (topicsData.topics || []);
+                    const currentTopic = topics.find(t => String(t.idTopic) === topicId);
+                    
+                    if (currentTopic) {
+                        const topicLikes = document.getElementById('likes-count');
+                        const topicDislikes = document.getElementById('dislikes-count');
+                        if (topicLikes) topicLikes.textContent = currentTopic.Likes;
+                        if (topicDislikes) topicDislikes.textContent = currentTopic.Dislikes;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Помилка під час polling коментарів:', error);
+            }
+        }
+
+        // Окрема функція для оновлення цифри в статистиці теми
+        function updateStatsCounter(count) {
+            const commentsCountSpan = document.getElementById('comments-count');
+            if (commentsCountSpan) {
+                commentsCountSpan.textContent = count;
+            }
+        }
+
+        // Запуск polling кожні 10 секунд після завантаження сторінки
+        document.addEventListener('DOMContentLoaded', () => {
+            commentsPollingInterval = setInterval(pollNewComments, 10000);
+        });
+
+
         function deleteComment(user, commentId) {
-            const topicId = "{{ topic.idTopic }}";  // id теми
+            const topicId = "{{ topic.idTopic }}"; 
 
             fetch(`/forum/delete_comment/${commentId}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),  // Якщо використовуєте CSRF токен
+                    'X-CSRFToken': getCookie('csrftoken'),
                 },
-                body: JSON.stringify({ username: user, commentId: commentId, topicId: topicId })
+                body: JSON.stringify({ 
+                    username: user, 
+                    commentId: commentId, 
+                    topicId: topicId 
+                })
             })
-            .then(response => {
-                if (response.ok) {
-                    //showAlert('Тему успішно видалено!');
-                    window.location.href = '/forum/topic/{{topic.idTopic}}'; // Перенаправлення на список тем
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const commentDiv = document.querySelector(`.comment[data-comment-id="${commentId}"]`);
+                    
+                    if (commentDiv) {
+                        commentDiv.style.transition = 'opacity 0.3s ease';
+                        commentDiv.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            commentDiv.remove();
+                            // Оновлюємо лічильник коментарів при видаленні
+                            const currentCount = document.querySelectorAll('#comments-section .comment').length;
+                            updateStatsCounter(currentCount);
+                        }, 300);
+                    }
                 } else {
-                    showAlert('Не вдалося видалити коментар.');
+                    showAlert('Помилка: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error deleting comment:', error);
-                showAlert('Помилка при видаленні коментаря: ' + error.message);
+                console.error('Error:', error);
+                showAlert('Не вдалося видалити коментар.');
             });
-        };
+        }
         function createEditForm(commentContentElement) {
             const editForm = document.createElement('div');
             editForm.className = 'edit-comment-form';
@@ -1152,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRFToken': getCookie('csrftoken'),  // Якщо використовуєте CSRF токен
                 },
                 body: JSON.stringify({
-                    title: title,
+                    itle: title,
                     content: content,
                     category: category
                 })
@@ -1171,27 +1222,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function deleteTopic(user) {
-            const topicId = "{{ topic.idTopic }}";  // id теми
+            const topicId = "{{ topic.idTopic }}";
 
             fetch(`/forum/delete_topic/${topicId}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),  // Якщо використовуєте CSRF токен
+                    'X-CSRFToken': getCookie('csrftoken'),
                 },
                 body: JSON.stringify({ username: user, topicId: topicId })
             })
             .then(response => {
-                if (response.ok) {
-                    //showAlert('Тему успішно видалено!');
-                    window.location.href = '/forum/'; // Перенаправлення на список тем
+                if (!response.ok) {
+                    throw new Error('Помилка сервера або методу');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = data.redirect_url; 
                 } else {
-                    showAlert('Не вдалося видалити тему.');
+                    showAlert('Помилка: ' + data.error);
                 }
             })
             .catch(error => {
-                console.error('Error deleting topic:', error);
-                showAlert('Помилка при видаленні теми: ' + error.message);
+                console.error('Error:', error);
+                showAlert('Не вдалося видалити тему. Перевірте консоль.');
             });
         }
 
@@ -1256,7 +1312,7 @@ function createCommentForm(parentId = null) {
 
         try {
             await createComment(content, parentId);
-            location.reload(); // Оновлення сторінки
+            commentForm.remove(); // Закриваємо форму замість перезавантаження
         } catch (error) {
             console.error('Помилка:', error);
             showAlert('Сталася помилка при додаванні коментаря.');
@@ -1460,5 +1516,4 @@ initializeCommentForm();
         document.getElementById('customAlert').style.display = 'none';
     }
 </script>
-</body>
-</html>
+{% endblock %}

@@ -25,4 +25,6 @@ urlpatterns = [
     path('get_comment/<int:comment_id>/', views.get_comment, name = 'get_comment'),
     path('api/toggle_favorite/', views.toggle_favorite_forum, name='toggle_favorite'),
     path('api/check_favorite/', views.check_favorite_forum, name='check_favorite'),
+    path('api/get_notifications/', views.api_get_notifications, name='api_get_notifications'),
+    path('api/mark_notification_read/', views.mark_notification_read, name='mark_notification_read'),
 ]

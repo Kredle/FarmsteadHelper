@@ -151,7 +151,15 @@ header {
     z-index: 1000;
     top: 0;
     left: 0;
-    width: 98%;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.line_top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
     /* лого */
@@ -196,24 +204,28 @@ nav a:hover {
 
 .auth {
     position: relative;
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    padding-right: 20px;
 }
 
 .auth img {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     cursor: pointer;
 }
 
 .user-avatar img {
-    width: 50px !important;
-    height: 50px !important;
+    width: 45px !important;
+    height: 45px !important;
     border-radius: 50% !important;
     cursor: pointer;
 }
 .user-avatar{
-    width: 100px;
-    height: 100px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     cursor: pointer;
     margin: 20px auto;
@@ -222,7 +234,7 @@ nav a:hover {
 .auth-menu {
     display: none;
     position: absolute;
-    top: 50px;
+    top: calc(100% + 0px);
     right: 0;
     background-color: var(--card_color);
     border: 1px solid var(--card_border);
@@ -342,7 +354,8 @@ nav a:hover {
 
 @media (max-width: 768px) {
     nav,
-    .auth {
+    .auth,
+    .user-controls {
         display: none;
     }
 
@@ -393,4 +406,52 @@ footer {
 .copyright {
     font-size: 14px;
     color: #ccc;
+}
+
+.user-controls {
+    display: flex;         
+    align-items: center;   
+    gap: 15px;             
+    flex-direction: row;
+    padding-right: 20px;   
+}
+
+.notification-container {
+    display: flex;
+    align-items: center;
+}
+
+.notif-icon {
+    color: var(--textcolor_light) !important;
+}
+
+.notif-wrapper {
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.auth {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+#auth-icon {
+    transform: scale(2);
+    height: 50px;          
+    width: 50px;
+    margin: 0;         
+    margin-right: -20px;    
+    object-fit: cover;     
+    border-radius: 50%;
+}
+.user-avatar{
+    transform: scale(1.5);
+    height: 50px;          
+    width: 50px;
+    margin: 0;         
+    margin-right: -20px;    
+    object-fit: cover;     
+    border-radius: 50%;
 }

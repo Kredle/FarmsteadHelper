@@ -1,0 +1,499 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мої мапи{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
+<style>
+    .maps-page {
+        max-width: 960px;
+        margin: 130px auto 30px;
+        background: #ffffff;
+        border: 1px solid #d8e8df;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(30, 73, 55, 0.12);
+        padding: 24px;
+    }
+
+    .maps-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .maps-title {
+        margin: 0;
+        color: #245843;
+    }
+
+    .maps-subtitle {
+        margin: 0 0 16px;
+        color: #44675a;
+    }
+
+    .maps-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .maps-btn {
+        border: none;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .maps-btn-primary {
+        background: #3b9173;
+        color: #ffffff;
+    }
+
+    .maps-btn-primary:hover {
+        background: #4ab58f;
+    }
+
+    .maps-btn-secondary {
+        background: #ebf5ef;
+        color: #2c5a46;
+        border: 1px solid #c5ddd1;
+    }
+
+    .maps-btn-secondary:hover {
+        background: #dceee5;
+    }
+
+    .maps-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 12px;
+    }
+
+    .map-card {
+        border: 1px solid #d7e8df;
+        border-radius: 10px;
+        padding: 14px;
+        background: #f8fcfa;
+        position: relative;
+    }
+
+    .map-card-title {
+        margin: 0 0 10px;
+        color: #1f5a43;
+        font-size: 16px;
+        word-break: break-word;
+    }
+
+    .map-card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .maps-btn-danger {
+        background: #c33e3e;
+        color: #ffffff;
+    }
+
+    .maps-btn-danger:hover {
+        background: #b03131;
+    }
+
+    .map-card-private {
+        margin: 8px 0 12px;
+        color: #2a5a47;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .map-card-private input[type="checkbox"] {
+        appearance: auto;
+        -webkit-appearance: checkbox;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: #3b9173;
+        cursor: pointer;
+        flex: 0 0 auto;
+    }
+
+    .map-card-private label {
+        margin: 0;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .map-settings-row {
+        margin: 8px 0;
+    }
+
+    .map-settings-row label {
+        display: block;
+        margin-bottom: 6px;
+        color: #2b5a47;
+        font-size: 13px;
+    }
+
+    .map-settings-input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #c7ded3;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    .map-empty {
+        border: 1px dashed #b9d5c8;
+        border-radius: 10px;
+        padding: 16px;
+        color: #4a6d5e;
+        background: #f5fbf8;
+    }
+
+    .map-kebab {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        border: 1px solid #c5ddd1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #2c5a46;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .map-settings-menu {
+        display: none;
+        margin-top: 8px;
+        border-top: 1px dashed #c8ddd3;
+        padding-top: 10px;
+    }
+
+    .map-settings-menu.visible {
+        display: block;
+    }
+
+    .map-settings-note {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: #557666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="maps-page">
+    <div class="maps-header">
+        <h1 class="maps-title">Мої мапи</h1>
+        <div class="maps-actions">
+            <button class="maps-btn maps-btn-primary" id="create-map-btn" type="button">Створити нову мапу</button>
+        </div>
+    </div>
+    <p class="maps-subtitle">Оберіть існуючу мапу для редагування або створіть нову.</p>
+
+    <div id="maps-list" class="maps-list"></div>
+    <div id="maps-empty" class="map-empty" style="display:none;">У вас ще немає мап. Натисніть "Створити нову мапу".</div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function fetchUserData(token) {
+        const response = await fetch('/api/user-data/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ token }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Не вдалося отримати дані користувача.');
+        }
+
+        return response.json();
+    }
+
+    async function fetchMaps(userId, token) {
+        const response = await fetch('/map/list-maps/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ Author: userId, token: token }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Не вдалося завантажити список мап.');
+        }
+
+        return response.json();
+    }
+
+    async function fetchMapStatus(userId) {
+        const response = await fetch('/map/check-map/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ Author: userId }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Не вдалося перевірити статус підписки.');
+        }
+
+        return response.json();
+    }
+
+    function createMapCard(mapItem, userId, token, refreshMaps) {
+        const card = document.createElement('div');
+        card.className = 'map-card';
+
+        const kebabButton = document.createElement('button');
+        kebabButton.type = 'button';
+        kebabButton.className = 'map-kebab';
+        kebabButton.textContent = '⋯';
+        kebabButton.title = 'Налаштування мапи';
+
+        const title = document.createElement('h3');
+        title.className = 'map-card-title';
+        title.textContent = mapItem.map_name || `Мапа #${mapItem.map_id}`;
+
+        const settingsMenu = document.createElement('div');
+        settingsMenu.className = 'map-settings-menu';
+
+        kebabButton.addEventListener('click', () => {
+            settingsMenu.classList.toggle('visible');
+        });
+
+        const nameRow = document.createElement('div');
+        nameRow.className = 'map-settings-row';
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Назва мапи';
+        const nameInput = document.createElement('input');
+        nameInput.className = 'map-settings-input';
+        nameInput.type = 'text';
+        nameInput.value = mapItem.map_name || '';
+        nameInput.placeholder = `Мапа #${mapItem.map_id}`;
+        nameRow.appendChild(nameLabel);
+        nameRow.appendChild(nameInput);
+
+        const privateRow = document.createElement('div');
+        privateRow.className = 'map-card-private';
+        const privateToggle = document.createElement('input');
+        privateToggle.type = 'checkbox';
+        privateToggle.checked = Boolean(mapItem.is_private);
+        privateToggle.id = `map-private-${mapItem.map_id}`;
+        privateToggle.className = 'map-private-checkbox';
+
+        const privateLabel = document.createElement('label');
+        privateLabel.setAttribute('for', privateToggle.id);
+        privateLabel.textContent = ' Приватна мапа';
+
+        privateRow.appendChild(privateToggle);
+        privateRow.appendChild(privateLabel);
+
+        const actions = document.createElement('div');
+        actions.className = 'map-card-actions';
+
+        const openButton = document.createElement('button');
+        openButton.className = 'maps-btn maps-btn-primary';
+        openButton.type = 'button';
+        openButton.textContent = 'Відкрити';
+        openButton.addEventListener('click', () => {
+            const tokenParam = `token=${encodeURIComponent(token)}`;
+            window.location.href = `/map/interactive-map/?owner_id=${userId}&map_id=${mapItem.map_id}&${tokenParam}`;
+        });
+
+        const saveSettingsButton = document.createElement('button');
+        saveSettingsButton.className = 'maps-btn maps-btn-secondary';
+        saveSettingsButton.type = 'button';
+        saveSettingsButton.textContent = 'Зберегти налаштування';
+        saveSettingsButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/map/update-map-settings/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({
+                        token,
+                        Author: userId,
+                        MapId: mapItem.map_id,
+                        MapName: nameInput.value,
+                        IsPrivate: privateToggle.checked,
+                    }),
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.error || 'Не вдалося зберегти налаштування мапи.');
+                }
+
+                title.textContent = payload?.map?.map_name || nameInput.value || `Мапа #${mapItem.map_id}`;
+            } catch (error) {
+                alert(error.message || 'Помилка збереження налаштувань.');
+            }
+        });
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'maps-btn maps-btn-danger';
+        deleteButton.type = 'button';
+        deleteButton.textContent = 'Видалити';
+        deleteButton.addEventListener('click', async () => {
+            const confirmed = window.confirm('Видалити цю мапу? Дію неможливо скасувати.');
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/map/delete-map/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({
+                        token,
+                        Author: userId,
+                        MapId: mapItem.map_id,
+                    }),
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.error || 'Не вдалося видалити мапу.');
+                }
+
+                await refreshMaps();
+            } catch (error) {
+                alert(error.message || 'Помилка видалення мапи.');
+            }
+        });
+
+        actions.appendChild(openButton);
+        if (mapItem.can_manage) {
+            const settingsActions = document.createElement('div');
+            settingsActions.className = 'map-card-actions';
+            settingsActions.appendChild(saveSettingsButton);
+            settingsActions.appendChild(deleteButton);
+            settingsMenu.appendChild(nameRow);
+            settingsMenu.appendChild(privateRow);
+            settingsMenu.appendChild(settingsActions);
+
+            const settingsNote = document.createElement('p');
+            settingsNote.className = 'map-settings-note';
+            settingsNote.textContent = 'Змінювати налаштування можуть лише власник мапи або адміністратор.';
+            settingsMenu.appendChild(settingsNote);
+        } else {
+            kebabButton.style.display = 'none';
+        }
+
+        card.appendChild(kebabButton);
+        card.appendChild(title);
+        card.appendChild(actions);
+        card.appendChild(settingsMenu);
+
+        return card;
+    }
+
+    function renderMaps(maps, userId, token, refreshMaps) {
+        const list = document.getElementById('maps-list');
+        const empty = document.getElementById('maps-empty');
+        list.innerHTML = '';
+
+        if (!Array.isArray(maps) || maps.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        maps.forEach((mapItem) => {
+            const card = createMapCard(mapItem, userId, token, refreshMaps);
+            list.appendChild(card);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('authToken');
+        const createButton = document.getElementById('create-map-btn');
+        let mapStatus = null;
+        let user = null;
+        let maps = [];
+
+        if (!token) {
+            window.location.href = '/login/';
+            return;
+        }
+
+        try {
+            user = await fetchUserData(token);
+            if (!user || !user.id) {
+                throw new Error('Некоректні дані користувача.');
+            }
+
+            const refreshMaps = async () => {
+                const mapsPayload = await fetchMaps(user.id, token);
+                maps = mapsPayload && Array.isArray(mapsPayload.maps) ? mapsPayload.maps : [];
+                mapStatus = await fetchMapStatus(user.id);
+                renderMaps(maps, user.id, token, refreshMaps);
+
+                if (maps.length === 0) {
+                    window.location.href = '/map/';
+                }
+            };
+
+            await refreshMaps();
+
+            createButton.addEventListener('click', async () => {
+                const tokenParam = `token=${encodeURIComponent(token)}`;
+                if (mapStatus && Number(mapStatus.count || 0) >= 1 && !mapStatus.has_active_subscription) {
+                    window.location.href = '/map/subscription/';
+                    return;
+                }
+                window.location.href = `/map/interactive-map/?create_new=1&${tokenParam}`;
+            });
+        } catch (error) {
+            console.error('Помилка завантаження сторінки мап:', error);
+            alert(error.message || 'Не вдалося завантажити список мап.');
+        }
+    });
+</script>
+{% endblock %}

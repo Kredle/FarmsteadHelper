@@ -34,7 +34,7 @@ def forum_main(request):
 @throttle_classes([ForumTrottling])
 def get_topics(request):
     topics = forum_use_case.get_topics()
-    return JsonResponse(topics, safe=False)
+    return JsonResponse(topics)
 
 
 def discussion_detail(request):
@@ -68,18 +68,18 @@ def topic_detail(request, pk):
     if topic_data is None:
         return redirect('forum_main')
     topic = {
-        'idTopic': topic_data.get('id'),
-        'Title': topic_data.get('title'),
-        'Content': topic_data.get('content'),
-        'Category': topic_data.get('category'),
-        'Author': topic_data.get('author'),
-        'Date': topic_data.get('date'),
-        'Time': topic_data.get('time'),
-        'Likes': topic_data.get('likes'),
-        'Dislikes': topic_data.get('dislikes'),
-        'Comments': topic_data.get('comments'),
-        'Likes_list': topic_data.get('likes_list'),
-        'Dislikes_list': topic_data.get('dislikes_list'),
+        'idTopic': topic_data.get('idTopic'),
+        'Title': topic_data.get('Title'),
+        'Content': topic_data.get('Content'),
+        'Category': topic_data.get('Category'),
+        'Author': topic_data.get('Author'),
+        'Date': topic_data.get('Date'),
+        'Time': topic_data.get('Time'),
+        'Likes': topic_data.get('Likes'),
+        'Dislikes': topic_data.get('Dislikes'),
+        'Comments': topic_data.get('Comments'),
+        'Likes_list': topic_data.get('Likes_list'),
+        'Dislikes_list': topic_data.get('Dislikes_list'),
     }
     return render(request, 'topic_detail.html', {'topic': topic})
 
@@ -183,19 +183,24 @@ def check_favorite_forum(request):
 @throttle_classes([ForumTrottling])
 def delete_topic(request, topic_id):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        requesting_user = data.get('username')
-        topic = forum_use_case.topic_detail(topic_id)
-        if topic is None:
-            return redirect('forum_main')
+        try:
+            data = json.loads(request.body)
+            requesting_user = data.get('username')
+            topic = forum_use_case.topic_detail(topic_id)
 
-        if topic['author'] == requesting_user:
-            topic_url = request.build_absolute_uri(
-                reverse('topic_detail', args=[topic_id])
-            )
-            forum_use_case.delete_topic(topic_id, topic_url)
-        return redirect('forum_main')
-    return redirect('forum_main')
+            if topic and (topic['Author'] == requesting_user or request.user.is_superuser):
+                forum_use_case.delete_topic(topic_id, "") 
+
+                return JsonResponse({
+                    'status': 'success', 
+                    'redirect_url': reverse('forum_main')
+                })
+            
+            return JsonResponse({'error': 'No permission'}, status=403)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 def edit_topic_new(request, topic_id):
@@ -226,26 +231,30 @@ def edit_topic_new(request, topic_id):
 
 @throttle_classes([ForumTrottling])
 def edit_topic(request, topic_id):
+    topic = forum_use_case.topic_detail(topic_id)
+    
+    if topic is None:
+        return redirect('forum_main')
+
     if request.method == 'POST':
         user = request.POST.get('username')
-        topic = forum_use_case.topic_detail(topic_id)
-        if topic and topic['author'] == user:
+        
+        if topic.get('Author') == user:
             forum_use_case.update_topic(
                 topic_id,
                 title=request.POST.get('title'),
                 content=request.POST.get('description'),
                 category=request.POST.get('category_text'),
             )
-            return redirect('topic_detail', topic_id)
+            return redirect('topic_detail', pk=topic_id)
+        
         return redirect('forum_main')
-    topic = forum_use_case.topic_detail(topic_id)
-    if topic is None:
-        return redirect('forum_main')
+
     return render(request, 'edit_topic.html', {
         'topic_id': topic_id,
-        'title': topic.get('title', ''),
-        'content': topic.get('content', ''),
-        'category': topic.get('category', ''),
+        'title': topic.get('Title', ''),    
+        'content': topic.get('Content', ''),   
+        'category': topic.get('Category', ''), 
     })
 
 
@@ -276,7 +285,7 @@ def add_comment(request, topic_id):
 
 def get_popular_topics(request):
     topics = forum_use_case.get_popular_topics()
-    return JsonResponse(topics, safe=False)
+    return JsonResponse(topics)
 
 
 def topic_detail_api(request, pk):
@@ -333,8 +342,59 @@ def edit_comment(request, comment_id):
 @throttle_classes([ForumTrottling])
 def delete_comment(request, comment_id):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        topic_id = data.get('topicId')
-        forum_use_case.delete_comment(comment_id, topic_id)
-        return redirect('forum_main')
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
+        try:
+            data = json.loads(request.body)
+            user = data.get('username')
+            topic_id = data.get('topicId')
+
+            comment = forum_use_case.get_comment(comment_id)
+            if not comment:
+                return JsonResponse({'error': 'Коментар не знайдено'}, status=404)
+
+            is_author = comment.get('Author') == user
+            is_admin = getattr(request.user, 'is_superuser', False) 
+
+            if is_author or is_admin:
+                forum_use_case.delete_comment(comment_id, topic_id)
+                return JsonResponse({'status': 'success', 'message': 'Видалено'})
+            else:
+                return JsonResponse({'error': 'Немає прав для видалення'}, status=403)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Метод не дозволено'}, status=405)
+
+
+@csrf_exempt
+def mark_notification_read(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+            notif_id = data.get('notification_id')
+            print(f"DEBUG: Marking notification {notif_id} as read for token {data.get('token')}")
+            success = forum_use_case.mark_notification_read(token, notif_id)
+            if success:
+                return JsonResponse({'status': 'success'})
+            else:
+                return JsonResponse({'error': 'Notification not found'}, status=404)
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=403)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@csrf_exempt
+def api_get_notifications(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+            notifs = forum_use_case.fetch_notifications(token)
+            return JsonResponse({'notifications': notifs})
+        except InvalidTokenError:
+            return JsonResponse({'notifications': []}) # Або помилка 403
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)

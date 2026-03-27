@@ -78,6 +78,7 @@
             margin: 5px;
         }
     </style>
+    <link rel="stylesheet" type="text/css" href="{% static 'notifications/notifications.css' %}">
 </head>
 <body>
 
@@ -430,6 +431,7 @@
     async function saveMap() {
         const updatedMapData = canvas.toDataURL();
         user = await fetchUserData();
+        const token = localStorage.getItem('authToken') || '';
         const response = await fetch(`/map/save-interactive-map/`, {
             method: 'POST',
             headers: {
@@ -439,6 +441,7 @@
             body: JSON.stringify({
                 Content: updatedMapData,
                 Author: user,
+                token: token || '',
             }),
         });
 
@@ -465,6 +468,6 @@
         };
     }
 </script>
-
+<script src="{% static 'notifications/notifications.js' %}"></script>
 </body>
 </html>

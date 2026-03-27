@@ -556,8 +556,8 @@ main {
     flex-direction: column;
     gap: 20px;
     padding: 20px;
-    padding-top: 100px;
-    margin-top: 120px;
+    margin-top: 100px; /* Базовий відступ для контенту під хедером */
+    min-height: calc(100vh - 200px); /* Щоб футер притискався до низу при малому контенті */
 }
 
 .categories,
@@ -776,7 +776,8 @@ input[type="checkbox"]:checked::before {
     max-width: 500px;
     width: -webkit-fill-available;
     margin: 0 auto;
-    margin-top: 120px;
+    margin-top: 120px; /* Залишаємо відступ для сторінок без JS-коригування */
+    margin-bottom: 50px;
     padding: 20px;
     border: 1px solid var(--card_border);
     border-radius: 8px;
@@ -1059,14 +1060,9 @@ input[type="checkbox"]:checked::before {
     /* ПОШУК ПО КАТАЛОГУ*/
 
 .search-container {
-    margin-top: 80px; /* Відступ від хедера */
-    z-index: 99; /* Значення нижче ніж у хедера */
-}
-/* Стилі для пошуку */
-.search-container {
+    margin: 150px auto 20px auto; /* Збільшений відступ від хедера */
     max-width: 600px;
     width: -webkit-fill-available;
-    margin: 20px auto;
     position: relative;
     padding: 0 15px;
 }

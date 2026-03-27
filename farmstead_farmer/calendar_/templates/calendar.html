@@ -1,206 +1,60 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    {% load static %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Календар{% endblock %}
+
+{% block extra_head %}
     <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
-    <title>Календар</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <!-- Add jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
     <!-- Add Moment.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-
     <!-- FullCalendar CSS and JS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.2.0/dist/fullcalendar.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@3.2.0/dist/fullcalendar.min.js"></script>
-
     <!-- Ukrainian Localization -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@3.2.0/dist/locale/uk.js"></script>
+{% endblock %}
 
-    <header>
-        <div class="logo">
-            <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-            <span>FarmsteadHelper</span>
-        </div>
-        <div class="hamburger" id="hamburger">
-            <div></div>
-            <div></div>
-            <div></div>
-        </div>
-        <div class="side-menu" id="side-menu">
-            <div class="side-menu-close">
-                <button id="close-menu">&times;</button>
-            </div>
-            <a href="/">Головна</a>
-            <a href="/catalog">Каталог</a>
-            <a href="/forum">Форум</a>
-            <a href="/map">Інтерактивна мапа</a>
-            <a href="/calendar">Календар</a>
-            <div class="auth-buttons" id="side-menu-auth">
-                <a href="/login">Вхід</a>
-                <a href="/register">Реєстрація</a>
-            </div>
-        </div>
-        <nav>
-            <a href="/">Головна</a>
-            <a href="/catalog">Каталог</a>
-            <a href="/forum">Форум</a>
-            <a href="/map">Інтерактивна мапа</a>
-            <a href="/calendar">Календар</a>
-        </nav>
-        <div class="auth">
-            <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-            <div class="auth-menu">
-                <a href="/login">Вхід</a>
-                <a href="/register">Реєстрація</a>
-            </div>
-        </div>
+{% block content %}
+    <div class="calendar_choice">
+        <label for="category">Виберіть категорію:</label>
+        <select id="category" onchange="fetchSorts()">
+            <option value="">-- Виберіть --</option>
+            <option value="дерева">Дерева</option>
+            <option value="овочі">Овочі</option>
+            <option value="рослини">Квіти</option>
+        </select>
 
-<div id="customAlert" style="display: none;">
-    <div id="customAlertBox">
-        <p id="customAlertMessage"></p>
-        <button onclick="closeAlert()">OK</button>
+        <div id="sorts-wrapper">
+            <div class="search_container">
+                <input type="text" id="search-sorts" placeholder="Пошук сортів..." onkeyup="filterSorts()">
+            </div>
+            <label for="sorts">Сорти:</label>
+            <select id="sorts" onchange="fetchSortDetails()">
+                <option value="">-- Спочатку виберіть категорію --</option>
+            </select>
+            <button id="filter-button">Показати фільтри</button>
+            <div class="filters-container" style="display: none;">
+                <div class="event-filters" id="event-filters"></div>
+            </div>
+        </div>
     </div>
-</div>
 
+    <div id="calendar"></div>
 
-        <script>
+    <div id="customAlert" style="display: none;">
+        <div id="customAlertBox">
+            <p id="customAlertMessage"></p>
+            <button onclick="closeAlert()">OK</button>
+        </div>
+    </div>
+{% endblock %}
 
-        var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('authToken');
-            const authContainer = document.querySelector('.auth');
-            const sideMenuAuth = document.getElementById('side-menu-auth');
-
-            if (token) {
-                fetch('/api/user-data/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ token: token }),
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-
-                        const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
-                        authContainer.innerHTML = `
-                            <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                            <div class="auth-menu">
-                                <span>${data.username}</span>
-                                <a href="/profile/${data.username}">Профіль</a>
-                                <a href="/edit-profile/">Налаштування профілю</a>
-                                <a href="#" id="logout-btn">Вихід</a>
-                            </div>
-                        `;
-
-                        sideMenuAuth.innerHTML = `
-                            <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                            <a href="/profile/${data.username}">Профіль</a>
-                            <a href="/edit-profile">Налаштування профілю</a>
-                            <a href="#" id="side-menu-logout">Вихід</a>
-                        `;
-
-                        document.getElementById('logout-btn').addEventListener('click', () => {
-                            handleLogout();
-                        });
-
-                        document.getElementById('side-menu-logout').addEventListener('click', () => {
-                            handleLogout();
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Помилка при отриманні даних користувача:', error);
-                        resetAuthState();
-                    });
-            } else {
-                resetAuthState();
-            }
-
-            function handleLogout() {
-                fetch('/api/logout/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ token: token }),
-                })
-                    .then(response => {
-                        if (response.ok) {
-                            localStorage.removeItem('authToken');
-                            window.location.href = '/';
-                        } else {
-                            return response.json().then(err => {
-                                throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                            });
-                        }
-                    })
-                    .catch(error => console.error('Помилка при виході:', error));
-            }
-
-            function resetAuthState() {
-                authContainer.innerHTML = `
-                    <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                    <div class="auth-menu">
-                        <a href="/login">Вхід</a>
-                        <a href="/register">Реєстрація</a>
-                    </div>
-                `;
-
-                sideMenuAuth.innerHTML = `
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                `;
-            }
-        });
-
-        const hamburger = document.getElementById('hamburger');
-        const sideMenu = document.getElementById('side-menu');
-        const closeMenu = document.getElementById('close-menu');
-        const nav = document.querySelector('nav');
-        const auth = document.querySelector('.auth');
-
-        hamburger.addEventListener('click', () => {
-            sideMenu.style.right = '0';
-        });
-
-        closeMenu.addEventListener('click', () => {
-            sideMenu.style.right = '-250px';
-        });
-
-        function checkMenuVisibility() {
-            const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-            if (window.innerWidth < 900 || isMobileDevice) {
-                nav.style.display = 'none';
-                auth.style.display = 'none';
-                hamburger.style.display = 'flex';
-            } else {
-                nav.style.display = 'flex';
-                auth.style.display = 'block';
-                hamburger.style.display = 'none';
-            }
-        }
-
-        checkMenuVisibility();
-        window.addEventListener('resize', checkMenuVisibility);
-    </script>
-</header>
-
+{% block extra_scripts %}
     <script>
         let eventData = [];
         let selectedEventTypes = [];
@@ -492,81 +346,29 @@
         }
 
         $(document).ready(() => initializeCalendar());
-
-
     </script>
-</head>
+    <script>
+        document.getElementById('filter-button').addEventListener('click', function() {
+            const filtersContainer = document.querySelector('.filters-container');
+            const filterButton = document.getElementById('filter-button');
 
-<body>
-    <div class="calendar_choice">
-        <label for="category">Виберіть категорію:</label>
-        <select id="category" onchange="fetchSorts()">
-            <option value="">-- Виберіть --</option>
-            <option value="дерева">Дерева</option>
-            <option value="овочі">Овочі</option>
-            <option value="рослини">Квіти</option>
+            if (filtersContainer.style.display === 'none' || filtersContainer.style.display === '') {
+                filtersContainer.style.display = 'block';
+                filterButton.textContent = 'Приховати фільтри';
+            } else {
+                filtersContainer.style.display = 'none';
+                filterButton.textContent = 'Показати фільтри';
+            }
+        });
+    </script>
+    <script>
+        function showAlert(message) {
+            document.getElementById('customAlertMessage').textContent = message;
+            document.getElementById('customAlert').style.display = 'flex';
+        }
 
-
-        </select>
-
-        <div id="sorts-wrapper">
-            <div class="search_container">
-                <input type="text" id="search-sorts" placeholder="Пошук сортів..." onkeyup="filterSorts()">
-            </div>
-            <label for="sorts">Сорти:</label>
-            <select id="sorts" onchange="fetchSortDetails()">
-                <option value="">-- Спочатку виберіть категорію --</option>
-            </select>
-            <button id="filter-button">Показати фільтри</button>
-            <div class="filters-container" style="display: none;">
-                <div class="event-filters" id="event-filters"></div>
-            </div>
-        </div>
-
-
-    </div>
-
-    <div id="calendar"></div>
-</body>
-<script>
-    document.getElementById('filter-button').addEventListener('click', function() {
-    const filtersContainer = document.querySelector('.filters-container');
-    const filterButton = document.getElementById('filter-button');
-
-    if (filtersContainer.style.display === 'none' || filtersContainer.style.display === '') {
-        filtersContainer.style.display = 'block';
-        filterButton.textContent = 'Приховати фільтри';
-    } else {
-        filtersContainer.style.display = 'none';
-        filterButton.textContent = 'Показати фільтри';
-    }
-});
-</script>
-<footer>
-    <div class="legal-links">
-        <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
-        <span>|</span>
-        <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
-        <span>|</span>
-        <a href="/feedback/">Форма зворотного зв’язку</a>
-    </div>
-    <div class="copyright">
-        &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
-    </div>
-</footer>
-
-<script>
-    document.getElementById("current-year").textContent = new Date().getFullYear();
-</script>
-
-<script>
-    function showAlert(message) {
-        document.getElementById('customAlertMessage').textContent = message;
-        document.getElementById('customAlert').style.display = 'flex';
-    }
-
-    function closeAlert() {
-        document.getElementById('customAlert').style.display = 'none';
-    }
-</script>
-</html>
+        function closeAlert() {
+            document.getElementById('customAlert').style.display = 'none';
+        }
+    </script>
+{% endblock %}

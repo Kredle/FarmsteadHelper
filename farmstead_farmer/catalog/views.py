@@ -16,12 +16,14 @@ catalog_use_case = CatalogUseCase(DjangoCatalogRepository())
 
 
 @throttle_classes([CatalogTrottle])
+@api_view(['GET'])
 def search_api(request):
     try:
         query = request.GET.get('query', '')
-        return JsonResponse(catalog_use_case.search(query))
-    except Exception:
-        return JsonResponse({'error': 'Internal Server Error'}, status=500)
+        return Response(catalog_use_case.search(query))
+    except Exception as e:
+        print(f"Search error: {e}")
+        return Response({'error': str(e)}, status=500)
 
 
 def catalog_view(request):

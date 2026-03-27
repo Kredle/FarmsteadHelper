@@ -1,187 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-    {% csrf_token %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Огляд інтерактивної мапи{% endblock %}
+
+{% block extra_head %}
     <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
-    <title>Огляд інтерактивної мапи</title>
-</head>
-<body>
+{% endblock %}
 
-    <!-- Хедер -->
-    <header>
-    <div class="logo">
-        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-        <span>FarmsteadHelper</span>
-    </div>
-    <div class="hamburger" id="hamburger">
-        <div></div>
-        <div></div>
-        <div></div>
-    </div>
-    <div class="side-menu" id="side-menu">
-        <div class="side-menu-close">
-            <button id="close-menu">&times;</button>
-        </div>
-        <a href="/">Головна</a>
-        <a href="/catalog">Каталог</a>
-        <a href="/forum">Форум</a>
-        <a href="/map">Інтерактивна мапа</a>
-        <a href="/calendar">Календар</a>
-        <div class="auth-buttons" id="side-menu-auth">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
-        </div>
-    </div>
-    <nav>
-        <a href="/">Головна</a>
-        <a href="/catalog">Каталог</a>
-        <a href="/forum">Форум</a>
-        <a href="/map">Інтерактивна мапа</a>
-        <a href="/calendar">Календар</a>
-    </nav>
-    <div class="auth">
-        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-        <div class="auth-menu">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
-        </div>
-    </div>
-
-
-    <script>
-
-    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('authToken');
-        const authContainer = document.querySelector('.auth');
-        const sideMenuAuth = document.getElementById('side-menu-auth');
-
-        if (token) {
-            fetch('/api/user-data/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
-                    authContainer.innerHTML = `
-                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                        <div class="auth-menu">
-                            <span>${data.username}</span>
-                            <a href="/profile/${data.username}">Профіль</a>
-                            <a href="/edit-profile/">Налаштування профілю</a>
-                            <a href="#" id="logout-btn">Вихід</a>
-                        </div>
-                    `;
-
-                    sideMenuAuth.innerHTML = `
-                        <a href="/profile/${data.username}">Профіль</a>
-                        <a href="/edit-profile">Налаштування профілю</a>
-                        <a href="#" id="side-menu-logout">Вихід</a>
-                    `;
-
-                    document.getElementById('logout-btn').addEventListener('click', () => {
-                        handleLogout();
-                    });
-
-                    document.getElementById('side-menu-logout').addEventListener('click', () => {
-                        handleLogout();
-                    });
-                })
-                .catch(error => {
-                    console.error('Помилка при отриманні даних користувача:', error);
-                    resetAuthState();
-                });
-        } else {
-            resetAuthState();
-        }
-
-        function handleLogout() {
-            fetch('/api/logout/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (response.ok) {
-                        localStorage.removeItem('authToken');
-                        window.location.href = '/';
-                    } else {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                })
-                .catch(error => console.error('Помилка при виході:', error));
-        }
-
-        function resetAuthState() {
-            authContainer.innerHTML = `
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            `;
-
-            sideMenuAuth.innerHTML = `
-                <a href="/login">Вхід</a>
-                <a href="/register">Реєстрація</a>
-            `;
-        }
-    });
-
-    const hamburger = document.getElementById('hamburger');
-    const sideMenu = document.getElementById('side-menu');
-    const closeMenu = document.getElementById('close-menu');
-    const nav = document.querySelector('nav');
-    const auth = document.querySelector('.auth');
-
-    hamburger.addEventListener('click', () => {
-        sideMenu.style.right = '0';
-    });
-
-    closeMenu.addEventListener('click', () => {
-        sideMenu.style.right = '-250px';
-    });
-
-    function checkMenuVisibility() {
-        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        if (window.innerWidth < 900 || isMobileDevice) {
-            nav.style.display = 'none';
-            auth.style.display = 'none';
-            hamburger.style.display = 'flex';
-        } else {
-            nav.style.display = 'flex';
-            auth.style.display = 'block';
-            hamburger.style.display = 'none';
-        }
-    }
-
-    checkMenuVisibility();
-    window.addEventListener('resize', checkMenuVisibility);
-    </script>
-    </header>
-<div class="page_container">
+{% block content %}
     <div class="container" style="margin-top: 120px;">
         <h1>Відкрийте для себе інтерактивну мапу!</h1>
         <p>
@@ -205,117 +31,110 @@
             <a class="button" href="/map/subscription/" style="margin-left: 10px;">Передплата</a>
         </div>
     </div>
-</div>
-    <footer>
-        <div class="legal-links">
-            <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
-            <span>|</span>
-            <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
-            <span>|</span>
-            <a href="/feedback/">Форма зворотного зв’язку</a>
-        </div>
-        <div class="copyright">
-            &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
-        </div>
-    </footer>
+{% endblock %}
 
+{% block extra_scripts %}
     <script>
-        document.getElementById("current-year").textContent = new Date().getFullYear();
-    </script>
-</body>
-<script>
-window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-            location.reload();
-        }
-    });
-    let user_id = null;
-    document.addEventListener("DOMContentLoaded", async function () {
-        const button = document.querySelector(".button");
-        const token = localStorage.getItem("authToken");
-        user_id = await fetchUserData();
-        let mapInfo = { exists: false, latest_map_id: null };
-        if(user_id){
-            mapInfo = await checkMap(user_id);
-            if (mapInfo && mapInfo.exists && button) {
-                button.textContent = "Продовжити роботу";
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                location.reload();
             }
-        }
-        if (button) {
-            button.addEventListener("click", async function (event) {
-                event.preventDefault();
-                if (!token) {
-                    window.location.href = "/login/";
-                    return;
-                }
-
-                const tokenParam = `token=${encodeURIComponent(token)}`;
-                if(mapInfo && mapInfo.exists){
-                    const mapIdPart = mapInfo.latest_map_id ? `&map_id=${mapInfo.latest_map_id}` : '';
-                    window.location.href = `/map/interactive-map/?owner_id=${user_id}${mapIdPart}&${tokenParam}`;
-                }else{
-                    window.location.href = `/map/interactive-map/?${tokenParam}`;
-                }
-            });
-        }
-    });
-
-    async function fetchUserData() {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            try {
-                const response = await fetch('/api/user-data/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                    body: JSON.stringify({ token: token }),
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
-                }
-                const data = await response.json();
-                user = data.id;
-                return user;
-            } catch (error) {
-                console.error('Error fetching user data:', error.message);
-            }
-        }
-    }
-    async function checkMap(user_id) {
-        //const user_id = await fetchUserData();
-        //console.log(user_id);
-        const response = await fetch(`/map/check-map/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: JSON.stringify({
-                Author: user_id,
-            }),
         });
 
-        if (!response.ok) {
-            throw new Error(`Статус помилки: ${response.status}`);
-        }
-        return await response.json();
-    }
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+        let user_id = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const button = document.getElementById('map-button');
+            const token = localStorage.getItem('authToken');
+            user_id = await fetchUserData();
+
+            let mapInfo = { exists: false, latest_map_id: null };
+            if (user_id) {
+                mapInfo = await checkMap(user_id);
+                if (mapInfo && mapInfo.exists) {
+                    const tokenParam = `token=${encodeURIComponent(token || '')}`;
+                    window.location.href = `/map/my-maps/?${tokenParam}`;
+                    return;
+                }
+                if (mapInfo && mapInfo.exists && button) {
+                    button.textContent = 'Продовжити роботу';
                 }
             }
+
+            if (button) {
+                button.addEventListener('click', async function(event) {
+                    event.preventDefault();
+                    if (!token) {
+                        window.location.href = '/login/';
+                        return;
+                    }
+
+                    const tokenParam = `token=${encodeURIComponent(token)}`;
+                    if (mapInfo && mapInfo.exists) {
+                        const mapIdPart = mapInfo.latest_map_id ? `&map_id=${mapInfo.latest_map_id}` : '';
+                        window.location.href = `/map/interactive-map/?owner_id=${user_id}${mapIdPart}&${tokenParam}`;
+                    } else {
+                        window.location.href = `/map/interactive-map/?${tokenParam}`;
+                    }
+                });
+            }
+        });
+
+        async function fetchUserData() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const response = await fetch('/api/user-data/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: JSON.stringify({ token: token }),
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Помилка: ${errorData.detail || 'Невідома помилка'}`);
+                    }
+                    const data = await response.json();
+                    return data.id;
+                } catch (error) {
+                    console.error('Error fetching user data:', error.message);
+                }
+            }
+            return null;
         }
-        return cookieValue;
-    }
-</script>
-</html>
+
+        async function checkMap(user_id) {
+            const response = await fetch('/map/check-map/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    Author: user_id,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`Статус помилки: ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,139 @@
+/* Map Subscription Page Styles */
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #e8f4ed 0%, #f6f5cb 100%);
+    color: #1f3d2f;
+    min-height: 100vh;
+}
+
+.page_container {
+    min-height: calc(100vh - 220px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 20px 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 980px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(22, 53, 40, 0.15);
+    padding: 30px;
+}
+
+h1 {
+    margin-top: 0;
+    text-align: center;
+    color: #245843;
+}
+
+.subtitle {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #486a5b;
+}
+
+.notice {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.sub-status {
+    display: none;
+    margin: 0 auto 18px;
+    max-width: 520px;
+    border-radius: 12px;
+    border: 2px solid #2f8f6d;
+    background: #e9fff5;
+    text-align: center;
+    padding: 14px 16px;
+}
+
+.sub-status-title {
+    font-size: 14px;
+    color: #1f5a43;
+    margin-bottom: 6px;
+}
+
+.sub-status-date {
+    font-size: 24px;
+    font-weight: 800;
+    color: #146a4b;
+    letter-spacing: 0.2px;
+}
+
+.success {
+    color: #237a3f;
+}
+
+.cancel {
+    color: #8f5f16;
+}
+
+.plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+}
+
+.plan {
+    border: 1px solid #c5ddd1;
+    border-radius: 12px;
+    padding: 20px;
+    background: #f8fcfa;
+}
+
+.plan h3 {
+    margin-top: 0;
+    color: #1f5a43;
+}
+
+.plan p {
+    margin: 6px 0;
+    color: #355e4c;
+}
+
+.price {
+    font-size: 30px;
+    font-weight: bold;
+    color: #2d7a5a;
+    margin: 12px 0;
+}
+
+.plan button {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 15px;
+    cursor: pointer;
+    background: #3b9173;
+    color: #fff;
+    transition: background 0.2s;
+}
+
+.plan button:hover {
+    background: #4ab58f;
+}
+
+.actions {
+    margin-top: 22px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.link-btn {
+    text-decoration: none;
+    background: #e4f1ea;
+    color: #2c5a46;
+    border: 1px solid #b9d5c8;
+    border-radius: 8px;
+    padding: 10px 14px;
+}

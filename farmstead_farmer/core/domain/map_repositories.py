@@ -24,6 +24,14 @@ class MapRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def update_map_settings(self, user_id: int, map_id: int, map_name: str | None = None, is_private: bool | None = None) -> dict:
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_map(self, user_id: int, map_id: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_tree_sorts(self) -> list[dict]:
         raise NotImplementedError
 

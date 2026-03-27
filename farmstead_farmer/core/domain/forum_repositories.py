@@ -4,11 +4,11 @@ from typing import List, Optional
 
 class ForumRepository(ABC):
     @abstractmethod
-    def get_all_topics(self) -> List[dict]:
+    def get_all_topics(self):
         raise NotImplementedError
 
     @abstractmethod
-    def get_topics_by_likes(self) -> List[dict]:
+    def get_topics_by_likes(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -59,7 +59,7 @@ class ForumRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_comments_for_topic(self, topic_id: int) -> List[dict]:
+    def get_comments_for_topic(self, topic_id: int):
         raise NotImplementedError
 
     @abstractmethod
@@ -92,3 +92,15 @@ class ForumRepository(ABC):
     @abstractmethod
     def update_author_name(self, old_name: str, new_name: str) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def create_notification(self, owner_username: str, content: str, link: str) -> None: pass
+
+    @abstractmethod
+    def get_notifications(self, username: str) -> list: pass
+
+    @abstractmethod
+    def delete_old_notifications(self) -> None: pass
+
+    @abstractmethod
+    def mark_notification_as_read(self, notification_id: int, username: str) -> bool: pass

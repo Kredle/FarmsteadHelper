@@ -1,12 +1,10 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f9;
-    margin: 0;
-    padding: 0;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
 }
 .login-form {
     background: #ffffff;
@@ -14,6 +12,8 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     width: 400px;
+    margin: 120px auto 50px auto; /* Відступ зверху для хедера, знизу для футера */
+    max-width: 90%; /* Адаптивність для мобільних */
 }
 .login-form h2 {
     text-align: center;

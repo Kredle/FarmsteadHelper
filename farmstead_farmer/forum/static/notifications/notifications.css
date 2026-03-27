@@ -1,0 +1,94 @@
+/* Контейнер сповіщень */
+.notif-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin-right: 15px;
+    vertical-align: middle;
+}
+
+/* Іконка листа */
+.notif-icon {
+    font-size: 22px;
+    color: var(--textcolor_light, #fff);
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.notif-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Червоний бабл з цифрою */
+.notif-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: #ff4d4d;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 14px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Випадаюче меню */
+.notif-dropdown {
+    position: absolute;
+    top: 35px;
+    right: 0;
+    width: 280px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 1000;
+    overflow: hidden;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25); /* Потужніша тінь для ефекту "поверх" */
+    z-index: 99999; /* Максимальне значення, щоб бути вище за всі елементи */
+    display: block;
+}
+
+.notif-header {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    font-weight: bold;
+    font-size: 14px;
+    color: #555;
+}
+
+.notif-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Елемент списку */
+.notif-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f1f1;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Три крапки, якщо текст довгий */
+}
+
+.notif-item:hover {
+    background-color: #f0f7ff;
+}
+
+.notif-item:last-child {
+    border-bottom: none;
+}
+
+.hidden {
+    display: none;
+}

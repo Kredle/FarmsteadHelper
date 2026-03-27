@@ -1,185 +1,14 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вхід</title>
-    {% load static %}  <!-- Завантажуємо тег статичних файлів -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <link rel="stylesheet" type="text/css" href="{% static 'api/stylesapi.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
-    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-</head>
-<body>
-    <!-- Хедер -->
-    <header>
-    <div class="logo">
-        <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-        <span>FarmsteadHelper</span>
-    </div>
-    <div class="hamburger" id="hamburger">
-        <div></div>
-        <div></div>
-        <div></div>
-    </div>
-    <div class="side-menu" id="side-menu">
-        <div class="side-menu-close">
-            <button id="close-menu">&times;</button>
-        </div>
-        <a href="/">Головна</a>
-        <a href="/catalog">Каталог</a>
-        <a href="/forum">Форум</a>
-        <a href="/map">Інтерактивна мапа</a>
-        <a href="/calendar">Календар</a>
-        <div class="auth-buttons" id="side-menu-auth">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
-        </div>
-    </div>
-    <nav>
-        <a href="/">Головна</a>
-        <a href="/catalog">Каталог</a>
-        <a href="/forum">Форум</a>
-        <a href="/map">Інтерактивна мапа</a>
-        <a href="/calendar">Календар</a>
-    </nav>
-    <div class="auth">
-        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-        <div class="auth-menu">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
-        </div>
-    </div>
-    
-    
-    <script>
+{% extends 'base.html' %}
+{% load static %}
 
-    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('authToken');
-        const authContainer = document.querySelector('.auth');
-        const sideMenuAuth = document.getElementById('side-menu-auth');
-    
-        if (token) {
-            fetch('/api/user-data/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
-                    authContainer.innerHTML = `
-                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                        <div class="auth-menu">
-                            <span>${data.username}</span>
-                            <a href="/profile/${data.username}">Профіль</a>
-                            <a href="/edit-profile/">Налаштування профілю</a>
-                            <a href="#" id="logout-btn">Вихід</a>
-                        </div>
-                    `;
-    
-                    sideMenuAuth.innerHTML = `
-                        <a href="/profile/${data.username}">Профіль</a>
-                        <a href="/edit-profile">Налаштування профілю</a>
-                        <a href="#" id="side-menu-logout">Вихід</a>
-                    `;
-    
-                    document.getElementById('logout-btn').addEventListener('click', () => {
-                        handleLogout();
-                    });
-    
-                    document.getElementById('side-menu-logout').addEventListener('click', () => {
-                        handleLogout();
-                    });
-                })
-                .catch(error => {
-                    console.error('Помилка при отриманні даних користувача:', error);
-                    resetAuthState();
-                });
-        } else {
-            resetAuthState();
-        }
-    
-        function handleLogout() {
-            fetch('/api/logout/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (response.ok) {
-                        localStorage.removeItem('authToken');
-                        window.location.href = '/';
-                    } else {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                })
-                .catch(error => console.error('Помилка при виході:', error));
-        }
-    
-        function resetAuthState() {
-            authContainer.innerHTML = `
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            `;
-    
-            sideMenuAuth.innerHTML = `
-                <a href="/login">Вхід</a>
-                <a href="/register">Реєстрація</a>
-            `;
-        }
-    });
-    
-    const hamburger = document.getElementById('hamburger');
-    const sideMenu = document.getElementById('side-menu');
-    const closeMenu = document.getElementById('close-menu');
-    const nav = document.querySelector('nav');
-    const auth = document.querySelector('.auth');
-    
-    hamburger.addEventListener('click', () => {
-        sideMenu.style.right = '0';
-    });
-    
-    closeMenu.addEventListener('click', () => {
-        sideMenu.style.right = '-250px';
-    });
-    
-    function checkMenuVisibility() {
-        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
-        if (window.innerWidth < 900 || isMobileDevice) {
-            nav.style.display = 'none';
-            auth.style.display = 'none';
-            hamburger.style.display = 'flex';
-        } else {
-            nav.style.display = 'flex';
-            auth.style.display = 'block';
-            hamburger.style.display = 'none';
-        }
-    }
-    
-    checkMenuVisibility();
-    window.addEventListener('resize', checkMenuVisibility);
-    </script>
-    </header>
+{% block title %}Вхід{% endblock %}
+
+{% block extra_head %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'api/styleslogin.css' %}">
+{% endblock %}
+
+{% block content %}
     <form id="login-form" class="login-form">
         <h2>Вхід</h2>
 
@@ -198,9 +27,12 @@
             <p><a href="/reset-password/">Забули пароль?</a></p>
         </div>
     </form>
+{% endblock %}
 
+{% block footer %}{% endblock %}
+
+{% block extra_scripts %}
     <script src="{% static 'api/loginscript.js' %}"></script>
-</body>
 <style>
     .g-recaptcha > div {
     display: inline-block;
@@ -212,4 +44,4 @@
     margin: 0px 0;
   }
 </style>
-</html>
+{% endblock %}

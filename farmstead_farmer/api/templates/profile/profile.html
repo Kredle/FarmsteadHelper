@@ -1,15 +1,18 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ваш профіль</title>
-    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ваш профіль{% endblock %}
+
+{% block extra_head %}
     <link rel="stylesheet" href="{% static 'profile/styles.css' %}">
-</head>
-<body>
+    <style>
+        .profile-container {
+            margin-top: 120px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
     <div class="profile-container">
         <h2>Ваш профіль</h2>
         <div class="profile-info">
@@ -25,5 +28,4 @@
         </div>
         <a href="{% url 'edit_profile' %}" class="btn">Редагувати профіль</a>
     </div>
-</body>
-</html>
+{% endblock %}

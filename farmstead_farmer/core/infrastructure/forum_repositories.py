@@ -1,11 +1,14 @@
 ﻿import json
 from typing import List, Optional
-
+from django.db.models.expressions import RawSQL
 from forum.models import Comment, Topic
-
+from django.db.models import F
 from core.domain.exceptions import DomainError
 from core.domain.forum_repositories import ForumRepository
-
+from forum.models import Notification
+from api.models import CustomUser
+from django.utils.timezone import now
+from datetime import timedelta
 
 class TopicNotFoundError(DomainError):
     pass
@@ -16,32 +19,92 @@ class CommentNotFoundError(DomainError):
 
 
 class DjangoForumRepository(ForumRepository):
-    def get_all_topics(self) -> List[dict]:
-        return list(Topic.objects.all().values())
+    # --------------------------- Допоміжні методи ---------------------------------
+    def _getTopic(self):
+        """Повертає 'Stream' (QuerySet) для тем з безпечними JSON полями."""
+        return Topic.objects.defer("Likes_list", "Dislikes_list").annotate(
+            l_raw=RawSQL(' "Likes_list"::text ', []),
+            d_raw=RawSQL(' "Dislikes_list"::text ', [])
+        )
 
-    def get_topics_by_likes(self) -> List[dict]:
-        return list(Topic.objects.all().order_by("-Likes").values())
+    def _getComment(self):
+        """Повертає 'Stream' (QuerySet) для коментарів з безпечними JSON полями."""
+        return Comment.objects.defer("Likes_list", "Dislikes_list").annotate(
+            l_raw=RawSQL(' "Likes_list"::text ', []),
+            d_raw=RawSQL(' "Dislikes_list"::text ', [])
+        )
+
+    def _get_clean_json_list(self, item, raw_field_name: str) -> list:
+        """Приватний парсер для перетворення тексту RawSQL у Python list."""
+        raw_val = getattr(item, raw_field_name, None)
+        if raw_val and isinstance(raw_val, str) and raw_val != 'null':
+            try:
+                return json.loads(raw_val)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+    
+    def _map_topics(self, topics_qs) -> dict:
+        """Перетворює QuerySet тем у словник із ключем 'topics'."""
+        return {
+            "topics": [
+                {
+                    "idTopic": t.idTopic,
+                    "Title": t.Title,
+                    "Content": t.Content,
+                    "Category": t.Category,
+                    "Likes": t.Likes,
+                    "Dislikes": t.Dislikes,
+                    "Date": t.Date,
+                    "Time": t.Time,
+                    "Author": str(t.Author),
+                    "Comments": t.Comments,
+                    "Likes_list": self._get_clean_json_list(t, 'l_raw'),
+                    "Dislikes_list": self._get_clean_json_list(t, 'd_raw'),
+                } for t in topics_qs
+            ]
+        }
+
+    def _map_comments(self, comments_qs) -> dict:
+        """Перетворює QuerySet коментарів у словник із ключем 'comments'."""
+        return {
+            "comments": [
+                {
+                    "idComments": c.idComments,
+                    "Author": str(c.Author),
+                    "Content": c.Content,
+                    "Likes": c.Likes,
+                    "Dislikes": c.Dislikes,
+                    "Comments": c.Comments,
+                    "Date": c.Date,
+                    "Time": c.Time,
+                    "ParentId": c.ParentId,
+                    "Likes_list": self._get_clean_json_list(c, 'l_raw'),
+                    "Dislikes_list": self._get_clean_json_list(c, 'd_raw'),
+                } for c in comments_qs
+            ]
+        }
+    # -----------------------------------------------------------------------------------
+    def get_all_topics(self) -> dict:
+        topics = self._getTopic()
+        
+        return self._map_topics(topics)
+
+
+    def get_topics_by_likes(self) -> dict:
+        topics = self._getTopic().order_by("-Likes")
+        
+        return self._map_topics(topics)
+
 
     def get_topic_detail(self, topic_id: int) -> Optional[dict]:
         try:
-            topic = Topic.objects.get(pk=topic_id)
+            t = self._getTopic().get(pk=topic_id)
         except Topic.DoesNotExist:
             return None
-        return {
-            "id": topic.idTopic,
-            "title": topic.Title,
-            "content": topic.Content,
-            "category": topic.Category,
-            "author": topic.Author,
-            "date": str(topic.Date),
-            "time": str(topic.Time),
-            "likes": topic.Likes,
-            "dislikes": topic.Dislikes,
-            "comments": topic.Comments,
-            "likes_list": topic.Likes_list,
-            "dislikes_list": topic.Dislikes_list,
-        }
 
+        return self._map_topics([t])["topics"][0]
+    
     def get_topic_title(self, topic_id: int) -> Optional[str]:
         try:
             return Topic.objects.values_list("Title", flat=True).get(idTopic=topic_id)
@@ -65,14 +128,14 @@ class DjangoForumRepository(ForumRepository):
         return topic.idTopic
 
     def update_topic(self, topic_id: int, title: str, content: str, category: str) -> None:
-        try:
-            topic = Topic.objects.get(idTopic=topic_id)
-        except Topic.DoesNotExist as exc:
-            raise TopicNotFoundError(str(exc))
-        topic.Title = title
-        topic.Content = content
-        topic.Category = category
-        topic.save()
+        updated_count = Topic.objects.filter(idTopic=topic_id).update(
+            Title=title,
+            Content=content,
+            Category=category
+        )
+
+        if updated_count == 0:
+            raise TopicNotFoundError(f"Topic with id {topic_id} not found")
 
     def delete_topic(self, topic_id: int) -> None:
         Topic.objects.filter(idTopic=topic_id).delete()
@@ -95,187 +158,312 @@ class DjangoForumRepository(ForumRepository):
 
     def toggle_topic_reaction(self, topic_id: int, user_id: int, reaction: str) -> dict:
         try:
-            topic = Topic.objects.get(idTopic=topic_id)
-        except Topic.DoesNotExist as exc:
-            raise TopicNotFoundError(str(exc))
-        self._normalize_lists(topic)
+            topic_data = self.get_topic_detail(topic_id)
+            if not topic_data:
+                raise TopicNotFoundError(f"Topic {topic_id} not found")
+            
+            l_list = topic_data["Likes_list"]
+            if isinstance(l_list, str):
+                l_list = json.loads(l_list) if l_list and l_list != 'null' else []
+            
+            d_list = topic_data["Dislikes_list"]
+            if isinstance(d_list, str):
+                d_list = json.loads(d_list) if d_list and d_list != 'null' else []
+            try:
+                user_id = int(user_id)
+            except (ValueError, TypeError):
+                raise DomainError("Invalid user ID format")
+            likes_count = topic_data["Likes"]
+            dislikes_count = topic_data["Dislikes"]
 
-        if reaction == "reset":
-            if user_id in topic.Likes_list:
-                topic.Likes_list.remove(user_id)
-                topic.Likes -= 1
-            if user_id in topic.Dislikes_list:
-                topic.Dislikes_list.remove(user_id)
-                topic.Dislikes -= 1
-        elif reaction == "like":
-            if user_id not in topic.Likes_list:
-                topic.Likes_list.append(user_id)
-                topic.Likes += 1
-            if user_id in topic.Dislikes_list:
-                topic.Dislikes_list.remove(user_id)
-                topic.Dislikes -= 1
-        elif reaction == "dislike":
-            if user_id not in topic.Dislikes_list:
-                topic.Dislikes_list.append(user_id)
-                topic.Dislikes += 1
-            if user_id in topic.Likes_list:
-                topic.Likes_list.remove(user_id)
-                topic.Likes -= 1
+            if reaction == "reset":
+                if user_id in l_list:
+                    l_list.remove(user_id)
+                    likes_count -= 1
+                if user_id in d_list:
+                    d_list.remove(user_id)
+                    dislikes_count -= 1
+            elif reaction == "like":
+                if user_id not in l_list:
+                    l_list.append(user_id)
+                    likes_count += 1
+                if user_id in d_list:
+                    d_list.remove(user_id)
+                    dislikes_count -= 1
+            elif reaction == "dislike":
+                if user_id not in d_list:
+                    d_list.append(user_id)
+                    dislikes_count += 1
+                if user_id in l_list:
+                    l_list.remove(user_id)
+                    likes_count -= 1
 
-        topic.save()
-        return {
-            "Likes": topic.Likes,
-            "Dislikes": topic.Dislikes,
-            "Likes_list": topic.Likes_list,
-            "Dislikes_list": topic.Dislikes_list,
-        }
+            Topic.objects.filter(idTopic=topic_id).update(
+                Likes=likes_count,
+                Dislikes=dislikes_count,
+                Likes_list=l_list,
+                Dislikes_list=d_list
+            )
+
+            return {
+                "Likes": likes_count,
+                "Dislikes": dislikes_count,
+                "Likes_list": l_list,
+                "Dislikes_list": d_list,
+            }
+
+        except Exception as e:
+            raise DomainError(str(e))
 
     def get_user_topic_reaction(self, topic_id: int, user_id: int) -> str:
-        try:
-            topic = Topic.objects.get(idTopic=topic_id)
-        except Topic.DoesNotExist as exc:
-            raise TopicNotFoundError(str(exc))
-        self._normalize_lists(topic)
-        if user_id in topic.Likes_list:
+        topic_qs = Topic.objects.filter(idTopic=topic_id)
+
+        # Перевіряємо Likes_list
+        # Додаємо умову: json_typeof("Likes_list") = 'array'
+        check_like = topic_qs.annotate(
+            is_liked=RawSQL(
+                '''
+                EXISTS (
+                    SELECT 1 
+                    FROM json_array_elements_text(
+                        CASE 
+                            WHEN json_typeof("Likes_list"::json) = 'array' THEN "Likes_list"::json 
+                            ELSE '[]'::json 
+                        END
+                    ) AS elem 
+                    WHERE elem = %s
+                )
+                ''', 
+                [str(user_id)]
+            )
+        ).values_list('is_liked', flat=True).first()
+
+        if check_like:
             return "like"
-        if user_id in topic.Dislikes_list:
+
+        # Перевіряємо Dislikes_list аналогічно
+        check_dislike = topic_qs.annotate(
+            is_disliked=RawSQL(
+                '''
+                EXISTS (
+                    SELECT 1 
+                    FROM json_array_elements_text(
+                        CASE 
+                            WHEN json_typeof("Dislikes_list"::json) = 'array' THEN "Dislikes_list"::json 
+                            ELSE '[]'::json 
+                        END
+                    ) AS elem 
+                    WHERE elem = %s
+                )
+                ''', 
+                [str(user_id)]
+            )
+        ).values_list('is_disliked', flat=True).first()
+
+        if check_dislike:
             return "dislike"
+
         return "reset"
 
     def get_comment(self, comment_id: int) -> Optional[dict]:
         try:
-            comment = Comment.objects.get(idComments=comment_id)
-        except Comment.DoesNotExist:
-            return None
-        return {
-            "id": comment.idComments,
-            "Author": comment.Author,
-            "Content": comment.Content,
-            "Date": comment.Date,
-            "Time": comment.Time,
-            "ParentId": comment.ParentId,
-            "Comments": comment.Comments,
-            "Topics_id": comment.Topics_id,
-            "absolute_url": comment.get_absolute_url(),
-        }
+            c = self._getComment().get(idComments=comment_id)
 
-    def get_comments_for_topic(self, topic_id: int) -> List[dict]:
-        return list(
-            Comment.objects.filter(Topics_id=topic_id).values(
-                "Author",
-                "Content",
-                "Likes",
-                "Dislikes",
-                "Comments",
-                "Date",
-                "Time",
-                "idComments",
-                "ParentId",
-            )
-        )
+            comment_dict = self._map_comments([c])["comments"][0]
+            
+            comment_dict["Topics_id"] = c.Topics_id
+            comment_dict["absolute_url"] = c.get_absolute_url()
+            
+            return comment_dict
+            
+        except (Comment.DoesNotExist, IndexError):
+            return None
+
+    def get_comments_for_topic(self, topic_id: int) -> dict:
+        comments = self._getComment().filter(Topics_id=topic_id)
+        
+        return self._map_comments(comments)
+
+
+    from django.db.models import F
 
     def create_comment(self, topic_id, content, author, date, time, topics_id, receiver, is_answer, parent_id) -> dict:
         try:
-            topic = Topic.objects.get(idTopic=topic_id)
-        except Topic.DoesNotExist as exc:
-            raise TopicNotFoundError(str(exc))
+            is_answer_int = 1 if is_answer else 0
+            comment = Comment.objects.create(
+                Content=content,
+                Likes=0,
+                Dislikes=0,
+                Comments=0,
+                Date=date,
+                Time=time,
+                Author=author,
+                Topics_id=topics_id,
+                Receiver=receiver,
+                IsAnswer=is_answer_int,
+                ParentId=parent_id,
+                Likes_list=[],    
+                Dislikes_list=[]  
+            )
 
-        parent_comment = Comment.objects.filter(idComments=parent_id).first() if parent_id else None
-        comment = Comment(
-            Content=content,
-            Likes=0,
-            Dislikes=0,
-            Comments=0,
-            Date=date,
-            Time=time,
-            Author=author,
-            Topics_id=topics_id,
-            Receiver=receiver,
-            IsAnswer=is_answer,
-            ParentId=parent_id,
-        )
-        topic.Comments += 1
-        topic.save()
-        if parent_comment:
-            parent_comment.Comments += 1
-            parent_comment.save()
-        comment.save()
-        return {
-            "status": "success",
-            "id": comment.idComments,
-            "Author": comment.Author,
-            "Content": comment.Content,
-            "Date": comment.Date,
-            "Time": comment.Time,
-            "ParentId": parent_id,
-            "Comments": 0,
-        }
+            updated_topic = Topic.objects.filter(idTopic=topic_id).update(
+                Comments=F('Comments') + 1
+            )
+            
+            if updated_topic == 0:
+                raise TopicNotFoundError(f"Topic {topic_id} not found")
+
+            if parent_id:
+                Comment.objects.filter(idComments=parent_id).update(
+                    Comments=F('Comments') + 1
+                )
+
+            return {
+                "status": "success",
+                "id": comment.idComments,
+                "Author": str(comment.Author),
+                "Content": comment.Content,
+                "Date": comment.Date,
+                "Time": comment.Time,
+                "ParentId": parent_id,
+                "Comments": 0,
+            }
+
+        except Exception as e:
+            raise DomainError(str(e))
 
     def update_comment_content(self, comment_id: int, content: str, actor: Optional[str] = None) -> None:
         try:
-            comment = Comment.objects.get(idComments=comment_id)
-        except Comment.DoesNotExist as exc:
-            raise CommentNotFoundError(str(exc))
-        if actor is not None and comment.Author != actor:
-            raise PermissionError("Not the comment author")
-        comment.Content = content
-        comment.save()
+            comment_qs = self._getComment().filter(idComments=comment_id)
+            comment = comment_qs.first()
+
+            if not comment:
+                raise CommentNotFoundError(f"Comment {comment_id} not found")
+
+            if actor is not None and str(comment.Author) != actor:
+                raise PermissionError("Not the comment author")
+
+            comment_qs.update(Content=content)
+
+        except Exception as e:
+            if isinstance(e, (CommentNotFoundError, PermissionError)):
+                raise e
+            raise DomainError(str(e))
 
     def delete_comment(self, comment_id: int, topic_id: int) -> None:
         try:
-            comment = Comment.objects.get(idComments=comment_id)
-            topic = Topic.objects.get(idTopic=topic_id)
-        except (Comment.DoesNotExist, Topic.DoesNotExist) as exc:
-            raise DomainError(str(exc))
-        topic.Comments = int(topic.Comments) - 1
-        topic.save()
-        comment.delete()
+            updated_topic = Topic.objects.filter(idTopic=topic_id).update(
+                Comments=F('Comments') - 1
+            )
+            
+            if updated_topic == 0:
+                raise DomainError(f"Topic {topic_id} not found")
+
+            deleted_count = Comment.objects.filter(idComments=comment_id).delete()[0]
+            
+            if deleted_count == 0:
+                raise DomainError(f"Comment {comment_id} not found")
+
+        except Exception as e:
+            if isinstance(e, DomainError):
+                raise e
+            raise DomainError(str(e))
 
     def toggle_comment_reaction(self, comment_id: int, user_id: int, reaction: str) -> dict:
         try:
-            comment = Comment.objects.get(idComments=comment_id)
-        except Comment.DoesNotExist as exc:
-            raise CommentNotFoundError(str(exc))
-        self._normalize_lists(comment)
+            comment_data = self.get_comment(comment_id)
+            if not comment_data:
+                raise CommentNotFoundError(f"Comment {comment_id} not found")
+            
+            l_list = comment_data["Likes_list"]
+            if isinstance(l_list, str):
+                l_list = json.loads(l_list) if l_list and l_list != 'null' else []
+            
+            d_list = comment_data["Dislikes_list"]
+            if isinstance(d_list, str):
+                d_list = json.loads(d_list) if d_list and d_list != 'null' else []
+            try:
+                user_id = int(user_id)
+            except (ValueError, TypeError):
+                raise DomainError("Invalid user ID format")
+            likes_count = comment_data["Likes"]
+            dislikes_count = comment_data["Dislikes"]
 
-        if reaction == "reset":
-            if user_id in comment.Likes_list:
-                comment.Likes_list.remove(user_id)
-                comment.Likes -= 1
-            if user_id in comment.Dislikes_list:
-                comment.Dislikes_list.remove(user_id)
-                comment.Dislikes -= 1
-        elif reaction == "like":
-            is_inside = user_id in comment.Likes_list
-            if not is_inside:
-                comment.Likes_list.append(user_id)
-                comment.Likes += 1
-            if user_id in comment.Dislikes_list:
-                comment.Dislikes_list.remove(user_id)
-                comment.Dislikes -= 1
-            if is_inside:
-                comment.Likes_list.remove(user_id)
-                comment.Likes -= 1
-        elif reaction == "dislike":
-            is_inside = user_id in comment.Dislikes_list
-            if not is_inside:
-                comment.Dislikes_list.append(user_id)
-                comment.Dislikes += 1
-            if user_id in comment.Likes_list:
-                comment.Likes_list.remove(user_id)
-                comment.Likes -= 1
-            if is_inside:
-                comment.Dislikes_list.remove(user_id)
-                comment.Dislikes -= 1
+            if reaction == "reset":
+                if user_id in l_list:
+                    l_list.remove(user_id)
+                    likes_count -= 1
+                if user_id in d_list:
+                    d_list.remove(user_id)
+                    dislikes_count -= 1
+            elif reaction == "like":
+                is_inside = user_id in l_list
+                if not is_inside:
+                    l_list.append(user_id)
+                    likes_count += 1
+                if user_id in d_list:
+                    d_list.remove(user_id)
+                    dislikes_count -= 1
+                if is_inside:
+                    l_list.remove(user_id)
+                    likes_count -= 1
+            elif reaction == "dislike":
+                is_inside = user_id in d_list
+                if not is_inside:
+                    d_list.append(user_id)
+                    dislikes_count += 1
+                if user_id in l_list:
+                    l_list.remove(user_id)
+                    likes_count -= 1
+                if is_inside:
+                    d_list.remove(user_id)
+                    dislikes_count -= 1
 
-        comment.save()
-        return {
-            "Likes": comment.Likes,
-            "Dislikes": comment.Dislikes,
-            "Likes_list": comment.Likes_list,
-            "Dislikes_list": comment.Dislikes_list,
-        }
+            Comment.objects.filter(idComments=comment_id).update(
+                Likes=likes_count,
+                Dislikes=dislikes_count,
+                Likes_list=l_list,
+                Dislikes_list=d_list
+            )
+
+            return {
+                "Likes": likes_count,
+                "Dislikes": dislikes_count,
+                "Likes_list": l_list,
+                "Dislikes_list": d_list,
+            }
+
+        except Exception as e:
+            if isinstance(e, CommentNotFoundError):
+                raise e
+            raise DomainError(str(e))
 
     def update_author_name(self, old_name: str, new_name: str) -> None:
         Topic.objects.filter(Author=old_name).update(Author=new_name)
         Comment.objects.filter(Author=old_name).update(Author=new_name)
+
+    def create_notification(self, owner_username: str, content: str, link: str) -> None:
+        try:
+            user = CustomUser.objects.get(username=owner_username)
+            Notification.objects.create(owner=user, content=content, link=link)
+        except CustomUser.DoesNotExist:
+            pass
+
+    def get_notifications(self, username: str) -> list:
+        # Повертаємо тільки непрочитані сповіщення
+        notifs = Notification.objects.filter(owner__username=username, is_read=False).order_by('-created_at')
+        return [{
+            "id": n.idNotification,  # JS очікує "id"
+            "content": n.content,
+            "link": n.link
+        } for n in notifs]
+
+    def delete_old_notifications(self) -> None:
+        Notification.objects.filter(created_at__lt=now() - timedelta(days=7)).delete()
+
+    def mark_notification_as_read(self, notification_id: int, username: str) -> bool:
+        # Оновлюємо статус, перевіряючи, що сповіщення належить користувачу
+        updated_count = Notification.objects.filter(
+            pk=notification_id, 
+            owner__username=username).update(is_read=True)
+        return updated_count > 0

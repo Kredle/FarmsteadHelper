@@ -158,13 +158,22 @@ class DjangoMapRepository(MapRepository):
         last_map = Map.objects.order_by('-id').first()
         return 1 if last_map is None else int(last_map.id) + 1
 
+    def _map_is_private(self, map_obj: Map) -> bool:
+        return bool(getattr(map_obj, 'is_private', False))
+
     def save_map(self, user_id: int, content, map_name: str | None = None):
         _validate_entity_placement(content)
         author = self._get_user(user_id)
         author.has_map = True
         author.save()
         normalized_name = str(map_name or '').strip() or None
-        map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content), map_name=normalized_name)
+        map_obj = Map(
+            id=self._next_map_id(),
+            User_id=author,
+            data=json.dumps(content),
+            map_name=normalized_name,
+            is_private=False,
+        )
         map_obj.save()
         return map_obj.id
 
@@ -179,7 +188,13 @@ class DjangoMapRepository(MapRepository):
         else:
             map_obj = Map.objects.filter(User_id=author).order_by('-id').first()
         if map_obj is None:
-            map_obj = Map(id=self._next_map_id(), User_id=author, data=json.dumps(content), map_name=normalized_name)
+            map_obj = Map(
+                id=self._next_map_id(),
+                User_id=author,
+                data=json.dumps(content),
+                map_name=normalized_name,
+                is_private=False,
+            )
         else:
             map_obj.data = json.dumps(content)
             if normalized_name is not None:
@@ -227,11 +242,45 @@ class DjangoMapRepository(MapRepository):
             map_name = str(getattr(map_obj, 'map_name', '') or '').strip()
             if not map_name:
                 map_name = f'Мапа #{int(map_obj.id)}'
+
             payload.append({
                 'map_id': int(map_obj.id),
                 'map_name': map_name,
+                'is_private': self._map_is_private(map_obj),
             })
         return payload
+
+    def update_map_settings(self, user_id: int, map_id: int, map_name: str | None = None, is_private: bool | None = None) -> dict:
+        author = self._get_user(user_id)
+        map_obj = Map.objects.filter(User_id=author, id=map_id).first()
+        if map_obj is None:
+            raise ValueError('Map not found')
+
+        normalized_name = str(map_name or '').strip() or None
+        if map_name is not None:
+            map_obj.map_name = normalized_name
+
+        if is_private is not None:
+            map_obj.is_private = bool(is_private)
+
+        map_obj.save()
+
+        return {
+            'map_id': int(map_obj.id),
+            'map_name': str(getattr(map_obj, 'map_name', '') or '').strip() or f'Мапа #{int(map_obj.id)}',
+            'is_private': self._map_is_private(map_obj),
+        }
+
+    def delete_map(self, user_id: int, map_id: int) -> None:
+        author = self._get_user(user_id)
+        deleted, _ = Map.objects.filter(User_id=author, id=map_id).delete()
+        if deleted == 0:
+            raise ValueError('Map not found')
+
+        has_maps = Map.objects.filter(User_id=author).exists()
+        if author.has_map != has_maps:
+            author.has_map = has_maps
+            author.save(update_fields=['has_map'])
 
     def _fetch_known_species_names(self) -> list[str]:
         with connection.cursor() as cursor:
@@ -253,7 +302,7 @@ class DjangoMapRepository(MapRepository):
         with connection.cursor() as cursor:
             cursor.execute(
                 '''
-                SELECT idsort, ground_type
+                SELECT "idSort", "Ground_type"
                 FROM sorts
                 '''
             )
@@ -294,7 +343,7 @@ class DjangoMapRepository(MapRepository):
         with connection.cursor() as cursor:
             cursor.execute(
                 '''
-                SELECT idtree, "Name", incompatible
+                SELECT "idTree", "Name", "Incompatible"
                 FROM tree
                 '''
             )
@@ -375,14 +424,14 @@ class DjangoMapRepository(MapRepository):
             cursor.execute(
                 '''
                 SELECT
-                    t.idtree,
+                    t."idTree",
                     t."Name",
-                    s.idsort,
-                    s.sort,
-                    s.ground_type
+                    s."idSort",
+                    s."Sort",
+                    s."Ground_type"
                 FROM tree t
-                LEFT JOIN sorts s ON s.tree_idtree = t.idtree
-                ORDER BY t."Name", s.sort
+                LEFT JOIN sorts s ON s."tree_idTree" = t."idTree"
+                ORDER BY t."Name", s."Sort"
                 '''
             )
             rows = cursor.fetchall()

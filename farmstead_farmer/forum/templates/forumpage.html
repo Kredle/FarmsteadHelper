@@ -1,192 +1,18 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Форум</title>
-    <link rel="icon" href="/static/logo.png" type="image/png">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
-    <!--<script defer src="script.js"></script>-->
-</head>
-<body>
-    <!-- Хедер -->
-    <header style="flex-direction: column; align-items: stretch;">
-        <div class="line_top">
-            <div class="logo">
-                <img src="{% static 'logo.png' %}" alt="FarmsteadHelper Logo">
-                <span>FarmsteadHelper</span>
-            </div>
-            <div class="hamburger" id="hamburger">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-            <div class="side-menu" id="side-menu">
-                <div class="side-menu-close">
-                    <button id="close-menu">&times;</button>
-                </div>
-                <a href="/">Головна</a>
-                <a href="/catalog">Каталог</a>
-                <a href="/forum">Форум</a>
-                <a href="/map">Інтерактивна мапа</a>
-                <a href="/calendar">Календар</a>
-                <div class="auth-buttons" id="side-menu-auth">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            </div>
-            <nav>
-                <a href="/">Головна</a>
-                <a href="/catalog">Каталог</a>
-                <a href="/forum">Форум</a>
-                <a href="/map">Інтерактивна мапа</a>
-                <a href="/calendar">Календар</a>
-            </nav>
-            <div class="auth">
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            </div>
-        
-    
-    
-    <script>
+{% extends "base.html" %}
+{% load static %}
 
-    var isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}";
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('authToken');
-        const authContainer = document.querySelector('.auth');
-        const sideMenuAuth = document.getElementById('side-menu-auth');
-    
-        if (token) {
-            fetch('/api/user-data/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const avatarUrl = data.avatarUrl ? decodeURIComponent(data.avatarUrl) : "{% static 'defaultlogo.png' %}";
-                    authContainer.innerHTML = `
-                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                        <div class="auth-menu">
-                            <span>${data.username}</span>
-                            <a href="/profile/${data.username}">Профіль</a>
-                            <a href="/edit-profile/">Налаштування профілю</a>
-                            <a href="#" id="logout-btn">Вихід</a>
-                        </div>
-                    `;
-    
-                    sideMenuAuth.innerHTML = `
-                        <img src="${avatarUrl}" alt="Avatar" class="user-avatar">
-                        <a href="/profile/${data.username}">Профіль</a>
-                        <a href="/edit-profile">Налаштування профілю</a>
-                        <a href="#" id="side-menu-logout">Вихід</a>
-                    `;
-    
-                    document.getElementById('logout-btn').addEventListener('click', () => {
-                        handleLogout();
-                    });
-    
-                    document.getElementById('side-menu-logout').addEventListener('click', () => {
-                        handleLogout();
-                    });
-                })
-                .catch(error => {
-                    console.error('Помилка при отриманні даних користувача:', error);
-                    resetAuthState();
-                });
-        } else {
-            resetAuthState();
-        }
-    
-        function handleLogout() {
-            fetch('/api/logout/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token }),
-            })
-                .then(response => {
-                    if (response.ok) {
-                        localStorage.removeItem('authToken');
-                        window.location.href = '/';
-                    } else {
-                        return response.json().then(err => {
-                            throw new Error(`Помилка: ${err.detail || 'Невідома помилка'}`);
-                        });
-                    }
-                })
-                .catch(error => console.error('Помилка при виході:', error));
-        }
-    
-        function resetAuthState() {
-            authContainer.innerHTML = `
-                <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-                <div class="auth-menu">
-                    <a href="/login">Вхід</a>
-                    <a href="/register">Реєстрація</a>
-                </div>
-            `;
-    
-            sideMenuAuth.innerHTML = `
-                <a href="/login">Вхід</a>
-                <a href="/register">Реєстрація</a>
-            `;
-        }
-    });
-    
-    const hamburger = document.getElementById('hamburger');
-    const sideMenu = document.getElementById('side-menu');
-    const closeMenu = document.getElementById('close-menu');
-    const nav = document.querySelector('nav');
-    const auth = document.querySelector('.auth');
-    
-    hamburger.addEventListener('click', () => {
-        sideMenu.style.right = '0';
-    });
-    
-    closeMenu.addEventListener('click', () => {
-        sideMenu.style.right = '-250px';
-    });
-    
-    function checkMenuVisibility() {
-        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
-        if (window.innerWidth < 900 || isMobileDevice) {
-            nav.style.display = 'none';
-            auth.style.display = 'none';
-            hamburger.style.display = 'flex';
-        } else {
-            nav.style.display = 'flex';
-            auth.style.display = 'block';
-            hamburger.style.display = 'none';
-        }
-    }
-    
-    checkMenuVisibility();
-    window.addEventListener('resize', checkMenuVisibility);
-    </script>
-        </div>
-        <div class="line_bottom">
-            <h1>Форум</h1>
-            <div class="search-panel">
-                <input type="text" id="search" placeholder="Пошук за ключовими словами...">
+{% block title %}Форум{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" type="text/css" href="{% static 'api/stylespages.css' %}">
+{% endblock %}
+
+{% block header_bottom %}
+    <!-- Специфічна панель пошуку тільки для форуму -->
+    <div class="line_bottom">
+        <h1>Форум</h1>
+        <div class="search-panel">
+            <input type="text" id="search" placeholder="Пошук...">
                 <div class="filter-dropdown">
                     <button id="filter-toggle-btn">Фільтри</button>
                     <div id="filter-options" class="filter-options hidden">
@@ -208,269 +34,210 @@
             </div>
             <button id="create-topic-btn">+ Створити тему</button>
         </div>
-    </header>
-<div class="page_container">
-    <main>
-        <!--<section class="discussions">
-            <h2>Популярні теми</h2>
-            <div id="discussion-list-popular"></div>
-        </section>-->
+{% endblock %}
 
+{% block content %}
+<!--<div class="page_container">-->
+    <main>
         <section class="discussions">
             <h2>Обговорення</h2>
             <div id="discussion-list"></div>
             <button id="load-more-btn" class="hidden">Завантажити ще</button>
         </section>     
     </main>
+{% endblock %}
+{% block extra_scripts %}
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    const categories = {
+    const CATEGORIES_CONFIG = {
         "Дерева": "/static/images/tree.jpg",
         "Овочі": "/static/images/vegetables.png",
         "Квіти": "/static/images/flowers.jpg",
         "Тварини": "https://farmsteadhelper.pythonanywhere.com/media/avatars/2/animals_1eF6m4f.jpg"
     };
 
-    const discussionList = document.getElementById('discussion-list');
-    const filterToggleBtn = document.getElementById('filter-toggle-btn');
-    const filterOptions = document.getElementById('filter-options');
-    const searchBtn = document.getElementById('search-btn');
-    const searchInput = document.getElementById('search');
-    const loadMoreBtn = document.getElementById('load-more-btn');
+    // Глобальний стан
+    let allFilteredTopics = []; 
+    let currentIndex = 0;
+    let confirmedSearchTerm = ''; // Сюди потрапляє текст тільки після Enter або кліку
     const discussionsPerLoad = 3;
-    // Показати/сховати випадаючий список із фільтрами
-    filterToggleBtn.addEventListener('click', () => {
-        filterOptions.classList.toggle('visible');
-    });
 
-    // Закрити випадаючий список при натисканні поза ним
-    document.addEventListener('click', (event) => {
-        if (!filterToggleBtn.contains(event.target) && !filterOptions.contains(event.target)) {
-            filterOptions.classList.remove('visible');
-        }
-    });
-
-    // Функція для отримання вибраних категорій
-    function getSelectedCategories() {
-        const checkboxes = filterOptions.querySelectorAll('input[type="checkbox"]:checked');
-        return Array.from(checkboxes).map(checkbox => checkbox.value);
-    }
-
-    // Функція для обрізки тексту до певної кількості слів
     function truncateText(text, wordLimit) {
+        if (!text) return 'Немає опису';
         const words = text.split(' ');
-        if (words.length <= wordLimit) {
-            return text;
-        }
-        return words.slice(0, wordLimit).join(' ') + '...';
+        return words.length <= wordLimit ? text : words.slice(0, wordLimit).join(' ') + '...';
     }
 
-    // Функція для завантаження обговорень
-    // Функція для завантаження даних через fetch
-    /*function fetchDiscussions() {
-        return fetch('/forum/get_topics') // Шлях до вашого API
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json(); // Парсимо JSON-відповідь
-            })
-            .catch(error => {
-                console.error('Error fetching discussions:', error); // Обробка помилок
-                return []; // Повертаємо порожній масив у разі помилки
-            });
-    }*/
-    function fetchPopularDiscussions() {
-        return fetch('/forum/get_popular_topics') // Шлях до вашого API
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP помилка! Статус: ${response.status}`);
-                }
-                return response.json(); // Парсимо JSON-відповідь
-            })
-            .catch(error => {
-                console.error('Помилка стягування обговорень:', error); // Обробка помилок
-                return []; // Повертаємо порожній масив у разі помилки
-            });
+    // Отримує фільтри, використовуючи ПІДТВЕРДЖЕНЕ слово пошуку
+    function getCurrentFilters() {
+        const filterOptions = document.getElementById('filter-options');
+        const selectedCategories = filterOptions ? Array.from(filterOptions.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value) : [];
+        return {
+            searchTerm: confirmedSearchTerm, 
+            categories: selectedCategories
+        };
     }
-    // Функція для відображення популярних тем
-    /*function loadPopularDiscussions(discussions) {
-        console.log(discussions); // Лог для перевірки масиву дискусій
 
-        const discussionList = document.querySelector('#discussion-list'); // Ваш контейнер для обговорень
-        if (!discussionList) {
-            console.error("Container for discussions not found");
-            return;
+    function renderSingleTopic(topic, prepend = false) {
+        const discussionList = document.getElementById('discussion-list');
+        if (!discussionList || document.querySelector(`.discussion[data-id="${topic.idTopic}"]`)) return;
+
+        const discussionDiv = document.createElement('div');
+        discussionDiv.classList.add('discussion');
+        discussionDiv.setAttribute('data-id', topic.idTopic);
+        
+        if (prepend) {
+            discussionDiv.style.borderLeft = "5px solid #4CAF50";
+            discussionDiv.style.backgroundColor = "#f1f8e9";
         }
 
-        // Очищуємо контейнер перед додаванням нових елементів
-        //discussionList.innerHTML = '';
-
-        // Ініціалізуємо фрагмент
-        const fragment = document.createDocumentFragment();
-
-        discussions.forEach(topic => {
-            const content = topic.Content || 'Немає опису';
-            const truncatedContent = truncateText(content, 30); // Функція для скорочення тексту
-            const discussionDiv = document.createElement('div');
-            discussionDiv.classList.add('discussion');
-            discussionDiv.innerHTML = `
-                <div class="discussion-header">
-                    <img src="${categories[topic.Category] || '/images/default.png'}" alt="${topic.Category}" class="category-img">
-                    <div>
-                        <h3><a href="/forum/topic/${topic.idTopic}/">${topic.Title}</a></h3>
-                        <p>Категорія: ${topic.Category}</p>
-                        <p>Автор: ${topic.Author} | Дата: ${topic.Date}</p>
-                    </div>
+        discussionDiv.innerHTML = `
+            <div class="discussion-header">
+                <img src="${CATEGORIES_CONFIG[topic.Category] || '/static/images/default.png'}" alt="${topic.Category}" class="category-img">
+                <div>
+                    <h3><a href="/forum/topic/${topic.idTopic}/">${topic.Title}</a></h3>
+                    <p>Категорія: ${topic.Category}</p>
+                    <p>Автор: ${topic.Author} | Дата: ${topic.Date}</p>
                 </div>
-                <p>${truncatedContent}</p>
-                <p>Лайки: ${topic.Likes || 0} | Коментарі: ${topic.Comments || 0}</p>
-            `;
-            fragment.appendChild(discussionDiv);
-        });
+            </div>
+            <p>${truncateText(topic.Content, 30)}</p>
+            <p class="topic-stats-row">Лайки: ${topic.Likes || 0} | Коментарі: ${topic.Comments || 0}</p>
+        `;
 
-        // Додаємо елементи в контейнер
-        discussionList.appendChild(fragment);
-    }*/
-    fetchPopularDiscussions().then(discussions => {
-        loadDiscussions(discussions);
-    });
-    // Функція для відображення дискусій
-    function loadDiscussions(discussions) {
-        console.log(discussions); // Лог для перевірки масиву дискусій
-
-        const discussionList = document.querySelector('#discussion-list'); // Ваш контейнер для обговорень
-        if (!discussionList) {
-            console.error("Контейнер для обговорень не знайдено");
-            return;
-        }
-
-        // Очищуємо контейнер перед додаванням нових елементів
-        //discussionList.innerHTML = '';
-
-        // Ініціалізуємо фрагмент
-        const fragment = document.createDocumentFragment();
-
-        discussions.forEach(topic => {
-            const content = topic.Content || 'Немає опису';
-            const truncatedContent = truncateText(content, 30); // Функція для скорочення тексту
-            const discussionDiv = document.createElement('div');
-            discussionDiv.classList.add('discussion');
-            discussionDiv.innerHTML = `
-                <div class="discussion-header">
-                    <img src="${categories[topic.Category] || '/images/default.png'}" alt="${topic.Category}" class="category-img">
-                    <div>
-                        <h3><a href="/forum/topic/${topic.idTopic}/">${topic.Title}</a></h3>
-                        <p>Категорія: ${topic.Category}</p>
-                        <p>Автор: ${topic.Author} | Дата: ${topic.Date}</p>
-                    </div>
-                </div>
-                <p>${truncatedContent}</p>
-                <p>Лайки: ${topic.Likes || 0} | Коментарі: ${topic.Comments || 0}</p>
-            `;
-            fragment.appendChild(discussionDiv);
-        });
-
-        // Додаємо елементи в контейнер
-        discussionList.appendChild(fragment);
-    }
-
-    // Використання
-    /*fetchDiscussions().then(discussions => {
-        loadDiscussions(discussions);
-    });*/
-
-    // Завантаження обговорень з кнопкою "Завантажити ще"
-    let currentIndex = 0; // Ініціалізуємо індекс
-    let filteredDiscussions = []; // Глобальна змінна для фільтрованих тем
-    // Функція для завантаження більше обговорень
-    function loadMoreDiscussions() {
-        // Завантажуємо наступну порцію тем
-        console.log(currentIndex);
-        const discussionsToLoad = filteredDiscussions.slice(currentIndex, currentIndex + discussionsPerLoad);
-        loadDiscussions(discussionsToLoad);
-
-        // Оновлюємо індекс
-        currentIndex += discussionsPerLoad;
-
-        // Якщо всі обговорення завантажено, ховаємо кнопку
-        if (currentIndex >= filteredDiscussions.length) {
-            loadMoreBtn.classList.add('hidden');
+        prepend ? discussionList.prepend(discussionDiv) : discussionList.appendChild(discussionDiv);
+        
+        if (prepend) {
+            setTimeout(() => { 
+                discussionDiv.style.backgroundColor = ''; 
+                discussionDiv.style.borderLeft = ''; 
+            }, 5000);
         }
     }
 
-    // Функція для об'єднаної фільтрації
-    function filterDiscussions() {
-        const searchTerm = searchInput.value.toLowerCase(); // Отримуємо значення пошуку
-        const selectedCategories = getSelectedCategories(); // Отримуємо вибрані категорії
+    async function startTopicsPolling() {
+        setInterval(async () => {
+            try {
+                const response = await fetch('/forum/get_topics');
+                if (!response.ok) return;
+                const serverTopics = await response.json();
+                const topics = Array.isArray(serverTopics) ? serverTopics : (serverTopics.topics || []);
+                
+                const { searchTerm, categories } = getCurrentFilters();
+                const currentIds = allFilteredTopics.map(t => String(t.idTopic));
 
-        fetch('/forum/get_topics') // Запит до вашого API
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP помилка! Статус: ${response.status}`);
-                }
-                return response.json(); // Парсимо JSON-відповідь
-            })
-            .then(topics => {
-                // Фільтруємо отримані теми
-                let filteredDiscussionsTemp = topics.filter(topic => {
-                    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(topic.Category);
-                    const matchesSearch = searchTerm === '' || topic.Title.toLowerCase().includes(searchTerm) || topic.Content.toLowerCase().includes(searchTerm);
-                    return matchesCategory && matchesSearch;
+                topics.forEach(topic => {
+                    const isKnown = currentIds.includes(String(topic.idTopic));
+                    const matchesFilter = (categories.length === 0 || categories.includes(topic.Category)) &&
+                                        (searchTerm === '' || topic.Title.toLowerCase().includes(searchTerm) || topic.Content.toLowerCase().includes(searchTerm));
+
+                    if (!isKnown && matchesFilter) {
+                        // Це абсолютно нова тема, якої не було при завантаженні сторінки
+                        allFilteredTopics.unshift(topic);
+                        currentIndex++;
+                        renderSingleTopic(topic, true);
+                    } else if (isKnown) {
+                        // Оновлюємо статситику для тих, що вже на екрані
+                        const div = document.querySelector(`.discussion[data-id="${topic.idTopic}"]`);
+                        if (div) {
+                            const stats = div.querySelector('.topic-stats-row');
+                            if (stats) stats.textContent = `Лайки: ${topic.Likes || 0} | Коментарі: ${topic.Comments || 0}`;
+                        }
+                    }
                 });
-
-                // Оновлюємо глобальний масив
-                filteredDiscussions = filteredDiscussionsTemp;
-                // Очищаємо список обговорень перед оновленням
-                discussionList.innerHTML = '';
-                currentIndex = 0; // Скидаємо індекс для завантаження
-
-                // Завантажуємо перші обговорення
-                loadDiscussions(filteredDiscussions.slice(0, discussionsPerLoad));
-                currentIndex = discussionsPerLoad;
-
-                // Якщо є більше тем для завантаження, показуємо кнопку "Завантажити ще"
-                if (filteredDiscussions.length > discussionsPerLoad) {
-                    loadMoreBtn.classList.remove('hidden');
-                } else {
-                    loadMoreBtn.classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                console.error("Помилка стягувань обговорень:", error);
-            });
+            } catch (e) { console.error("Polling error", e); }
+        }, 10000);
     }
 
-    // Обробники для фільтрації та кнопки "Завантажити ще"
-    filterOptions.addEventListener('change', filterDiscussions);
-    searchBtn.addEventListener('click', filterDiscussions);
-    loadMoreBtn.addEventListener('click', loadMoreDiscussions);
+    async function loadData() {
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const discussionList = document.getElementById('discussion-list');
+        const { searchTerm, categories } = getCurrentFilters();
+
+        try {
+            const [popRes, allRes] = await Promise.all([
+                fetch('/forum/get_popular_topics'),
+                fetch('/forum/get_topics')
+            ]);
+            
+            const popData = await popRes.json();
+            const allData = await allRes.json();
+            
+            const popular = popData.topics || [];
+            const normal = Array.isArray(allData) ? allData : (allData.topics || []);
+
+            // Формуємо чергу: популярні спочатку, потім решта без дублів
+            let combined = [...popular];
+            normal.forEach(t => {
+                if (!combined.find(p => p.idTopic === t.idTopic)) combined.push(t);
+            });
+
+            // Фільтруємо згідно з ПІДТВЕРДЖЕНИМИ параметрами
+            allFilteredTopics = combined.filter(topic => {
+                const matchesCategory = categories.length === 0 || categories.includes(topic.Category);
+                const matchesSearch = searchTerm === '' || 
+                                     topic.Title.toLowerCase().includes(searchTerm) || 
+                                     topic.Content.toLowerCase().includes(searchTerm);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (discussionList) discussionList.innerHTML = '';
+            currentIndex = 0;
+            
+            const initialBatch = allFilteredTopics.slice(0, discussionsPerLoad);
+            initialBatch.forEach(t => renderSingleTopic(t));
+            currentIndex = initialBatch.length;
+
+            if (loadMoreBtn) {
+                allFilteredTopics.length > currentIndex ? loadMoreBtn.classList.remove('hidden') : loadMoreBtn.classList.add('hidden');
+            }
+        } catch (e) { console.error("Load error", e); }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        filterDiscussions();
+        const searchInput = document.getElementById('search');
+        const searchBtn = document.getElementById('search-btn');
+        const filterToggleBtn = document.getElementById('filter-toggle-btn');
+        const filterOptions = document.getElementById('filter-options');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+
+        // Функція підтвердження пошуку
+        function triggerSearch() {
+            if (searchInput) confirmedSearchTerm = searchInput.value.toLowerCase();
+            loadData();
+        }
+
+        // Початкове завантаження
+        loadData();
+        startTopicsPolling();
+
+        // Пошук по кнопці
+        if (searchBtn) searchBtn.addEventListener('click', triggerSearch);
+
+        // Пошук по Enter
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    triggerSearch();
+                }
+            });
+        }
+
+        // Фільтри категорій
+        if (filterToggleBtn) filterToggleBtn.addEventListener('click', () => filterOptions.classList.toggle('visible'));
+        if (filterOptions) filterOptions.addEventListener('change', loadData);
+        
+        // Кнопка пагінації
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', () => {
+                const nextBatch = allFilteredTopics.slice(currentIndex, currentIndex + discussionsPerLoad);
+                nextBatch.forEach(t => renderSingleTopic(t));
+                currentIndex += nextBatch.length;
+                if (currentIndex >= allFilteredTopics.length) loadMoreBtn.classList.add('hidden');
+            });
+        }
     });
-    // Початкове завантаження перших трьох обговорень
-    loadMoreDiscussions();
-    });
-    document.getElementById('create-topic-btn').addEventListener('click', () => {
-            window.location.href = 'create-discussion';
-    });
+
+    const createBtn = document.getElementById('create-topic-btn');
+    if (createBtn) createBtn.addEventListener('click', () => { window.location.href = 'create-discussion'; });
     </script>
-</div>
-    <footer>
-        <div class="legal-links">
-            <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
-            <span>|</span>
-            <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
-            <span>|</span>
-            <a href="/feedback/">Форма зворотного зв’язку</a>
-        </div>
-        <div class="copyright">
-            &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
-        </div>
-    </footer>
-    
-    <script>
-        document.getElementById("current-year").textContent = new Date().getFullYear();
-    </script>
-</body>
-</html>
+{% endblock %}

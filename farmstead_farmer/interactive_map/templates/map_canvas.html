@@ -263,6 +263,7 @@
         <img class="tool-icon-image" src="https://cdn-icons-png.flaticon.com/512/77/77705.png" alt="Гумка">
     </button>
     <button class="tool-btn" data-tool="points" onclick="setTool('points')" title="Точки і лінії">◌</button>
+    <button class="tool-btn" id="gridToggleBtn" type="button" onclick="toggleGridMode()" title="Сітка: увімкнути/вимкнути">▦</button>
 
     <div class="tool-divider"></div>
     <div class="tool-section-label">Обʼєкти</div>
@@ -415,6 +416,8 @@
         <div class="scale-label" id="scaleLabel">1 m</div>
     </div>
 </div>
+
+<div id="gridLegend" style="display:none; position:fixed; left:18px; bottom:18px; z-index:1200; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.92); border:1px solid rgba(41,72,58,0.25); box-shadow:0 6px 14px rgba(0,0,0,0.12); font-size:13px; color:#2f4f40; font-weight:600;">□ 1 м</div>
 
 <div class="help-popup" id="help-popup">
     <div class="help-content">
@@ -1333,6 +1336,7 @@
             },
             body: JSON.stringify({
                 Author: requestedOwner,
+                token: token || '',
             }),
         });
 
@@ -1603,6 +1607,8 @@
     let rightDownClientX = 0;
     let rightDownClientY = 0;
     let rightDownDeletionTarget = null;
+    let rightDragEntityState = null;
+    let rightDragEntityMoved = false;
     let rightDragTriggered = false;
     const RIGHT_DRAG_THRESHOLD = 6;
     const PIXELS_PER_METER = 20;
@@ -1610,6 +1616,16 @@
     const scaleBar = document.getElementById('scaleBar');
     const scaleLabel = document.getElementById('scaleLabel');
     const zoomSlider = document.getElementById('zoomSlider');
+    const gridLegend = document.getElementById('gridLegend');
+    const gridToggleBtn = document.getElementById('gridToggleBtn');
+
+    const GRID_BASE_SIDE_METERS = 1;
+    const GRID_MIN_SCREEN_STEP = 24;
+    const GRID_SNAP_THRESHOLD_SCREEN = 10;
+    const ALIGN_SNAP_THRESHOLD_SCREEN = 8;
+    let isGridModeEnabled = false;
+    let pointPreview = null;
+    let pointAlignmentGuides = { vertical: null, horizontal: null };
 
     const TOOL_CURSOR_CLASS_MAP = {
         draw: 'map-tool-draw',
@@ -1936,6 +1952,242 @@
         scaleLabel.textContent = `${niceMeters.toLocaleString('uk-UA')} m`;
     }
 
+    function getEffectiveGridStepWorld() {
+        let stepWorld = metersToPixels(GRID_BASE_SIDE_METERS);
+        let screenStep = stepWorld * zoomLevel;
+
+        while (screenStep < GRID_MIN_SCREEN_STEP) {
+            stepWorld *= 2;
+            screenStep *= 2;
+        }
+
+        return stepWorld;
+    }
+
+    function updateGridLegend() {
+        if (!gridLegend) {
+            return;
+        }
+
+        if (!isGridModeEnabled) {
+            gridLegend.style.display = 'none';
+            return;
+        }
+
+        const sideMeters = pixelsToMeters(getEffectiveGridStepWorld());
+        gridLegend.textContent = `□ ${sideMeters.toLocaleString('uk-UA', { maximumFractionDigits: 2 })} м`;
+        gridLegend.style.display = 'flex';
+    }
+
+    function updateGridToggleButton() {
+        if (!gridToggleBtn) {
+            return;
+        }
+
+        gridToggleBtn.classList.toggle('tool-active', isGridModeEnabled);
+        gridToggleBtn.setAttribute('aria-pressed', isGridModeEnabled ? 'true' : 'false');
+    }
+
+    function getAlignmentReferencePoints() {
+        const points = [];
+
+        allFigures.forEach((figure) => {
+            if (figure && Array.isArray(figure.points)) {
+                figure.points.forEach((point) => {
+                    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+                        points.push(point);
+                    }
+                });
+            }
+        });
+
+        currentPoints.forEach((point) => {
+            if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+                points.push(point);
+            }
+        });
+
+        return points;
+    }
+
+    function maybeSoftSnapToTarget(value, target, threshold) {
+        if (!Number.isFinite(target)) {
+            return { value, snapped: false };
+        }
+
+        const delta = Math.abs(target - value);
+        if (delta > threshold) {
+            return { value, snapped: false };
+        }
+
+        if (delta <= threshold * 0.35) {
+            return { value: target, snapped: true };
+        }
+
+        return {
+            value: value + (target - value) * 0.65,
+            snapped: true,
+        };
+    }
+
+    function getSnappedPointForDrawing(rawX, rawY) {
+        let nextX = rawX;
+        let nextY = rawY;
+        const guides = { vertical: null, horizontal: null };
+
+        const worldGridThreshold = GRID_SNAP_THRESHOLD_SCREEN / Math.max(zoomLevel, 0.001);
+        const worldAlignThreshold = ALIGN_SNAP_THRESHOLD_SCREEN / Math.max(zoomLevel, 0.001);
+
+        if (isGridModeEnabled) {
+            const stepWorld = getEffectiveGridStepWorld();
+            const snappedGridX = Math.round(nextX / stepWorld) * stepWorld;
+            const snappedGridY = Math.round(nextY / stepWorld) * stepWorld;
+
+            const gridX = maybeSoftSnapToTarget(nextX, snappedGridX, worldGridThreshold);
+            const gridY = maybeSoftSnapToTarget(nextY, snappedGridY, worldGridThreshold);
+            nextX = gridX.value;
+            nextY = gridY.value;
+        }
+
+        const trailingPoint = currentPoints.length
+            ? currentPoints[currentPoints.length - 1]
+            : null;
+
+        let bestX = null;
+        let bestXDelta = worldAlignThreshold;
+        let bestY = null;
+        let bestYDelta = worldAlignThreshold;
+
+        getAlignmentReferencePoints().forEach((point) => {
+            if (
+                trailingPoint &&
+                Math.abs(point.x - trailingPoint.x) < 0.0001 &&
+                Math.abs(point.y - trailingPoint.y) < 0.0001
+            ) {
+                return;
+            }
+
+            const dx = Math.abs(point.x - nextX);
+            if (dx < bestXDelta) {
+                bestXDelta = dx;
+                bestX = point.x;
+            }
+
+            const dy = Math.abs(point.y - nextY);
+            if (dy < bestYDelta) {
+                bestYDelta = dy;
+                bestY = point.y;
+            }
+        });
+
+        const alignX = maybeSoftSnapToTarget(nextX, bestX, worldAlignThreshold);
+        const alignY = maybeSoftSnapToTarget(nextY, bestY, worldAlignThreshold);
+        nextX = alignX.value;
+        nextY = alignY.value;
+
+        if (alignX.snapped && Number.isFinite(bestX)) {
+            guides.vertical = bestX;
+        }
+        if (alignY.snapped && Number.isFinite(bestY)) {
+            guides.horizontal = bestY;
+        }
+
+        return { x: nextX, y: nextY, guides };
+    }
+
+    function drawGridOverlay() {
+        if (!isGridModeEnabled) {
+            return;
+        }
+
+        const stepWorld = getEffectiveGridStepWorld();
+        const topLeft = screenToWorld(0, 0);
+        const bottomRight = screenToWorld(canvas.width, canvas.height);
+
+        const minX = Math.min(topLeft.x, bottomRight.x);
+        const maxX = Math.max(topLeft.x, bottomRight.x);
+        const minY = Math.min(topLeft.y, bottomRight.y);
+        const maxY = Math.max(topLeft.y, bottomRight.y);
+
+        const startX = Math.floor(minX / stepWorld) * stepWorld;
+        const startY = Math.floor(minY / stepWorld) * stepWorld;
+
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1 / Math.max(zoomLevel, 0.001);
+
+        let columnIndex = 0;
+        for (let x = startX; x <= maxX + stepWorld; x += stepWorld) {
+            const isMajor = columnIndex % 5 === 0;
+            ctx.strokeStyle = isMajor ? 'rgba(47, 79, 64, 0.26)' : 'rgba(47, 79, 64, 0.15)';
+            ctx.beginPath();
+            ctx.moveTo(x, minY);
+            ctx.lineTo(x, maxY);
+            ctx.stroke();
+            columnIndex += 1;
+        }
+
+        let rowIndex = 0;
+        for (let y = startY; y <= maxY + stepWorld; y += stepWorld) {
+            const isMajor = rowIndex % 5 === 0;
+            ctx.strokeStyle = isMajor ? 'rgba(47, 79, 64, 0.26)' : 'rgba(47, 79, 64, 0.15)';
+            ctx.beginPath();
+            ctx.moveTo(minX, y);
+            ctx.lineTo(maxX, y);
+            ctx.stroke();
+            rowIndex += 1;
+        }
+
+        ctx.restore();
+    }
+
+    function drawPointAlignmentGuides() {
+        if (tool !== 'points') {
+            return;
+        }
+
+        const hasVertical = Number.isFinite(pointAlignmentGuides.vertical);
+        const hasHorizontal = Number.isFinite(pointAlignmentGuides.horizontal);
+        if (!hasVertical && !hasHorizontal) {
+            return;
+        }
+
+        const topLeft = screenToWorld(0, 0);
+        const bottomRight = screenToWorld(canvas.width, canvas.height);
+        const minX = Math.min(topLeft.x, bottomRight.x);
+        const maxX = Math.max(topLeft.x, bottomRight.x);
+        const minY = Math.min(topLeft.y, bottomRight.y);
+        const maxY = Math.max(topLeft.y, bottomRight.y);
+
+        ctx.save();
+        ctx.setLineDash([8 / Math.max(zoomLevel, 0.001), 5 / Math.max(zoomLevel, 0.001)]);
+        ctx.strokeStyle = 'rgba(37, 110, 84, 0.92)';
+        ctx.lineWidth = 1.2 / Math.max(zoomLevel, 0.001);
+
+        if (hasVertical) {
+            ctx.beginPath();
+            ctx.moveTo(pointAlignmentGuides.vertical, minY);
+            ctx.lineTo(pointAlignmentGuides.vertical, maxY);
+            ctx.stroke();
+        }
+
+        if (hasHorizontal) {
+            ctx.beginPath();
+            ctx.moveTo(minX, pointAlignmentGuides.horizontal);
+            ctx.lineTo(maxX, pointAlignmentGuides.horizontal);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    function toggleGridMode() {
+        isGridModeEnabled = !isGridModeEnabled;
+        updateGridToggleButton();
+        updateGridLegend();
+        redrawCanvas();
+    }
+
     // === ZOOM & PAN FUNCTIONS ===
     function screenToWorld(screenX, screenY) {
         // Convert screen coordinates to world coordinates accounting for pan and zoom
@@ -1970,6 +2222,7 @@
         if (clampedZoom === zoomLevel) {
             updateZoomDisplay();
             updateScaleIndicator();
+            updateGridLegend();
             return;
         }
 
@@ -1980,6 +2233,7 @@
 
         updateZoomDisplay();
         updateScaleIndicator();
+        updateGridLegend();
         redrawCanvas();
     }
 
@@ -2036,9 +2290,25 @@
             rightDownClientX = e.clientX;
             rightDownClientY = e.clientY;
             rightDownDeletionTarget = null;
+            rightDragEntityState = null;
+            rightDragEntityMoved = false;
 
             if (canDraw) {
                 const worldPos = screenToWorld(e.offsetX, e.offsetY);
+                const rightEntityTarget = getTopEntityTargetAtPoint(worldPos.x, worldPos.y);
+                if (rightEntityTarget) {
+                    const entity = getEntityByTarget(rightEntityTarget);
+                    if (entity) {
+                        rightDragEntityState = {
+                            entity,
+                            entityType: rightEntityTarget.entityType,
+                            originalX: entity.x,
+                            originalY: entity.y,
+                        };
+                        e.preventDefault();
+                        return;
+                    }
+                }
                 rightDownDeletionTarget = getDeletionTargetAtPoint(worldPos.x, worldPos.y);
             }
 
@@ -2047,6 +2317,30 @@
     });
 
     canvas.addEventListener('mousemove', (e) => {
+        if (rightDragEntityState && rightDragEntityState.entity && isRightMouseDown) {
+            const worldPos = screenToWorld(e.offsetX, e.offsetY);
+            const entity = rightDragEntityState.entity;
+            entity.x = worldPos.x;
+            entity.y = worldPos.y;
+
+            const validation = validateEntityPlacement(
+                rightDragEntityState.entityType,
+                entity,
+                worldPos.x,
+                worldPos.y,
+                {
+                    silent: true,
+                    ignoreUid: entity._entityUid || null,
+                    ignoreEntity: entity,
+                }
+            );
+
+            rightDragEntityMoved = Math.hypot(entity.x - rightDragEntityState.originalX, entity.y - rightDragEntityState.originalY) > 1;
+            canvas.style.cursor = validation.ok ? 'grabbing' : 'not-allowed';
+            redrawCanvas();
+            return;
+        }
+
         if (isPanning) {
             panX = e.offsetX - panStartX;
             panY = e.offsetY - panStartY;
@@ -2071,6 +2365,56 @@
 
     canvas.addEventListener('mouseup', (e) => {
         if (e.button === 2) {
+            if (rightDragEntityState && rightDragEntityState.entity) {
+                const entity = rightDragEntityState.entity;
+                const validation = validateEntityPlacement(
+                    rightDragEntityState.entityType,
+                    entity,
+                    entity.x,
+                    entity.y,
+                    {
+                        silent: true,
+                        ignoreUid: entity._entityUid || null,
+                        ignoreEntity: entity,
+                    }
+                );
+
+                if (!validation.ok) {
+                    entity.x = rightDragEntityState.originalX;
+                    entity.y = rightDragEntityState.originalY;
+                    if (validation.reason === 'overlap') {
+                        showAlert('❌ Об’єкти не можна ставити один на одного.');
+                    } else if (validation.reason === 'soil_mismatch') {
+                        const topFigure = getTopFigureAtPoint(entity.x, entity.y);
+                        const soilType = normalizeSoilType(topFigure?.soilType) || 'невідомий';
+                        showAlert(`❌ Помилка: Ця рослина не росте на ґрунті типу "${soilType}".`);
+                    } else if (validation.reason === 'incompatible_in_radius') {
+                        showAlert('❌ Несумісне розміщення: зона впливу перетинається з несумісною рослиною.');
+                    } else {
+                        showAlert('❌ Об’єкти можна ставити лише в межах намальованої території (трава/земля), а не у порожнечу.');
+                    }
+                } else if (rightDragEntityMoved) {
+                    if (rightDragEntityState.entityType === 'tree' || rightDragEntityState.entityType === 'vegetable') {
+                        rebuildCompatibilityGrid();
+                    }
+                    saveState();
+                }
+
+                if (rightDragEntityState.entityType === 'tree' || rightDragEntityState.entityType === 'vegetable') {
+                    rebuildCompatibilityGrid();
+                }
+
+                rightDragEntityState = null;
+                rightDragEntityMoved = false;
+                isRightMouseDown = false;
+                rightDragTriggered = false;
+                rightDownDeletionTarget = null;
+                updateCanvasCursor(!canDraw);
+                redrawCanvas();
+                e.preventDefault();
+                return;
+            }
+
             const shouldOpenPopup = isRightMouseDown && !rightDragTriggered && canDraw && !!rightDownDeletionTarget;
 
             if (shouldOpenPopup) {
@@ -2081,12 +2425,22 @@
             isRightMouseDown = false;
             rightDragTriggered = false;
             rightDownDeletionTarget = null;
+            rightDragEntityState = null;
+            rightDragEntityMoved = false;
             updateCanvasCursor(!canDraw);
             e.preventDefault();
         }
     });
 
     canvas.addEventListener('mouseleave', () => {
+        if (rightDragEntityState && rightDragEntityState.entity) {
+            rightDragEntityState.entity.x = rightDragEntityState.originalX;
+            rightDragEntityState.entity.y = rightDragEntityState.originalY;
+            rightDragEntityState = null;
+            rightDragEntityMoved = false;
+            redrawCanvas();
+        }
+
         if (isRightMouseDown || isPanning) {
             isPanning = false;
             isRightMouseDown = false;
@@ -2122,6 +2476,8 @@
     // Initialize zoom display
     updateZoomDisplay();
     updateScaleIndicator();
+    updateGridToggleButton();
+    updateGridLegend();
 
     function isPointOnSegment(px, py, ax, ay, bx, by) {
         const epsilon = 1e-6;
@@ -2477,6 +2833,11 @@
     }
 
     function canPlaceEntityAt(x, y) {
+        return canPlaceEntityAtWithOptions(x, y, { silent: false });
+    }
+
+    function canPlaceEntityAtWithOptions(x, y, options = {}) {
+        const { silent = false } = options;
         const terrainType = getTerrainAtPoint(x, y);
 
         if (terrainType && ALLOWED_ENTITY_TERRAINS.has(terrainType)) {
@@ -2484,12 +2845,91 @@
         }
 
         if (terrainType && BLOCKED_ENTITY_TERRAINS.has(terrainType)) {
-            showAlert('❌ Об’єкти можна ставити лише на траву або землю. На воді розміщення заборонено.');
+            if (!silent) {
+                showAlert('❌ Об’єкти можна ставити лише на траву або землю. На воді розміщення заборонено.');
+            }
             return false;
         }
 
-        showAlert('❌ Об’єкти можна ставити лише в межах намальованої території (трава/земля), а не у порожнечу.');
+        if (!silent) {
+            showAlert('❌ Об’єкти можна ставити лише в межах намальованої території (трава/земля), а не у порожнечу.');
+        }
         return false;
+    }
+
+    function getEntityVisualRadius(entity) {
+        return Math.max(12, (Number(entity?.size) || 50) * 0.38);
+    }
+
+    function forEachCanvasEntity(callback) {
+        treesOnCanvas.forEach((entity) => callback(entity, 'tree'));
+        vegetablesOnCanvas.forEach((entity) => callback(entity, 'vegetable'));
+        buildingsOnCanvas.forEach((entity) => callback(entity, 'building'));
+        flowersOnCanvas.forEach((entity) => callback(entity, 'flower'));
+    }
+
+    function findEntityOverlapAtPosition(candidateX, candidateY, candidateEntity, options = {}) {
+        const { ignoreEntity = null } = options;
+        const candidateRadius = getEntityVisualRadius(candidateEntity);
+        let overlap = null;
+
+        forEachCanvasEntity((existingEntity, existingType) => {
+            if (overlap || !existingEntity || existingEntity === ignoreEntity) {
+                return;
+            }
+
+            const dx = Number(existingEntity.x) - candidateX;
+            const dy = Number(existingEntity.y) - candidateY;
+            const maxDist = candidateRadius + getEntityVisualRadius(existingEntity);
+            if ((dx * dx + dy * dy) < (maxDist * maxDist)) {
+                overlap = { entity: existingEntity, entityType: existingType };
+            }
+        });
+
+        return overlap;
+    }
+
+    function validateEntityPlacement(entityType, entity, x, y, options = {}) {
+        const { silent = false, ignoreUid = null, ignoreEntity = null } = options;
+
+        if (!canPlaceEntityAtWithOptions(x, y, { silent })) {
+            return { ok: false, reason: 'terrain', conflictTarget: null };
+        }
+
+        const overlap = findEntityOverlapAtPosition(x, y, entity, { ignoreEntity });
+        if (overlap) {
+            if (!silent) {
+                showAlert('❌ Об’єкти не можна ставити один на одного.');
+            }
+            return { ok: false, reason: 'overlap', conflictTarget: overlap.entity };
+        }
+
+        if (entityType === 'tree' || entityType === 'vegetable') {
+            return validateCompatibilityAtPosition(entity, x, y, { ignoreUid, silent });
+        }
+
+        return { ok: true, reason: null, conflictTarget: null };
+    }
+
+    function getEntityByTarget(target) {
+        if (!target || target.type !== 'entity') {
+            return null;
+        }
+
+        if (target.entityType === 'tree') {
+            return treesOnCanvas[target.index] || null;
+        }
+        if (target.entityType === 'vegetable') {
+            return vegetablesOnCanvas[target.index] || null;
+        }
+        if (target.entityType === 'building') {
+            return buildingsOnCanvas[target.index] || null;
+        }
+        if (target.entityType === 'flower') {
+            return flowersOnCanvas[target.index] || null;
+        }
+
+        return null;
     }
 
     function setTool(selectedTool) {
@@ -2499,10 +2939,15 @@
             pendingFlowerbedFigureIndex = null;
             flowerbedModal.classList.remove('visible');
         }
+        if (selectedTool !== 'points') {
+            pointPreview = null;
+            pointAlignmentGuides = { vertical: null, horizontal: null };
+        }
         topToolbar.classList.toggle('visible', tool === 'draw' || tool === 'erase');
         applyButton.classList.toggle('visible', tool === 'points');
         updateActiveToolButtons();
         updateCanvasCursor(!canDraw);
+        redrawCanvas();
     }
 
     function getTexturePattern(type) {
@@ -2755,9 +3200,15 @@
                 redrawCanvas();
             }
         } else if (tool === "points") {
-            currentPoints.push({ x: worldPos.x, y: worldPos.y });
+            const snapped = getSnappedPointForDrawing(worldPos.x, worldPos.y);
+            const lastPoint = currentPoints.length ? currentPoints[currentPoints.length - 1] : null;
+            if (!lastPoint || Math.hypot((snapped.x - lastPoint.x) * zoomLevel, (snapped.y - lastPoint.y) * zoomLevel) >= 2) {
+                currentPoints.push({ x: snapped.x, y: snapped.y });
+                saveState();
+            }
+            pointPreview = { x: snapped.x, y: snapped.y };
+            pointAlignmentGuides = snapped.guides;
             redrawCanvas();
-            saveState();
         }
     });
 
@@ -2768,14 +3219,27 @@
         if (dragEntityState && dragEntityState.entity) {
             dragEntityState.entity.x = worldPos.x;
             dragEntityState.entity.y = worldPos.y;
-            const validation = validateCompatibilityAtPosition(
+            const validation = validateEntityPlacement(
+                dragEntityState.entityType,
                 dragEntityState.entity,
                 worldPos.x,
                 worldPos.y,
-                { ignoreUid: dragEntityState.entity._entityUid, silent: true }
+                {
+                    ignoreUid: dragEntityState.entity._entityUid,
+                    ignoreEntity: dragEntityState.entity,
+                    silent: true,
+                }
             );
             dragConflictTarget = validation.ok ? null : validation.conflictTarget;
             canvas.style.cursor = validation.ok ? 'grabbing' : 'not-allowed';
+            redrawCanvas();
+            return;
+        }
+
+        if (tool === 'points') {
+            const snapped = getSnappedPointForDrawing(worldPos.x, worldPos.y);
+            pointPreview = { x: snapped.x, y: snapped.y };
+            pointAlignmentGuides = snapped.guides;
             redrawCanvas();
             return;
         }
@@ -2811,22 +3275,30 @@
     canvas.addEventListener("mouseup", (e) => {
         if (!canDraw) return;
         if (e.button !== 0) return;
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
 
         if (dragEntityState && dragEntityState.entity) {
             const entity = dragEntityState.entity;
             const attemptedX = entity.x;
             const attemptedY = entity.y;
-            const validation = validateCompatibilityAtPosition(
+            const validation = validateEntityPlacement(
+                dragEntityState.entityType,
                 entity,
                 entity.x,
                 entity.y,
-                { ignoreUid: entity._entityUid, silent: true }
+                {
+                    ignoreUid: entity._entityUid,
+                    ignoreEntity: entity,
+                    silent: true,
+                }
             );
 
             if (!validation.ok) {
                 entity.x = dragEntityState.originalX;
                 entity.y = dragEntityState.originalY;
-                if (validation.reason === 'soil_mismatch') {
+                if (validation.reason === 'overlap') {
+                    showAlert('❌ Об’єкти не можна ставити один на одного.');
+                } else if (validation.reason === 'soil_mismatch') {
                     const topFigure = getTopFigureAtPoint(attemptedX, attemptedY);
                     const soilType = normalizeSoilType(topFigure?.soilType) || 'невідомий';
                     showAlert(`❌ Помилка: Ця рослина не росте на ґрунті типу "${soilType}".`);
@@ -2868,6 +3340,13 @@
             return;
         }
 
+        if (tool === 'points') {
+            pointPreview = null;
+            pointAlignmentGuides = { vertical: null, horizontal: null };
+            redrawCanvas();
+            return;
+        }
+
         if (tool === 'draw') {
             commitCurrentStroke();
         } else if (tool === 'erase' && isDrawing) {
@@ -2881,6 +3360,8 @@
             allFigures.push({ points: [...currentPoints], fill: null });
             currentFigureIndex = allFigures.length - 1;
             currentPoints = [];
+            pointPreview = null;
+            pointAlignmentGuides = { vertical: null, horizontal: null };
             saveState();
             redrawCanvas();
             const fillSelect = document.getElementById('fillTextureSelect');
@@ -2931,6 +3412,37 @@
             const midX = (a.x + b.x) / 2;
             const midY = (a.y + b.y) / 2 - 8;
             ctx.fillText(`${segmentMeters.toFixed(1)} м`, midX, midY);
+        }
+
+        if (tool === 'points' && pointPreview && currentPoints.length) {
+            const anchor = currentPoints[currentPoints.length - 1];
+            const dx = pointPreview.x - anchor.x;
+            const dy = pointPreview.y - anchor.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            if (length > 0.01) {
+                ctx.save();
+                ctx.setLineDash([8 / Math.max(zoomLevel, 0.001), 5 / Math.max(zoomLevel, 0.001)]);
+                ctx.strokeStyle = 'rgba(38, 90, 72, 0.85)';
+                ctx.lineWidth = 1.5 / Math.max(zoomLevel, 0.001);
+                ctx.beginPath();
+                ctx.moveTo(anchor.x, anchor.y);
+                ctx.lineTo(pointPreview.x, pointPreview.y);
+                ctx.stroke();
+                ctx.restore();
+
+                const segmentMeters = pixelsToMeters(length);
+                const midX = (anchor.x + pointPreview.x) / 2;
+                const midY = (anchor.y + pointPreview.y) / 2 - 10;
+                ctx.fillStyle = '#1f4c3a';
+                ctx.font = '12px Arial';
+                ctx.fillText(`${segmentMeters.toFixed(1)} м`, midX, midY);
+
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(38, 90, 72, 0.95)';
+                ctx.arc(pointPreview.x, pointPreview.y, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 
@@ -3465,6 +3977,7 @@
         if (isImageDrawable(loadedBackgroundImage)) {
             ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
         }
+        drawGridOverlay();
         drawAllFigures();
         drawAllBrushStrokes();
         drawCurrentFigure();
@@ -3473,6 +3986,7 @@
         drawAllTrees();
         drawAllVegetables();
         drawCompatibilityHighlights();
+        drawPointAlignmentGuides();
         restoreCanvasTransform();
     }
 
@@ -3482,6 +3996,7 @@
         if (isImageDrawable(loadedBackgroundImage)) {
             ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
         }
+        drawGridOverlay();
         drawAllFigures();
         drawAllBrushStrokes();
         drawCompletedFigureLengths();
@@ -3491,6 +4006,7 @@
         drawAllTreesWithLabels();
         drawAllVegetablesWithLabels();
         drawCompatibilityHighlights();
+        drawPointAlignmentGuides();
         restoreCanvasTransform();
     }
 
@@ -3687,6 +4203,7 @@
                 Content: mapData, // Серіалізуємо всі дані в JSON
                 Author: user_id,
                 MapName: currentMapName,
+                token: token || '',
             }),
         });
 
@@ -3732,6 +4249,7 @@
                 Author: user_id,
                 MapId: current_map_id,
                 MapName: currentMapName,
+                token: token || '',
             }),
         });
 
@@ -3854,7 +4372,15 @@
         }
 
         if (pendingFlowerPosition) {
-            if (!canPlaceEntityAt(pendingFlowerPosition.x, pendingFlowerPosition.y)) {
+            const flowerCandidate = { x: pendingFlowerPosition.x, y: pendingFlowerPosition.y, size: 50 };
+            const validation = validateEntityPlacement(
+                'flower',
+                flowerCandidate,
+                pendingFlowerPosition.x,
+                pendingFlowerPosition.y,
+                { silent: false }
+            );
+            if (!validation.ok) {
                 pendingFlowerPosition = null;
                 flowerModal.classList.remove("visible");
                 return;
@@ -4185,10 +4711,12 @@
                 allowedSoils: selectedSortVeg.allowed_soils || [],
             }, 'vegetable');
 
-            const validation = validateCompatibilityAtPosition(
+            const validation = validateEntityPlacement(
+                'vegetable',
                 vegetableCandidate,
                 pendingVegetablePosition.x,
-                pendingVegetablePosition.y
+                pendingVegetablePosition.y,
+                { silent: false }
             );
 
             if (!validation.ok) {
@@ -4529,7 +5057,13 @@
                 allowedSoils: selectedSort.allowed_soils || [],
             }, 'tree');
 
-            const validation = validateCompatibilityAtPosition(treeCandidate, pendingTreePosition.x, pendingTreePosition.y);
+            const validation = validateEntityPlacement(
+                'tree',
+                treeCandidate,
+                pendingTreePosition.x,
+                pendingTreePosition.y,
+                { silent: false }
+            );
             if (!validation.ok) {
                 pendingTreePosition = null;
                 treeModal.classList.remove("visible");
@@ -4688,7 +5222,15 @@
         }
 
         if (pendingBuildingPosition) {
-            if (!canPlaceEntityAt(pendingBuildingPosition.x, pendingBuildingPosition.y)) {
+            const buildingCandidate = { x: pendingBuildingPosition.x, y: pendingBuildingPosition.y, size: 60 };
+            const validation = validateEntityPlacement(
+                'building',
+                buildingCandidate,
+                pendingBuildingPosition.x,
+                pendingBuildingPosition.y,
+                { silent: false }
+            );
+            if (!validation.ok) {
                 pendingBuildingPosition = null;
                 buildingModal.classList.remove("visible");
                 return;

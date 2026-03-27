@@ -4,20 +4,39 @@ from .models import Cutting, Disease, Fertilizer, Planting, Sort, Tree
 
 
 def sort_detail(request, tree_id, sort_id):
+    # Спочатку отримуємо основні дані
     try:
         tree = get_object_or_404(Tree, idTree=tree_id)
         sort = get_object_or_404(Sort, idSort=sort_id, tree_id=tree_id)
+    except Exception as e:
+        print(f"Помилка при отриманні дерева/сорту: {e}")
+        return render(request, 'trees/sort_detail.html', {'tree': None, 'sort': None})
+
+    # Отримуємо додаткові дані окремо, щоб помилки в них не блокували сторінку
+    try:
         cutting = list(Cutting.objects.all())
-        fertilizer = list(Fertilizer.objects.all())
-        disease = list(Disease.objects.all())
-        planting = list(Planting.objects.all())
-    except Exception:
-        tree = None
-        sort = None
+    except Exception as e:
+        print(f"Помилка при отриманні Cutting: {e}")
         cutting = []
+
+    try:
+        fertilizer = list(Fertilizer.objects.all())
+    except Exception as e:
+        print(f"Помилка при отриманні Fertilizer: {e}")
         fertilizer = []
+
+    try:
+        disease = list(Disease.objects.all())
+    except Exception as e:
+        print(f"Помилка при отриманні Disease: {e}")
         disease = []
+
+    try:
+        planting = list(Planting.objects.all())
+    except Exception as e:
+        print(f"Помилка при отриманні Planting: {e}")
         planting = []
+
     return render(request, 'trees/sort_detail.html', {
         'tree': tree,
         'sort': sort,

@@ -10,7 +10,8 @@ catalog_use_case = CatalogUseCase(DjangoCatalogRepository())
 def animal_list(request):
     try:
         animals = catalog_use_case.animals_list()
-    except Exception:
+    except Exception as e:
+        print(f"Error in animal_list: {e}")
         animals = []
     legacy_animals = [
         {
@@ -26,7 +27,8 @@ def animal_list(request):
 def animal_detail(request, animal_id, sort_id):
     try:
         detail = catalog_use_case.animal_detail(animal_id, sort_id)
-    except Exception:
+    except Exception as e:
+        print(f"Error in animal_detail: {e}")
         detail = {}
     return render(request, 'animals/animal_detail.html', {'animal': detail})
 
@@ -34,7 +36,8 @@ def animal_detail(request, animal_id, sort_id):
 def animal_sorts(request, animal_id):
     try:
         payload = catalog_use_case.animal_sorts(animal_id)
-    except Exception:
+    except Exception as e:
+        print(f"Error in animal_sorts: {e}")
         payload = {'animal': {}, 'sorts': []}
     animal = {
         'idAni': payload.get('animal', {}).get('id'),

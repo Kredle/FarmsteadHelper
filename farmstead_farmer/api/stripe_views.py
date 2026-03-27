@@ -76,14 +76,54 @@ def _stripe_list_data(value):
         return []
     if isinstance(value, dict):
         data = value.get('data', [])
-        return data if isinstance(data, list) else []
+        if not isinstance(data, list):
+            return []
+        normalized = []
+        for item in data:
+            normalized_item = _stripe_to_dict(item)
+            if normalized_item:
+                normalized.append(normalized_item)
+        return normalized
     data_attr = getattr(value, 'data', None)
     if isinstance(data_attr, list):
-        return data_attr
+        normalized = []
+        for item in data_attr:
+            normalized_item = _stripe_to_dict(item)
+            if normalized_item:
+                normalized.append(normalized_item)
+        return normalized
     return []
 
 
+def _stripe_to_dict(value):
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+
+    to_recursive = getattr(value, 'to_dict_recursive', None)
+    if callable(to_recursive):
+        try:
+            converted = to_recursive()
+            if isinstance(converted, dict):
+                return converted
+        except Exception:
+            pass
+
+    to_dict = getattr(value, 'to_dict', None)
+    if callable(to_dict):
+        try:
+            converted = to_dict()
+            if isinstance(converted, dict):
+                return converted
+        except Exception:
+            pass
+
+    return {}
+
+
 def _subscription_period_end(subscription_obj):
+    subscription_obj = _stripe_to_dict(subscription_obj)
     if not subscription_obj:
         return None
 
@@ -118,6 +158,7 @@ def _normalize_plan(plan_value):
 
 
 def _plan_from_subscription(subscription_obj):
+    subscription_obj = _stripe_to_dict(subscription_obj)
     if not subscription_obj:
         return None
 
@@ -177,6 +218,7 @@ def _plan_from_subscription(subscription_obj):
 
 
 def _plan_from_checkout_session(checkout_session):
+    checkout_session = _stripe_to_dict(checkout_session)
     if not checkout_session:
         return None
 
@@ -261,7 +303,7 @@ def _apply_stacked_extension(user, plan, session_id=None):
 
 
 def _sync_from_checkout_session(user, session_id):
-    checkout_session = stripe.checkout.Session.retrieve(session_id)
+    checkout_session = _stripe_to_dict(stripe.checkout.Session.retrieve(session_id))
     subscription_id = checkout_session.get('subscription')
     if not subscription_id:
         raise ValueError('Сесія не містить підписки.')
@@ -275,7 +317,7 @@ def _sync_from_checkout_session(user, session_id):
 
     session_plan = _normalize_plan(checkout_session.get('metadata', {}).get('plan'))
     if not session_plan:
-        subscription = stripe.Subscription.retrieve(subscription_id)
+        subscription = _stripe_to_dict(stripe.Subscription.retrieve(subscription_id))
         session_plan = _normalize_plan(subscription.get('metadata', {}).get('plan')) or _plan_from_subscription(subscription)
     if not session_plan:
         session_plan = _plan_from_checkout_session(checkout_session)
@@ -284,7 +326,7 @@ def _sync_from_checkout_session(user, session_id):
         _apply_stacked_extension(user, session_plan, session_id=session_id)
         return
 
-    subscription = stripe.Subscription.retrieve(subscription_id)
+    subscription = _stripe_to_dict(stripe.Subscription.retrieve(subscription_id))
     period_end_ts = _subscription_period_end(subscription)
     if not period_end_ts:
         raise ValueError('Не вдалося визначити дату завершення передплати.')

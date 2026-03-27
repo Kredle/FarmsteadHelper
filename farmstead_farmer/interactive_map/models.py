@@ -5,6 +5,7 @@ class Map(models.Model):
     id = models.IntegerField(primary_key=True, db_column = 'idInteractive')
     data = models.JSONField(db_column = 'map')
     map_name = models.CharField(max_length=255, null=True, blank=True, db_column='map_name')
+    is_private = models.BooleanField(default=False, db_column='is_private')
     class Meta:
         managed = False
         db_table = 'interactive_map'

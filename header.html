@@ -154,6 +154,13 @@
                 cursor: pointer;
             }
     
+            .user-controls {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 15px;
+            }
+
             .side-menu .auth-buttons {
                 margin-top: auto;
                 padding: 20px;
@@ -176,7 +183,8 @@
     
             @media (max-width: 768px) {
                 nav,
-                .auth {
+                .auth,
+                .user-controls {
                     display: none;
                 }
     
@@ -217,11 +225,14 @@
         <a href="/map">Інтерактивна мапа</a>
         <a href="/calendar">Календар</a>
     </nav>
-    <div class="auth">
-        <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
-        <div class="auth-menu">
-            <a href="/login">Вхід</a>
-            <a href="/register">Реєстрація</a>
+    <div class="user-controls">
+        {% include 'notifications/notifications.html' %}
+        <div class="auth">
+            <img src="{% static 'loginlogo.png' %}" alt="Auth Icon" id="auth-icon">
+            <div class="auth-menu">
+                <a href="/login">Вхід</a>
+                <a href="/register">Реєстрація</a>
+            </div>
         </div>
     </div>
     
@@ -326,7 +337,7 @@
     const sideMenu = document.getElementById('side-menu');
     const closeMenu = document.getElementById('close-menu');
     const nav = document.querySelector('nav');
-    const auth = document.querySelector('.auth');
+    const auth = document.querySelector('.user-controls');
     
     hamburger.addEventListener('click', () => {
         sideMenu.style.right = '0';

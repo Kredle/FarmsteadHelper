@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FarmsteadHelper{% endblock %}</title>
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/png">
+    
+    <!-- Спільні стилі -->
+    <link rel="stylesheet" type="text/css" href="{% static 'api/mainstyles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'notifications/notifications.css' %}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Твій хедер тепер має два блоки всередині -->
+    <header style="display: flex; flex-direction: column; align-items: stretch;">
+        {% include 'includes/header.html' %}
+        
+        <!-- ЦЬОГО БЛОКУ НЕ ВИСТАЧАЛО: сюди прийде пошук і фільтри форуму -->
+        {% block header_bottom %}{% endblock %}
+    </header>
+
+    <div class="page_container">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block footer %}
+    <footer>
+        <div class="legal-links">
+            <a href="https://drive.google.com/file/d/1DKvuKJ343JoX2fahkNjqwe8QATdcpTnX/view?usp=sharing">Умови використання</a>
+            <span>|</span>
+            <a href="https://drive.google.com/file/d/1ivp0k5hy9bq9loZBFS9CBzi-MFexHtPX/view?usp=sharing">Політика конфіденційності</a>
+            <span>|</span>
+            <a href="/feedback/">Форма зворотного зв’язку</a>
+        </div>
+        <div class="copyright">
+            &copy; <span id="current-year"></span> FarmsteadHelper. Усі права захищено.
+        </div>
+    </footer>
+    {% endblock %}
+
+    <script src="{% static 'notifications/notifications.js' %}"></script>
+    <script>
+        const yearSpan = document.getElementById("current-year");
+        if (yearSpan) {
+            yearSpan.textContent = new Date().getFullYear();
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

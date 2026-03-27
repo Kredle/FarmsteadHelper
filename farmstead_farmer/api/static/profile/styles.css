@@ -273,12 +273,25 @@ p {
 .profile-map-section {
     margin: 10px auto 30px;
     max-width: 1000px;
+    text-align: left;
 }
 
 .profile-map-actions {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
     margin-bottom: 12px;
+}
+
+.profile-map-section .profile-map-actions {
+    justify-content: flex-start !important;
+}
+
+.profile-map-section .map-button {
+    margin-left: 0 !important;
+    margin-right: 12px !important;
 }
 
 .profile-map-preview {

@@ -44,8 +44,7 @@ h1 {
 
 .topic-info {
     max-width: 1000px;
-    margin: 20px auto;
-    margin-top: 160px;
+    margin: 0 auto 20px auto;
     padding: 20px;
     background: var(--box_color);
     border-radius: 8px;

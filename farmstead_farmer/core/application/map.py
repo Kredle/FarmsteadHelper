@@ -33,6 +33,20 @@ class MapUseCase:
     def list_maps(self, user_id: int) -> list[dict]:
         return self.repository.list_maps(user_id)
 
+    def update_map_settings(self, user_id: int, map_id: int, map_name: str | None = None, is_private: bool | None = None) -> dict:
+        updated = self.repository.update_map_settings(user_id, map_id, map_name=map_name, is_private=is_private)
+        return {
+            'status': 'success',
+            'map': updated,
+        }
+
+    def delete_map(self, user_id: int, map_id: int) -> dict:
+        self.repository.delete_map(user_id, map_id)
+        return {
+            'status': 'success',
+            'message': 'Map deleted successfully',
+        }
+
     def tree_sorts(self) -> list[dict]:
         return self.repository.get_tree_sorts()
 

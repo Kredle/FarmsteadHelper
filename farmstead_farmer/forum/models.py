@@ -1,4 +1,7 @@
 from django.db import models
+from django.utils.timezone import now
+from datetime import timedelta
+from api.models import CustomUser
 
 class Topic(models.Model):
     idTopic = models.AutoField(primary_key=True, db_column = 'idTopic')
@@ -30,7 +33,7 @@ class Comment(models.Model):
     Author = models.TextField(db_column = 'Author')
     Topics_id = models.IntegerField(db_column = 'Topics_idTopic')
     Receiver = models.TextField(db_column = 'Receiver')
-    IsAnswer = models.BooleanField(null=True, db_column = 'IsAnswer')
+    IsAnswer = models.IntegerField(null=True, db_column = 'IsAnswer')
     Likes_list =models.JSONField(default=list, blank=True)
     Dislikes_list = models.JSONField(default=list, blank=True)
     ParentId = models.IntegerField(db_column='ParentId')
@@ -52,4 +55,15 @@ class User(models.Model):
     class Meta:
         managed = False
         db_table = 'api_customuser'
+
+class Notification(models.Model):
+    idNotification = models.AutoField(primary_key=True)
+    owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notifications')
+    content = models.TextField()
+    link = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'notifications'
 # Create your models here.
