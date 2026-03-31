@@ -72,6 +72,39 @@
         #comment-form .cancel-comment:hover {
             background-color: var(--accent_hover);
         }
+
+        .comment-thread {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .comment-thread::before {
+            content: none;
+            display: none;
+        }
+
+        .reply-children {
+            margin: 0;
+            padding: 0;
+            display: none;
+        }
+
+        .toggle-replies-btn {
+            display: inline-block;
+            margin-right: 6px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 700;
+            font-size: 12px;
+            line-height: 1;
+            color: var(--accent);
+        }
+
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 {% endblock %}
 
@@ -581,69 +614,77 @@ document.addEventListener('DOMContentLoaded', () => {
         let commentId;
         const topicStats = document.querySelector('.topic-stats');
         const topicId = topicStats.dataset.topicId;
-        async function FetchingComment(Id) {
-            try {
-                const response = await fetch(`/forum/get_comment/${Id}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                    body: JSON.stringify({}),
-                });
+        let commentsCacheById = new Map();
+        let commentsChildrenByParent = new Map();
+        let lastCommentStructureSignature = '';
+        // Функція для створення елемента коментаря
+        function normalizeParentId(parentId) {
+            const parsedParentId = Number(parentId);
+            return Number.isInteger(parsedParentId) && parsedParentId > 0 ? parsedParentId : null;
+        }
 
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        return "Коментар видалено";
-                    }
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || errorData.message || 'Помилка сервера');
+        function getAuthorHtml(author) {
+            if (!author || author === "Користувача видалено" || author === "Коментар видалено") {
+                return 'Коментар видалено';
+            }
+            return `<a href="/profile/${author}">${author}</a>`;
+        }
+
+        function buildReplyToHtml(parentId, parentAuthorName = null) {
+            const normalizedParentId = normalizeParentId(parentId);
+            if (!normalizedParentId) {
+                return '';
+            }
+
+            const parentFromCache = commentsCacheById.get(normalizedParentId);
+            const resolvedParentAuthor = parentAuthorName || (parentFromCache ? parentFromCache.Author : null);
+            const parentAuthorDisplay = getAuthorHtml(resolvedParentAuthor);
+            return `<p class="reply-to">Відповідь на коментар: ${parentAuthorDisplay}</p>`;
+        }
+
+        function updateToggleButtonState(button, isCollapsed) {
+            if (!button) {
+                return;
+            }
+            button.textContent = isCollapsed ? '▶' : '▼';
+            button.setAttribute('title', isCollapsed ? 'Розгорнути відповіді' : 'Згорнути відповіді');
+        }
+
+        function expandCommentAncestors(commentDiv) {
+            let currentThread = commentDiv.closest('.comment-thread');
+
+            while (currentThread) {
+                const parentRepliesContainer = currentThread.parentElement;
+                if (!parentRepliesContainer || !parentRepliesContainer.classList.contains('reply-children')) {
+                    break;
                 }
 
-                const data = await response.json();
-                return data.Author || "Коментар видалено";
-            } catch (error) {
-                return "Коментар видалено";
+                parentRepliesContainer.style.display = 'block';
+                const parentThread = parentRepliesContainer.closest('.comment-thread');
+                if (!parentThread) {
+                    break;
+                }
+
+                const parentToggleButton = parentThread.querySelector('.comment .toggle-replies-btn');
+                updateToggleButtonState(parentToggleButton, false);
+                currentThread = parentThread;
             }
-        };
-        // Функція для створення елемента коментаря
-        async function createCommentElement(comment) {
+        }
+
+        async function createCommentElement(comment, parentAuthorName = null) {
             const commentDiv = document.createElement('div');
             commentDiv.className = 'comment';
             commentDiv.setAttribute('data-comment-id', comment.idComments);
-            commentDiv.setAttribute('data-parent-id', comment.ParentId || 'null');
+            const normalizedParentId = normalizeParentId(comment.ParentId);
+            commentDiv.setAttribute('data-parent-id', normalizedParentId ? String(normalizedParentId) : 'null');
+            commentDiv.setAttribute('data-author-name', comment.Author || '');
             commentDiv.id = `comment-${comment.idComments}`;
 
-            // Додано перевірку на видалені коментарі
-            const authorLink = comment.Author === "Користувача видалено" || comment.Author === "Коментар видалено"
-                ? comment.Author
-                : `<a href="/profile/${comment.Author}">${comment.Author}</a>`;
-
-                let replyToText = '';
-                if (comment.ParentId) {
-                    try {
-                        const parentAuthor = await FetchingComment(comment.ParentId);
-                        const parentAuthorDisplay = parentAuthor === "Користувача видалено" ||
-                                                parentAuthor === "Коментар видалено" ||
-                                                !parentAuthor
-                            ? 'Коментар видалено'
-                            : `<a href="/profile/${parentAuthor}">${parentAuthor}</a>`;
-
-                        replyToText = `<p class="reply-to">Відповідь на коментар: ${parentAuthorDisplay}</p>`;
-                    } catch (error) {
-                        console.error('Помилка отримання батьківського коментаря:', error);
-                        replyToText = '<p class="reply-to">Відповідь на коментар: Коментар видалено</p>';
-                    }
-                }
-
-            const authorDisplay = comment.Author === "Користувача видалено"
-                ? 'Коментар видалено'
-                : (comment.Author
-                    ? `<a href="/profile/${comment.Author}">${comment.Author}</a>`
-                    : 'Коментар видалено');
+            const authorLink = getAuthorHtml(comment.Author);
+            const replyToText = buildReplyToHtml(comment.ParentId, parentAuthorName);
 
             commentDiv.innerHTML = `
-                <p>Автор: ${authorLink} | Дата: ${comment.Date} | Час: ${comment.Time}</p>
+                <p class="comment-meta"><span class="toggle-replies-btn" style="display: none;">▶</span><span class="comment-meta-text">Автор: ${authorLink} | Дата: ${comment.Date} | Час: ${comment.Time}</span></p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
                 <div  class="topic_buttons" style="display: flex;">
@@ -651,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="comment-dislike-btn">👎 Дизлайк (<span id="comment-dislikes-count">${comment.Dislikes}</span>)</button>
                     <button class="comment-reply-btn">Відповісти</button>
                     <div class="topic-actions">
-                        <button class="actions-btn-comment">...</button>
+                        <button type="button" class="actions-btn-comment">...</button>
                         <div class="actions-menu-comment" style="display: none;">
                             <button class="report-comment-btn" data-comment-id="${comment.idComments}">
                                 Поскаржитися
@@ -665,6 +706,244 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             return commentDiv;
+        }
+
+        function setCommentsCache(comments) {
+            commentsCacheById = new Map();
+            commentsChildrenByParent = new Map();
+
+            comments.forEach((comment) => {
+                commentsCacheById.set(comment.idComments, comment);
+                commentsChildrenByParent.set(comment.idComments, []);
+            });
+
+            comments.forEach((comment) => {
+                const parentId = normalizeParentId(comment.ParentId);
+                if (parentId && commentsChildrenByParent.has(parentId)) {
+                    commentsChildrenByParent.get(parentId).push(comment.idComments);
+                }
+            });
+        }
+
+        function patchCachedComment(commentId, patch) {
+            const existing = commentsCacheById.get(Number(commentId));
+            if (!existing) {
+                return;
+            }
+            commentsCacheById.set(Number(commentId), { ...existing, ...patch });
+            const allComments = Array.from(commentsCacheById.values()).sort((a, b) => a.idComments - b.idComments);
+            setCommentsCache(allComments);
+            lastCommentStructureSignature = getStructureSignature(allComments);
+        }
+
+        function createThreadShell(commentDiv, commentId) {
+            const threadDiv = document.createElement('div');
+            threadDiv.className = 'comment-thread';
+            threadDiv.setAttribute('data-thread-id', commentId);
+            threadDiv.appendChild(commentDiv);
+
+            const repliesContainer = document.createElement('div');
+            repliesContainer.className = 'reply-children';
+            repliesContainer.setAttribute('data-parent-id', commentId);
+            repliesContainer.style.display = 'none';
+            threadDiv.appendChild(repliesContainer);
+            bindToggleForThread(threadDiv);
+            return threadDiv;
+        }
+
+        function bindToggleForThread(threadDiv) {
+            if (!threadDiv) {
+                return;
+            }
+
+            const commentDiv = threadDiv.querySelector('.comment');
+            const repliesContainer = threadDiv.querySelector('.reply-children');
+            if (!commentDiv || !repliesContainer) {
+                return;
+            }
+
+            const toggleRepliesButton = commentDiv.querySelector('.toggle-replies-btn');
+            if (!toggleRepliesButton || toggleRepliesButton.dataset.toggleBound === 'true') {
+                return;
+            }
+
+            toggleRepliesButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const isCollapsed = repliesContainer.style.display === 'none';
+                repliesContainer.style.display = isCollapsed ? 'block' : 'none';
+                updateToggleButtonState(toggleRepliesButton, !isCollapsed);
+            });
+
+            toggleRepliesButton.dataset.toggleBound = 'true';
+        }
+
+        function refreshToggleForComment(commentId) {
+            const commentDiv = document.querySelector(`.comment[data-comment-id="${commentId}"]`);
+            if (!commentDiv) {
+                return;
+            }
+
+            const threadDiv = commentDiv.closest('.comment-thread');
+            const repliesContainer = threadDiv ? threadDiv.querySelector('.reply-children') : null;
+            const toggleRepliesButton = commentDiv.querySelector('.toggle-replies-btn');
+
+            if (!repliesContainer || !toggleRepliesButton) {
+                return;
+            }
+
+            const hasChildren = !!repliesContainer.querySelector('.comment-thread');
+            toggleRepliesButton.style.display = hasChildren ? 'inline-block' : 'none';
+            if (!hasChildren) {
+                repliesContainer.style.display = 'none';
+                updateToggleButtonState(toggleRepliesButton, true);
+            } else if (!toggleRepliesButton.textContent.trim()) {
+                updateToggleButtonState(toggleRepliesButton, true);
+            }
+        }
+
+        async function insertCommentIntoDom(comment, userName) {
+            const commentsSection = document.getElementById('comments-section');
+            const parentId = normalizeParentId(comment.ParentId);
+            const parentAuthorName = parentId && commentsCacheById.has(parentId)
+                ? commentsCacheById.get(parentId).Author
+                : null;
+
+            const commentDiv = await createCommentElement(comment, parentAuthorName);
+            const threadDiv = createThreadShell(commentDiv, comment.idComments);
+            handleCommentInteractions(commentDiv, userName, comment.Author);
+
+            if (parentId) {
+                const parentCommentDiv = document.querySelector(`.comment[data-comment-id="${parentId}"]`);
+                if (parentCommentDiv) {
+                    const parentThreadDiv = parentCommentDiv.closest('.comment-thread');
+                    const parentRepliesContainer = parentThreadDiv.querySelector('.reply-children');
+                    parentRepliesContainer.appendChild(threadDiv);
+                    refreshToggleForComment(parentId);
+                    return true;
+                }
+                return false;
+            }
+
+            if (commentsSection.querySelector('p') && commentsSection.textContent.includes('Немає коментарів.')) {
+                commentsSection.innerHTML = '';
+            }
+            commentsSection.appendChild(threadDiv);
+            return true;
+        }
+
+        function updateCommentDomFields(comment) {
+            const commentDiv = document.querySelector(`.comment[data-comment-id="${comment.idComments}"]`);
+            if (!commentDiv) {
+                return;
+            }
+
+            const normalizedParentId = normalizeParentId(comment.ParentId);
+            commentDiv.setAttribute('data-parent-id', normalizedParentId ? String(normalizedParentId) : 'null');
+            commentDiv.setAttribute('data-author-name', comment.Author || '');
+
+            const metaText = commentDiv.querySelector('.comment-meta-text');
+            if (metaText) {
+                metaText.innerHTML = `Автор: ${getAuthorHtml(comment.Author)} | Дата: ${comment.Date} | Час: ${comment.Time}`;
+            }
+
+            const content = commentDiv.querySelector('.comment-content');
+            if (content) {
+                content.textContent = comment.Content;
+            }
+
+            const likesSpan = commentDiv.querySelector('#comment-likes-count');
+            const dislikesSpan = commentDiv.querySelector('#comment-dislikes-count');
+            if (likesSpan) {
+                likesSpan.textContent = comment.Likes;
+            }
+            if (dislikesSpan) {
+                dislikesSpan.textContent = comment.Dislikes;
+            }
+
+            const oldReplyTo = commentDiv.querySelector('.reply-to');
+            const newReplyToHtml = buildReplyToHtml(comment.ParentId, commentsCacheById.get(normalizedParentId)?.Author);
+            if (newReplyToHtml) {
+                if (oldReplyTo) {
+                    oldReplyTo.outerHTML = newReplyToHtml;
+                } else {
+                    const contentEl = commentDiv.querySelector('.comment-content');
+                    if (contentEl) {
+                        contentEl.insertAdjacentHTML('afterend', newReplyToHtml);
+                    }
+                }
+            } else if (oldReplyTo) {
+                oldReplyTo.remove();
+            }
+        }
+
+        async function syncCommentsIncremental(serverComments) {
+            const comments = (serverComments || []).slice().sort((a, b) => a.idComments - b.idComments);
+            const currentUser = user || null;
+
+            const serverIds = new Set(comments.map((c) => String(c.idComments)));
+            const existingThreads = Array.from(document.querySelectorAll('#comments-section .comment-thread'));
+            existingThreads.forEach((thread) => {
+                const threadId = thread.getAttribute('data-thread-id');
+                if (!serverIds.has(String(threadId))) {
+                    thread.remove();
+                }
+            });
+
+            setCommentsCache(comments);
+
+            const pendingInsertions = [];
+            comments.forEach((comment) => {
+                const existingCommentDiv = document.querySelector(`.comment[data-comment-id="${comment.idComments}"]`);
+                if (existingCommentDiv) {
+                    const expectedParent = normalizeParentId(comment.ParentId);
+                    const currentParentRaw = existingCommentDiv.getAttribute('data-parent-id');
+                    const currentParent = currentParentRaw && currentParentRaw !== 'null' ? Number(currentParentRaw) : null;
+
+                    if (currentParent !== expectedParent) {
+                        const currentThread = existingCommentDiv.closest('.comment-thread');
+                        if (currentThread) {
+                            currentThread.remove();
+                        }
+                        pendingInsertions.push(comment);
+                    } else {
+                        updateCommentDomFields(comment);
+                    }
+                } else {
+                    pendingInsertions.push(comment);
+                }
+            });
+
+            let attempts = 0;
+            while (pendingInsertions.length > 0 && attempts < comments.length + 2) {
+                let insertedThisRound = 0;
+                for (let i = pendingInsertions.length - 1; i >= 0; i -= 1) {
+                    const wasInserted = await insertCommentIntoDom(pendingInsertions[i], currentUser);
+                    const parentId = normalizeParentId(pendingInsertions[i].ParentId);
+                    if (wasInserted || (parentId && document.querySelector(`.comment[data-comment-id="${parentId}"]`))) {
+                        pendingInsertions.splice(i, 1);
+                        insertedThisRound += 1;
+                    }
+                }
+
+                if (insertedThisRound === 0) {
+                    for (let i = pendingInsertions.length - 1; i >= 0; i -= 1) {
+                        await insertCommentIntoDom({ ...pendingInsertions[i], ParentId: 0 }, currentUser);
+                        pendingInsertions.splice(i, 1);
+                    }
+                }
+                attempts += 1;
+            }
+
+            Array.from(commentsCacheById.keys()).forEach((id) => refreshToggleForComment(id));
+
+            const commentsSection = document.getElementById('comments-section');
+            if (comments.length === 0) {
+                commentsSection.innerHTML = '<p>Немає коментарів.</p>';
+            }
+
+            updateStatsCounter(comments.length);
+            lastCommentStructureSignature = getStructureSignature(comments);
         }
         // Функція для створення коментаря
         async function createComment(content, parentId = null, parentAuthor = null) {
@@ -703,28 +982,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await response.json();
                 if (data.status === 'success') {
-                    const commentData = {
-                        idComments: data.id,
-                        Content: content,
-                        Author: user,
-                        Date: createdDateInput,
-                        Time: createdTimeInput,
-                        Likes: 0,
-                        Dislikes: 0,
-                        ParentId: parentId
-                    };
-                    const newComment = await createCommentElement(commentData);
-                    document.getElementById('comments-section').appendChild(newComment);
-                    handleCommentInteractions(newComment, user, user);
-
-                    // Оновлюємо лічильник коментарів при додаванні
-                    const currentCount = document.querySelectorAll('#comments-section .comment').length;
-                    updateStatsCounter(currentCount);
-
-                    if (parentId) {
-                        //highlightComment(parentId); // Підсвічуємо батьківський коментар
+                    const commentsResponse = await fetch(`/forum/topic/${topicId}/comments_list/`);
+                    if (commentsResponse.ok) {
+                        const commentsData = await commentsResponse.json();
+                        await syncCommentsIncremental(commentsData.comments || []);
                     }
-                    //location.reload(); // Оновлюємо сторінку для відображення нового коментаря
                 }
             } catch (error) {
                 console.error('Помилка при створенні коментаря:', error);
@@ -747,6 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (commentId && commentId !== 'null') {
                 const parentCommentDiv = document.querySelector(`.comment[data-comment-id="${commentId}"]`);
                 if (parentCommentDiv) {
+                    expandCommentAncestors(parentCommentDiv);
                     parentCommentDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     highlightComment(commentId);
                 }
@@ -756,7 +1019,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Додаємо делегування подій на контейнер коментарів
         function initializeReplyToLinks() {
-            document.getElementById('comments-section').addEventListener('click', function(event) {
+            const commentsSection = document.getElementById('comments-section');
+            if (!commentsSection || commentsSection.dataset.replyToLinksInitialized === 'true') {
+                return;
+            }
+
+            commentsSection.addEventListener('click', function(event) {
                 // Перевіряємо, чи клікнули саме на елемент .reply-to
                 const replyToElement = event.target.closest('.reply-to');
                 if (!replyToElement) return;
@@ -774,6 +1042,78 @@ document.addEventListener('DOMContentLoaded', () => {
                     scrollToParentComment(parentId);
                 }
             });
+
+            commentsSection.dataset.replyToLinksInitialized = 'true';
+        }
+
+        function initializeToggleRepliesDelegation() {
+            const commentsSection = document.getElementById('comments-section');
+            if (!commentsSection || commentsSection.dataset.toggleRepliesInitialized === 'true') {
+                return;
+            }
+
+            commentsSection.addEventListener('click', function(event) {
+                const toggle = event.target.closest('.toggle-replies-btn');
+                if (!toggle) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const commentDiv = toggle.closest('.comment');
+                if (!commentDiv) {
+                    return;
+                }
+
+                const threadDiv = commentDiv.closest('.comment-thread');
+                if (!threadDiv) {
+                    return;
+                }
+
+                const parentId = commentDiv.getAttribute('data-comment-id');
+                const repliesContainer = Array.from(threadDiv.children).find((child) => {
+                    return child.classList && child.classList.contains('reply-children') && child.getAttribute('data-parent-id') === parentId;
+                });
+
+                if (!repliesContainer) {
+                    return;
+                }
+
+                const isCollapsed = getComputedStyle(repliesContainer).display === 'none';
+                repliesContainer.style.display = isCollapsed ? 'block' : 'none';
+                updateToggleButtonState(toggle, !isCollapsed);
+            });
+
+            commentsSection.dataset.toggleRepliesInitialized = 'true';
+        }
+
+        function initializeCommentActionsDelegation() {
+            const commentsSection = document.getElementById('comments-section');
+            if (!commentsSection || commentsSection.dataset.commentActionsInitialized === 'true') {
+                return;
+            }
+
+            commentsSection.addEventListener('click', function(event) {
+                const actionsButton = event.target.closest('.actions-btn-comment');
+                if (!actionsButton) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const actionsWrapper = actionsButton.closest('.topic-actions');
+                const actionsMenuCom = actionsWrapper ? actionsWrapper.querySelector('.actions-menu-comment') : null;
+                if (!actionsMenuCom) {
+                    return;
+                }
+
+                const isHidden = actionsMenuCom.style.display === 'none' || actionsMenuCom.style.display === '';
+                actionsMenuCom.style.display = isHidden ? 'block' : 'none';
+            });
+
+            commentsSection.dataset.commentActionsInitialized = 'true';
         }
         // Обробка кнопки "Відповісти" в коментарі
         function handleReplyButtonClick(parentCommentId, parentAuthor) {
@@ -835,13 +1175,68 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('DOMContentLoaded', initializeReplyToLinks);
         // Викликаємо функцію ініціалізації при завантаженні сторінки
         document.addEventListener('DOMContentLoaded', initializeReplyButtons);
+        document.addEventListener('DOMContentLoaded', initializeToggleRepliesDelegation);
+        document.addEventListener('DOMContentLoaded', initializeCommentActionsDelegation);
         document.addEventListener('DOMContentLoaded', Add_Favorites);
         //Add_Favorites()
         // Викликаємо функцію ініціалізації при завантаженні сторінки
         //document.addEventListener('DOMContentLoaded', initializeCommentClickHandlers);
+        async function buildCommentThread(comment, childrenByParent, commentsById, user) {
+            const threadDiv = document.createElement('div');
+            threadDiv.className = 'comment-thread';
+            threadDiv.setAttribute('data-thread-id', comment.idComments);
+
+            const parentId = normalizeParentId(comment.ParentId);
+            const parentAuthorName = parentId && commentsById.has(parentId)
+                ? commentsById.get(parentId).Author
+                : null;
+            const commentDiv = await createCommentElement(comment, parentAuthorName);
+            threadDiv.appendChild(commentDiv);
+            handleCommentInteractions(commentDiv, user, comment.Author);
+
+            const childComments = childrenByParent.get(comment.idComments) || [];
+            const toggleRepliesButton = commentDiv.querySelector('.toggle-replies-btn');
+
+            const repliesContainer = document.createElement('div');
+            repliesContainer.className = 'reply-children';
+            repliesContainer.setAttribute('data-parent-id', comment.idComments);
+            repliesContainer.style.display = 'none';
+
+            if (childComments.length > 0 && toggleRepliesButton) {
+                toggleRepliesButton.style.display = 'inline-block';
+                updateToggleButtonState(toggleRepliesButton, true);
+            }
+
+            bindToggleForThread(threadDiv);
+
+            for (const childComment of childComments) {
+                const childThread = await buildCommentThread(childComment, childrenByParent, commentsById, user);
+                repliesContainer.appendChild(childThread);
+            }
+
+            threadDiv.appendChild(repliesContainer);
+            return threadDiv;
+        }
+
+        function getStructureSignature(comments) {
+            const safeComments = Array.isArray(comments) ? comments : [];
+            return safeComments
+                .slice()
+                .sort((a, b) => a.idComments - b.idComments)
+                .map((comment) => `${comment.idComments}:${normalizeParentId(comment.ParentId) || 0}:${comment.Content}:${comment.Author}:${comment.Date}:${comment.Time}`)
+                .join('|');
+        }
+
         async function loadComments(topicId) {
             try {
                 const response = await fetch(`/forum/topic/${topicId}/comments_list/`);
+                if (response.status === 404) {
+                    handleDeletedTopic();
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
                 const data = await response.json();
                 const commentsSection = document.getElementById('comments-section');
                 const user = await fetchUserData(); // Отримуємо користувача асинхронно
@@ -849,20 +1244,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentsSection.innerHTML = ''; // Clear previous comments
                 const comments = data.comments || [];
 
-                // Сортуємо коментарі від найстаріших до найновіших (за ID), щоб хронологія зберігалася
                 comments.sort((a, b) => a.idComments - b.idComments);
+                lastCommentStructureSignature = getStructureSignature(comments);
+                setCommentsCache(comments);
 
                 if (comments.length > 0) {
-                    for (const comment of comments) {
-                        // Дочекаємося завершення створення елемента
-                        const commentDiv = await createCommentElement(comment);
-                        console.log(commentDiv);
-                        commentsSection.appendChild(commentDiv);
-                        handleCommentInteractions(commentDiv, user, comment.Author);
+                    const commentsById = new Map();
+                    const childrenByParent = new Map();
+
+                    comments.forEach((comment) => {
+                        commentsById.set(comment.idComments, comment);
+                        childrenByParent.set(comment.idComments, []);
+                    });
+
+                    const rootComments = [];
+                    comments.forEach((comment) => {
+                        const parentId = normalizeParentId(comment.ParentId);
+                        if (parentId && commentsById.has(parentId)) {
+                            childrenByParent.get(parentId).push(comment);
+                        } else {
+                            rootComments.push(comment);
+                        }
+                    });
+
+                    for (const rootComment of rootComments) {
+                        const threadElement = await buildCommentThread(rootComment, childrenByParent, commentsById, user);
+                        commentsSection.appendChild(threadElement);
                     }
                 } else {
                     commentsSection.innerHTML = '<p>Немає коментарів.</p>';
                 }
+                updateStatsCounter(comments.length);
                 // Ініціалізуємо обробники кліків після завантаження коментарів
                 //initializeCommentClickHandlers();
                 // Після завантаження коментарів ініціалізуємо обробники знову
@@ -873,97 +1285,40 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         let commentsPollingInterval;
+        let topicDeletedRedirectScheduled = false;
+        let alertRedirectUrl = null;
+
+        function handleDeletedTopic() {
+            if (topicDeletedRedirectScheduled) {
+                return;
+            }
+            topicDeletedRedirectScheduled = true;
+
+            if (commentsPollingInterval) {
+                clearInterval(commentsPollingInterval);
+            }
+
+            alertRedirectUrl = '/forum/?message=topic_deleted';
+            showAlert('Тему було видалено. Натисніть OK для переходу до списку обговорень.');
+        }
 
         async function pollNewComments() {
-            // Використовуємо глобальну змінну topicId, отриману з data-topic-id
             try {
-                // Паралельний запит: коментарі (для списку) і теми (для лайків теми)
                 const [commentsResponse, topicsResponse] = await Promise.all([
                     fetch(`/forum/topic/${topicId}/comments_list/`),
                     fetch('/forum/get_topics')
                 ]);
-                
-                if (commentsResponse.ok) {
-                    const data = await commentsResponse.json();
-                const serverComments = data.comments || [];
-                const commentsSection = document.getElementById('comments-section');
 
-                // 1. Отримуємо ID всіх коментарів, які зараз відображені в браузері
-                const localCommentElements = Array.from(commentsSection.querySelectorAll('.comment'));
-                const serverIds = serverComments.map(c => String(c.idComments));
-
-                // --- ЛОГІКА ВИДАЛЕННЯ ---
-                // Перевіряємо кожен локальний коментар: якщо його ID немає в списку від сервера — видаляємо
-                localCommentElements.forEach(commentDiv => {
-                    const localId = commentDiv.getAttribute('data-comment-id');
-                    
-                    if (!serverIds.includes(localId)) {
-                        console.log(`Polling: коментар ${localId} видалено на сервері. Прибираємо з екрана.`);
-                        
-                        // Плавна анімація зникнення
-                        commentDiv.style.transition = "all 0.5s ease";
-                        commentDiv.style.opacity = "0";
-                        commentDiv.style.transform = "translateX(-20px)";
-                        
-                        setTimeout(() => {
-                            commentDiv.remove();
-                        }, 500);
-                    }
-                });
-
-                // --- ЛОГІКА ОНОВЛЕННЯ (ВІДПОВІДІ) ---
-                // Перевіряємо існуючі коментарі: якщо батьківський коментар зник, оновлюємо текст
-                // --- ЛОГІКА ОНОВЛЕННЯ (ВІДПОВІДІ ТА ЛАЙКИ) ---
-                localCommentElements.forEach(commentDiv => {
-                    const localId = commentDiv.getAttribute('data-comment-id');
-                    // Обробляємо тільки ті коментарі, які залишаються на сторінці
-                    if (serverIds.includes(localId)) {
-                        // Оновлюємо лайки та дизлайки коментаря
-                        const serverComment = serverComments.find(c => String(c.idComments) === localId);
-                        if (serverComment) {
-                            const likesSpan = commentDiv.querySelector('#comment-likes-count');
-                            const dislikesSpan = commentDiv.querySelector('#comment-dislikes-count');
-                            if (likesSpan) likesSpan.textContent = serverComment.Likes;
-                            if (dislikesSpan) dislikesSpan.textContent = serverComment.Dislikes;
-                        }
-
-                        // Оновлюємо текст відповіді, якщо батьківський коментар видалено
-                        const parentId = commentDiv.getAttribute('data-parent-id');
-                        if (parentId && parentId !== 'null') {
-                            // Якщо батьківського ID немає в списку актуальних (серверних) ID
-                            if (!serverIds.includes(parentId)) {
-                                const replyToElem = commentDiv.querySelector('.reply-to');
-                                if (replyToElem && !replyToElem.textContent.includes('Коментар видалено')) {
-                                    replyToElem.innerHTML = 'Відповідь на коментар: Коментар видалено';
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // --- ЛОГІКА ДОДАВАННЯ ---
-                // Відфільтровуємо лише ті коментарі від сервера, яких ще немає у нас в DOM
-                const existingLocalIds = localCommentElements.map(el => el.getAttribute('data-comment-id'));
-                const newCommentsData = serverComments.filter(c => !existingLocalIds.includes(String(c.idComments)));
-
-                // Сортуємо нові коментарі перед додаванням, щоб порядок був правильним (старі -> нові)
-                newCommentsData.sort((a, b) => a.idComments - b.idComments);
-
-                if (newCommentsData.length > 0) {
-                    console.log(`Polling: додаємо ${newCommentsData.length} нових повідомлень`);
-                    const user = await fetchUserData();
-
-                    for (const comment of newCommentsData) {
-                        const commentDiv = await createCommentElement(comment);
-                        // Додаємо в кінець секції коментарів
-                        commentsSection.appendChild(commentDiv);
-                        // "Оживляємо" кнопки лайків/редагування для нового елемента
-                        handleCommentInteractions(commentDiv, user, comment.Author);
-                    }
+                if (commentsResponse.status === 404) {
+                    handleDeletedTopic();
+                    return;
                 }
 
-                // Оновлюємо лічильник коментарів завжди, щоб синхронізувати з сервером
-                updateStatsCounter(serverComments.length);
+                if (commentsResponse.ok) {
+                    const commentsData = await commentsResponse.json();
+                    const comments = commentsData.comments || [];
+                    comments.sort((a, b) => a.idComments - b.idComments);
+                    await syncCommentsIncremental(comments);
                 }
 
                 // --- ОНОВЛЕННЯ ЛАЙКІВ ТЕМИ ---
@@ -971,7 +1326,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const topicsData = await topicsResponse.json();
                     const topics = Array.isArray(topicsData) ? topicsData : (topicsData.topics || []);
                     const currentTopic = topics.find(t => String(t.idTopic) === topicId);
-                    
+
+                    if (!currentTopic) {
+                        handleDeletedTopic();
+                        return;
+                    }
+
                     if (currentTopic) {
                         const topicLikes = document.getElementById('likes-count');
                         const topicDislikes = document.getElementById('dislikes-count');
@@ -1014,29 +1374,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     topicId: topicId 
                 })
             })
-            .then(response => response.json())
+            .then(async response => {
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
+                }
+                return payload;
+            })
             .then(data => {
                 if (data.status === 'success') {
-                    const commentDiv = document.querySelector(`.comment[data-comment-id="${commentId}"]`);
-                    
-                    if (commentDiv) {
-                        commentDiv.style.transition = 'opacity 0.3s ease';
-                        commentDiv.style.opacity = '0';
-                        
-                        setTimeout(() => {
-                            commentDiv.remove();
-                            // Оновлюємо лічильник коментарів при видаленні
-                            const currentCount = document.querySelectorAll('#comments-section .comment').length;
-                            updateStatsCounter(currentCount);
-                        }, 300);
-                    }
+                    fetch(`/forum/topic/${topicId}/comments_list/`)
+                        .then(response => response.json())
+                        .then(payload => syncCommentsIncremental(payload.comments || []));
                 } else {
-                    showAlert('Помилка: ' + data.message);
+                    showAlert('Помилка: ' + (data.error || data.message || 'Не вдалося видалити коментар.'));
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('Не вдалося видалити коментар.');
+                showAlert('Не вдалося видалити коментар: ' + (error.message || 'невідома помилка'));
             });
         }
         function createEditForm(commentContentElement) {
@@ -1075,6 +1431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     if (response.ok) {
                         commentContentElement.textContent = updatedContent;
+                        patchCachedComment(commentId, { Content: updatedContent });
                         editForm.remove();
                     } else {
                         showAlert('Сталася помилка при збереженні коментаря.');
@@ -1092,31 +1449,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const deleteButton = commentDiv.querySelector('.delete-comment-btn');
             const commentId = commentDiv.getAttribute('data-comment-id');
 
-            document.querySelectorAll(".actions-btn-comment").forEach((btn) => {
-                if (!btn.hasAttribute('data-listener-attached')) {
-                    btn.addEventListener("click", () => {
-                        const actionsMenuCom = btn.closest('.topic-actions').querySelector('.actions-menu-comment');
-                        if (actionsMenuCom) {
-                            actionsMenuCom.style.display =
-                                actionsMenuCom.style.display === "none" || actionsMenuCom.style.display === ""
-                                ? "block"
-                                : "none";
-                        }
-                    });
-                    btn.setAttribute('data-listener-attached', 'true');
-                }
-            });
-
-            commentDiv.querySelector('.comment-like-btn').addEventListener('click', () => {
+            commentDiv.querySelector('.comment-like-btn').addEventListener('click', (event) => {
                 event.stopPropagation();
                 updateCommentReaction(commentId, 'like')
             });
-            commentDiv.querySelector('.comment-dislike-btn').addEventListener('click', () => {
+            commentDiv.querySelector('.comment-dislike-btn').addEventListener('click', (event) => {
                 event.stopPropagation();
                 updateCommentReaction(commentId, 'dislike')
             });
             commentDiv.querySelector('.comment-reply-btn').addEventListener('click', (event) => {
-                if (comment.Author === "Користувача видалено" || comment.Author === "Коментар видалено") {
+                if (commentAuthor === "Користувача видалено" || commentAuthor === "Коментар видалено") {
                     event.preventDefault();
                     event.stopPropagation();
                     showAlert("Неможливо відповісти на видалений коментар");
@@ -1131,13 +1473,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 editButton.style.display = user === commentAuthor ? 'inline-block' : 'none';
                 deleteButton.style.display = 'inline-block';
 
-                deleteButton.addEventListener('click', () => {
+                deleteButton.addEventListener('click', (event) => {
                     event.stopPropagation();
                     deleteComment(user, commentId);
                 });
 
                 if (user === commentAuthor) {
-                    editButton.addEventListener('click', () => {
+                    editButton.addEventListener('click', (event) => {
                         event.stopPropagation();
                         editComment(commentDiv, user, commentId)
                     });
@@ -1557,6 +1899,11 @@ initializeCommentForm();
 
     function closeAlert() {
         document.getElementById('customAlert').style.display = 'none';
+        if (alertRedirectUrl) {
+            const redirectUrl = alertRedirectUrl;
+            alertRedirectUrl = null;
+            window.location.href = redirectUrl;
+        }
     }
 </script>
 {% endblock %}

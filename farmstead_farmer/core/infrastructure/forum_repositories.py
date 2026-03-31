@@ -352,17 +352,44 @@ class DjangoForumRepository(ForumRepository):
 
     def delete_comment(self, comment_id: int, topic_id: int) -> None:
         try:
-            updated_topic = Topic.objects.filter(idTopic=topic_id).update(
-                Comments=F('Comments') - 1
-            )
-            
-            if updated_topic == 0:
+            if not Topic.objects.filter(idTopic=topic_id).exists():
                 raise DomainError(f"Topic {topic_id} not found")
 
-            deleted_count = Comment.objects.filter(idComments=comment_id).delete()[0]
-            
+            root_comment_id = Comment.objects.filter(
+                idComments=comment_id,
+                Topics_id=topic_id,
+            ).values_list('idComments', flat=True).first()
+            if root_comment_id is None:
+                raise DomainError(f"Comment {comment_id} not found")
+
+            ids_to_delete = {root_comment_id}
+            frontier = [root_comment_id]
+
+            # Видаляємо всю гілку: коментар і всіх його нащадків будь-якої глибини
+            while frontier:
+                child_ids = list(
+                    Comment.objects.filter(
+                        Topics_id=topic_id,
+                        ParentId__in=frontier,
+                    ).values_list('idComments', flat=True)
+                )
+                frontier = [cid for cid in child_ids if cid not in ids_to_delete]
+                ids_to_delete.update(frontier)
+
+            comments_qs = Comment.objects.filter(
+                Topics_id=topic_id,
+                idComments__in=ids_to_delete,
+            )
+            deleted_count = comments_qs.count()
+            if deleted_count > 0:
+                comments_qs._raw_delete(comments_qs.db)
+
             if deleted_count == 0:
                 raise DomainError(f"Comment {comment_id} not found")
+
+            Topic.objects.filter(idTopic=topic_id).update(
+                Comments=F('Comments') - deleted_count
+            )
 
         except Exception as e:
             if isinstance(e, DomainError):
