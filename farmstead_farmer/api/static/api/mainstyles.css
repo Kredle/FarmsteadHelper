@@ -413,12 +413,20 @@ footer {
     align-items: center;   
     gap: 15px;             
     flex-direction: row;
-    padding-right: 20px;   
+    padding-right: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
 }
 
 .notification-container {
-    display: flex;
+    display: none; /* За замовчуванням приховано для запобігання мерехтінню */
     align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.notification-container[style*="display: flex"] {
+    opacity: 1; /* Плавний фейд-ін коли показується */
 }
 
 .notif-icon {

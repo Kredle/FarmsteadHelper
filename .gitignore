@@ -1,0 +1,3 @@
+farmstead_farmer/.copilotignore
+.env
+django_mail.log

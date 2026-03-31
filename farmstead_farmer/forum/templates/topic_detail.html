@@ -29,6 +29,49 @@
             padding-bottom: 10px;
         }
         #title { margin: 0; }
+
+        #comment-form {
+            margin-top: 10px;
+        }
+
+        #comment-form #comment-content {
+            display: block;
+            width: 100%;
+            min-height: 120px;
+            box-sizing: border-box;
+            border: 2px solid var(--card_border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            background: var(--box_color);
+            color: var(--textcolor_dark);
+            margin-bottom: 10px;
+        }
+
+        #comment-form #comment-content:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 145, 115, 0.15);
+        }
+
+        #comment-form .submit-comment,
+        #comment-form .cancel-comment {
+            background-color: var(--accent);
+            color: var(--textcolor_light);
+            border: none;
+            margin-right: 8px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #comment-form .submit-comment:hover,
+        #comment-form .cancel-comment:hover {
+            background-color: var(--accent_hover);
+        }
     </style>
 {% endblock %}
 
@@ -1292,7 +1335,7 @@ function createCommentForm(parentId = null) {
     commentForm.id = 'comment-form';
     commentForm.style.marginTop = '10px';
     commentForm.innerHTML = `
-        <textarea id="comment-content" class="comment-content" placeholder="Введіть ваш коментар"></textarea>
+        <textarea id="comment-content" class="comment-content" placeholder="Введіть ваш коментар..."></textarea>
         <button id="submit-comment" class="submit-comment">Додати коментар</button>
         <button id="cancel-comment" class="cancel-comment">Скасувати</button>
     `;

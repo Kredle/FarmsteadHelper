@@ -28,13 +28,13 @@ async function updateNotifications() {
             if (!badge || !mailIcon || !container) return;
 
             // Оновлюємо лічильник та іконку
+            // Завжди показуємо звичайний конверт, але лише з числом якщо є сповіщення
+            mailIcon.textContent = '✉️'; // Завжди звичайний конверт
             if (list.length > 0) {
                 badge.style.display = 'block';
                 badge.textContent = list.length > 999 ? '999+' : list.length;
-                mailIcon.textContent = '📩'; // Закритий лист
             } else {
                 badge.style.display = 'none';
-                mailIcon.textContent = '✉'; // Відкритий лист
             }
 
             // Рендеримо список
@@ -112,8 +112,9 @@ function refreshBadgeCount(newCount) {
         }
     });
 
+    // Завжди показуємо звичайний конверт
     mailIcons.forEach(icon => {
-        icon.textContent = newCount > 0 ? '📩' : '✉';
+        icon.textContent = '✉️';
     });
 }
 

@@ -260,3 +260,181 @@ h1 {
 .comment button:hover {
     background-color: var(--accent_hover);
 }
+
+/* ==================== УЛУЧШЕНА СТРУКТУРА КОМЕНТАРІВ ================== */
+
+/* Основне вікно введення коментаря */
+#comment-input, .reply-input {
+    width: 100%;
+    min-height: 120px;
+    border: 2px solid var(--card_border);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    resize: vertical;
+    background-color: var(--box_color);
+    color: var(--textcolor_dark);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#comment-input:focus, .reply-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 145, 115, 0.1);
+}
+
+/* Кнопки поруч з вводом */
+#add-comment-btn, .add-reply-btn {
+    background-color: var(--accent);
+    color: var(--textcolor_light);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 8px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+#add-comment-btn:hover, .add-reply-btn:hover {
+    background-color: var(--accent_hover);
+}
+
+/* ==================== NESTED COMMENTS (ЯК У REDDIT) ================== */
+
+/* Обгортка для коментаря з лінією */
+.comment-thread {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Вертикальна лінія для показання ієрархії */
+.comment-thread::before {
+    content: '';
+    width: 2px;
+    background-color: var(--card_border);
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+.comment-thread.root::before {
+    content: none; /* Без лінії для кореневих коментарів */
+}
+
+/* Контейнер самого коментаря */
+.comment-wrapper {
+    flex: 1;
+    position: relative;
+}
+
+/* Collapse/Expand кнопка */
+.collapse-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    margin-right: 5px;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.collapse-btn:hover {
+    color: var(--accent_hover);
+}
+
+.comment-header-with-collapse {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+/* Відповіді (replies) до коментаря */
+.replies-list {
+    margin-top: 15px;
+    margin-left: 0;
+}
+
+.reply {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    background-color: rgba(59, 145, 115, 0.03);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Вертикальна лінія для reply */
+.reply::before {
+    content: '';
+    width: 2px;
+    background-color: var(--card_border);
+    flex-shrink: 0;
+    margin-left: 5px;
+}
+
+/* Контроль вкладеності - максимум 4 рівні */
+.comment-level-3 .replies-list,
+.comment-level-4 .replies-list {
+    border-left: 2px solid var(--card_border);
+    padding-left: 10px;
+    margin-left: 10px;
+}
+
+.comment-level-4 .reply:before,
+.comment-level-5 .reply:before {
+    display: none; /* Приховуємо лінії на глибоких рівнях */
+}
+
+/* Для дуже глибоких рівнів - без дальшого вкладення */
+.comment-level-4 .replies-list,
+.comment-level-5 .replies-list {
+    margin-left: 0;
+    padding-left: 0;
+}
+
+.reply-section {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--card_border);
+}
+
+.comment-hidden {
+    opacity: 0.6;
+}
+
+.comment-hidden .comment-text,
+.comment-hidden .comment-buttons,
+.comment-hidden .reply-section {
+    display: none;
+}
+
+/* Компактний заголовок для згорнутих коментарів */
+.comment-collapsed-info {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+}
+
+/* Responsive для мобільних */
+@media (max-width: 768px) {
+    .comment-thread {
+        gap: 5px;
+    }
+    
+    .comment-thread::before {
+        width: 1px;
+        margin-left: 5px;
+    }
+    
+    #comment-input, .reply-input {
+        min-height: 100px;
+        font-size: 13px;
+        padding: 10px;
+    }
+}

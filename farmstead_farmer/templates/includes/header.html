@@ -61,9 +61,7 @@
         const sideMenuAvatar = document.getElementById('side-menu-avatar');
 
         if (token) {
-            document.querySelectorAll('.notification-container').forEach(el => {
-                el.style.setProperty('display', 'flex', 'important');
-            });
+            // Контейнер сповіщень залишаємо прихованим доки не завантажимо дані
             fetch('/api/user-data/', {
                 method: 'POST',
                 headers: {
@@ -97,6 +95,17 @@
                         <a href="/edit-profile">Налаштування профілю</a>
                         <a href="#" id="side-menu-logout">Вихід</a>
                      `;
+
+                    // Тепер показуємо контейнер сповіщень після завантаження всіх даних
+                    document.querySelectorAll('.notification-container').forEach(el => {
+                        el.style.setProperty('display', 'flex', 'important');
+                    });
+
+                    // Показуємо весь user-controls контейнер з плавним переходом
+                    const userControls = document.querySelector('.user-controls');
+                    if (userControls) {
+                        userControls.style.opacity = '1';
+                    }
 
                     // Примусово оновлюємо сповіщення, бо ми щойно перемалювали DOM
                     if (typeof updateNotifications === 'function') {
@@ -157,6 +166,12 @@
             document.querySelectorAll('.notification-container').forEach(el => {
                 el.style.display = 'none';
             });
+            
+            // Показуємо user-controls для неавторизованих користувачів
+            const userControls = document.querySelector('.user-controls');
+            if (userControls) {
+                userControls.style.opacity = '1';
+            }
         }
     });
 
