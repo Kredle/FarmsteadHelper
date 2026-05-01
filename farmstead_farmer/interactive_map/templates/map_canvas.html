@@ -151,6 +151,7 @@
             font-size: 13px;
             line-height: 1.3;
             word-break: break-word;
+            white-space: pre-line;
         }
         .context-popup-actions {
             display: flex;
@@ -235,6 +236,15 @@
         <button type="button" id="contextDeleteConfirmBtn" class="delete-btn">Видалити</button>
     </div>
 </div>
+<div class="modal discard-changes-modal" id="discardChangesModal" role="dialog" aria-modal="true" aria-labelledby="discardChangesTitle">
+    <button type="button" class="modal-close" onclick="closeDiscardChangesModal(false)" aria-label="Закрити">&times;</button>
+    <h3 id="discardChangesTitle">Незбережені зміни</h3>
+    <p id="discardChangesMessage">Є незбережені зміни. Під час перемикання незбережені зміни будуть видалені. Продовжити?</p>
+    <div class="modal-buttons">
+        <button type="button" class="global-btn discard-cancel-btn" onclick="closeDiscardChangesModal(false)">Скасувати</button>
+        <button type="button" class="global-btn global-btn--accent" onclick="closeDiscardChangesModal(true)">Продовжити</button>
+    </div>
+</div>
 <body>
 <div class="global-actions-bar" id="globalActionsBar">
     <div class="global-actions-left">
@@ -249,13 +259,14 @@
         <button class="global-btn" onclick="redo()" title="Повернути (Ctrl+Shift+Z)">↻ Повернути</button>
         <button class="global-btn global-btn--accent" onclick="handleSaveMap()" title="Зберегти мапу">🖫 Зберегти</button>
         <button class="global-btn" id="subscriptionOrSwitchBtn" onclick="handleSubscriptionOrSwitch()" title="Передплата">💳 Передплата</button>
+        <button type="button" id="viewSwitchMapBtn" class="global-btn view-switch-map-btn" onclick="openMapSwitcher()" style="display:none;">
+            🗺 Зміна мапи
+        </button>
+        <button type="button" id="backToAllMapsBtn" class="global-btn back-to-all-maps-btn" onclick="goBackToAllMaps()" title="Повернутися до всіх моїх карт">
+            ← Мої карти
+        </button>
     </div>
 </div>
-
-<button type="button" id="viewSwitchMapBtn" class="view-switch-map-btn" onclick="openMapSwitcher()" style="display:none;">
-    🗺 Зміна мапи
-</button>
-
 <div class="toolbar" id="mainToolbar">
     <div class="tool-section-label">Малювання</div>
     <button class="tool-btn" data-tool="draw" onclick="setTool('draw')" title="Олівець">✎</button>
@@ -427,6 +438,7 @@
         <p><strong>Гумка:</strong> видаляє тільки лінії пензля.</p>
         <p><strong>ПКМ по об'єкту/ділянці:</strong> відкриває меню з кнопкою видалення.</p>
         <p><strong>ПКМ + перетягування:</strong> рухає карту (панорамування).</p>
+        <p><strong>Ctrl + ПКМ + перетягування об'єкта:</strong> переміщує рослини та будівлі.</p>
         <p><strong>Колесо миші:</strong> масштабує карту (наблизити/віддалити).</p>
         <p><strong>Курсор:</strong> При наведені на об'єкт показує назву цього об'єкта.</p>
     </div>
@@ -701,24 +713,16 @@
     }
 
     .view-switch-map-btn {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1200;
         width: auto;
         margin: 0;
         padding: 10px 14px;
         border-radius: 12px;
-        border: 1px solid rgba(179, 205, 192, 0.35);
-        background: linear-gradient(180deg, #4f6159, #41524b);
-        color: #e8f1ed;
-        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
         font-size: 14px;
         font-weight: 700;
     }
 
     .view-switch-map-btn:hover {
-        background: linear-gradient(180deg, #5b7067, #4a5f56);
+        transform: translateY(-1px);
     }
 
     .global-actions-left {
@@ -727,6 +731,18 @@
         gap: 10px;
     }
 
+    .back-to-all-maps-btn {
+        width: auto;
+        margin: 0;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .back-to-all-maps-btn:hover {
+        transform: translateY(-1px);
+    }
     .map-brand-dot {
         width: 12px;
         height: 12px;
@@ -946,6 +962,53 @@
         padding: 9px 14px;
     }
 
+    .discard-changes-modal {
+        background: linear-gradient(180deg, #44564f, #33423c);
+        border-color: #5a7068;
+        box-shadow: 0 20px 44px rgba(12, 22, 18, 0.32);
+        z-index: 2500;
+    }
+
+    .discard-changes-modal h3 {
+        color: #f2f7f4;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .discard-changes-modal p {
+        margin: 0 0 14px;
+        color: #d7e4de;
+        line-height: 1.5;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    .discard-changes-modal .modal-buttons {
+        justify-content: center;
+    }
+
+    .discard-changes-modal .global-btn {
+        min-width: 140px;
+    }
+
+    .discard-cancel-btn {
+        background: linear-gradient(180deg, #556962, #44544d);
+        color: #eef5f1;
+        border-color: #687d75;
+    }
+
+    .discard-cancel-btn:hover {
+        background: linear-gradient(180deg, #62756d, #4d6058);
+    }
+
+    .discard-changes-modal .modal-close {
+        color: #f3f8f5 !important;
+    }
+
+    .discard-changes-modal .modal-close:hover {
+        color: #ffffff !important;
+    }
+
     #mapSwitcherSelect,
     #mapNameInput {
         width: 100%;
@@ -1155,6 +1218,15 @@
         <button class="custom-alert-btn" onclick="closeAlert()">OK</button>
     </div>
 </div>
+<div class="modal discard-changes-modal" id="discardChangesModal" role="dialog" aria-modal="true" aria-labelledby="discardChangesTitle">
+    <button type="button" class="modal-close" onclick="closeDiscardChangesModal(false)" aria-label="Закрити">&times;</button>
+    <h3 id="discardChangesTitle">Незбережені зміни</h3>
+    <p id="discardChangesMessage">Є незбережені зміни. Під час перемикання незбережені зміни будуть видалені. Продовжити?</p>
+    <div class="modal-buttons">
+        <button type="button" class="global-btn discard-cancel-btn" onclick="closeDiscardChangesModal(false)">Скасувати</button>
+        <button type="button" class="global-btn global-btn--accent" onclick="closeDiscardChangesModal(true)">Продовжити</button>
+    </div>
+</div>
 <script>
     let canDraw = true;
     let first_map = true;
@@ -1170,6 +1242,8 @@
     let persistedCanvasImageData = null;
     let currentMapName = current_map_name_from_server || '';
     let mapNameModalResolver = null;
+    let discardChangesModalResolver = null;
+    let lastSavedHistoryIndex = -1;
     const mapData = "{{ map_data|escapejs }}";
     const token = localStorage.getItem("authToken");
     const canvas = document.getElementById("mapCanvas");
@@ -1233,7 +1307,7 @@
                 }
 
                 redrawCanvas();
-                saveState();
+                saveState(false);
             } catch (e) {
                 console.error("Помилка при парсингу даних карти:", e);
                 // Якщо дані не в JSON форматі (стара версія), завантажуємо просто зображення
@@ -1242,7 +1316,7 @@
                 img.onload = function() {
                     loadedBackgroundImage = img;
                     redrawCanvas();
-                    saveState();
+                    saveState(false);
                 };
                 img.src = mapData;
             }
@@ -1320,6 +1394,10 @@
             return;
         }
         window.location.href = '/map/subscription/';
+    }
+
+    function goBackToAllMaps() {
+        window.location.href = '/map/my-maps/';
     }
 
     async function fetchUserMaps() {
@@ -1401,6 +1479,10 @@
             return;
         }
 
+        if (!(await confirmDiscardUnsavedChanges())) {
+            return;
+        }
+
         const targetOwner = canDraw ? await fetchUserData() : Number(owner_id || 0);
         if (!targetOwner) {
             showAlert('Не вдалося визначити власника мапи.');
@@ -1408,6 +1490,7 @@
         }
 
         const params = new URLSearchParams(window.location.search);
+        params.delete('create_new');
         params.set('owner_id', String(targetOwner));
         params.set('map_id', String(select.value));
         if (token) {
@@ -1417,6 +1500,10 @@
     }
 
     async function createNewMapFromModal() {
+        if (!(await confirmDiscardUnsavedChanges())) {
+            return;
+        }
+
         closeMapSwitcher();
         await createNewMap();
     }
@@ -1482,6 +1569,42 @@
             mapNameModalResolver(null);
             mapNameModalResolver = null;
         }
+    }
+
+    function markWorkspaceSaved() {
+        lastSavedHistoryIndex = historyIndex;
+    }
+
+    function openDiscardChangesModal() {
+        const modal = document.getElementById('discardChangesModal');
+        if (!modal) {
+            return Promise.resolve(true);
+        }
+
+        modal.classList.add('visible');
+        return new Promise((resolve) => {
+            discardChangesModalResolver = resolve;
+        });
+    }
+
+    function closeDiscardChangesModal(confirmed) {
+        const modal = document.getElementById('discardChangesModal');
+        if (modal) {
+            modal.classList.remove('visible');
+        }
+
+        if (discardChangesModalResolver) {
+            discardChangesModalResolver(Boolean(confirmed));
+            discardChangesModalResolver = null;
+        }
+    }
+
+    async function confirmDiscardUnsavedChanges() {
+        if (historyIndex === lastSavedHistoryIndex) {
+            return true;
+        }
+
+        return openDiscardChangesModal();
     }
 
     /*if (!token) {
@@ -1573,6 +1696,7 @@
     let currentBrushSize = 5;
     let history = [];
     let historyIndex = 0;
+    let hasUnsavedChanges = false;
     const topToolbar = document.getElementById('topToolbar');
     const applyButton = document.getElementById('applyButton');
     const fillModal = document.getElementById('fillModal');
@@ -1610,6 +1734,7 @@
     let rightDragEntityState = null;
     let rightDragEntityMoved = false;
     let rightDragTriggered = false;
+    let rightControlDragMode = false;
     const RIGHT_DRAG_THRESHOLD = 6;
     const PIXELS_PER_METER = 20;
     const coordsLabel = document.getElementById('coordsLabel');
@@ -2285,6 +2410,7 @@
 
             isRightMouseDown = true;
             rightDragTriggered = false;
+            rightControlDragMode = !!e.ctrlKey;
             rightDownOffsetX = e.offsetX;
             rightDownOffsetY = e.offsetY;
             rightDownClientX = e.clientX;
@@ -2296,7 +2422,7 @@
             if (canDraw) {
                 const worldPos = screenToWorld(e.offsetX, e.offsetY);
                 const rightEntityTarget = getTopEntityTargetAtPoint(worldPos.x, worldPos.y);
-                if (rightEntityTarget) {
+                if (e.ctrlKey && rightEntityTarget) {
                     const entity = getEntityByTarget(rightEntityTarget);
                     if (entity) {
                         rightDragEntityState = {
@@ -2348,7 +2474,7 @@
             return;
         }
 
-        if (isRightMouseDown && !rightDragTriggered) {
+        if (isRightMouseDown && !rightDragTriggered && !rightDownDeletionTarget && !rightControlDragMode) {
             const dx = e.offsetX - rightDownOffsetX;
             const dy = e.offsetY - rightDownOffsetY;
             const movedEnough = Math.sqrt(dx * dx + dy * dy) >= RIGHT_DRAG_THRESHOLD;
@@ -2415,7 +2541,7 @@
                 return;
             }
 
-            const shouldOpenPopup = isRightMouseDown && !rightDragTriggered && canDraw && !!rightDownDeletionTarget;
+            const shouldOpenPopup = isRightMouseDown && !rightDragTriggered && !rightControlDragMode && canDraw && !!rightDownDeletionTarget;
 
             if (shouldOpenPopup) {
                 showContextDeletePopup(rightDownClientX, rightDownClientY, rightDownDeletionTarget);
@@ -2427,6 +2553,7 @@
             rightDownDeletionTarget = null;
             rightDragEntityState = null;
             rightDragEntityMoved = false;
+            rightControlDragMode = false;
             updateCanvasCursor(!canDraw);
             e.preventDefault();
         }
@@ -2446,6 +2573,7 @@
             isRightMouseDown = false;
             rightDragTriggered = false;
             rightDownDeletionTarget = null;
+            rightControlDragMode = false;
             updateCanvasCursor(!canDraw);
         }
     });
@@ -3079,7 +3207,7 @@
         document.getElementById('brushSizeValue').textContent = this.value;
     });
 
-    function saveState() {
+    function saveState(markDirty = true) {
         history = history.slice(0, historyIndex + 1);
         let imageData = null;
         try {
@@ -3102,6 +3230,9 @@
         
         history.push(state);
         historyIndex = history.length - 1;
+                if (!markDirty) {
+                    lastSavedHistoryIndex = historyIndex;
+                }
     }
 
     function undo() {
@@ -3168,24 +3299,6 @@
         if (!canDraw) return;
         if (e.button !== 0) return;
         const worldPos = screenToWorld(e.offsetX, e.offsetY);
-
-        if (tool === 'tree' || tool === 'vegetable') {
-            const hit = getMovablePlantAtPoint(worldPos.x, worldPos.y);
-            if (hit && hit.entity) {
-                enrichEntityCompatibility(hit.entity, hit.entityType);
-                dragEntityState = {
-                    entityType: hit.entityType,
-                    index: hit.index,
-                    entity: hit.entity,
-                    originalX: hit.entity.x,
-                    originalY: hit.entity.y,
-                };
-                selectedCompatibilityTarget = hit.entity;
-                dragConflictTarget = null;
-                saveState();
-                return;
-            }
-        }
         
         if (tool === "draw") {
             isDrawing = true;
@@ -3766,6 +3879,27 @@
         return 'Об’єкт';
     }
 
+    function getEntityPopupDescription(target) {
+        const entity = getEntityByTarget(target);
+        if (!entity) {
+            return target?.label || 'Немає даних для відображення.';
+        }
+
+        const descriptionLines = [];
+
+        if (target.entityType === 'tree') {
+            descriptionLines.push(`Назва: ${entity.treeName || 'невідомо'}`);
+            descriptionLines.push(`Сорт: ${entity.sortName || 'невідомо'}`);
+        } else if (target.entityType === 'vegetable') {
+            descriptionLines.push(`Назва: ${entity.vegetableName || 'невідомо'}`);
+            descriptionLines.push(`Сорт: ${entity.sortVegName || 'невідомо'}`);
+        } else {
+            descriptionLines.push(`Назва: ${target.label || 'невідомо'}`);
+        }
+
+        return descriptionLines.join('\n');
+    }
+
     function getFieldLabel(figure) {
         const typeLabelMap = {
             grass: 'трава',
@@ -3860,7 +3994,58 @@
         }
 
         if (target.type === 'field' && allFigures[target.index]) {
-            allFigures.splice(target.index, 1);
+            const figure = allFigures[target.index];
+            const polygon = Array.isArray(figure?.points) ? figure.points : null;
+            let compatibilityNeedsRebuild = false;
+
+            if (polygon) {
+                const isFigureInsideDeletedField = (candidateFigure) => {
+                    if (!candidateFigure || !Array.isArray(candidateFigure.points) || candidateFigure.points.length < 3) {
+                        return false;
+                    }
+
+                    return candidateFigure.points.every((point) =>
+                        isPointInsidePolygon({ x: Number(point.x), y: Number(point.y) }, polygon)
+                    );
+                };
+
+                const filterEntitiesInsideFigure = (collection) => {
+                    const nextCollection = [];
+                    for (const entity of collection) {
+                        if (entity && isPointInsidePolygon({ x: entity.x, y: entity.y }, polygon)) {
+                            if (entity._entityType === 'tree' || entity._entityType === 'vegetable') {
+                                compatibilityNeedsRebuild = true;
+                            }
+                            continue;
+                        }
+                        nextCollection.push(entity);
+                    }
+                    return nextCollection;
+                };
+
+                flowersOnCanvas = filterEntitiesInsideFigure(flowersOnCanvas);
+                buildingsOnCanvas = filterEntitiesInsideFigure(buildingsOnCanvas);
+                treesOnCanvas = filterEntitiesInsideFigure(treesOnCanvas);
+                vegetablesOnCanvas = filterEntitiesInsideFigure(vegetablesOnCanvas);
+
+                if (selectedCompatibilityTarget && isPointInsidePolygon({ x: selectedCompatibilityTarget.x, y: selectedCompatibilityTarget.y }, polygon)) {
+                    selectedCompatibilityTarget = null;
+                }
+
+                allFigures = allFigures.filter((candidateFigure, candidateIndex) => {
+                    if (candidateIndex === target.index) {
+                        return false;
+                    }
+
+                    return !isFigureInsideDeletedField(candidateFigure);
+                });
+            } else {
+                allFigures.splice(target.index, 1);
+            }
+
+            if (compatibilityNeedsRebuild) {
+                rebuildCompatibilityGrid();
+            }
             return true;
         }
 
@@ -3879,10 +4064,10 @@
         }
 
         contextDeleteTitle.textContent = target.type === 'field' ? 'Ділянка' : 'Об’єкт';
-        contextDeleteDescription.textContent = target.label;
+        contextDeleteDescription.textContent = getEntityPopupDescription(target);
 
-        const popupWidth = 280;
-        const popupHeight = 130;
+        const popupWidth = 320;
+        const popupHeight = target.type === 'entity' && (target.entityType === 'tree' || target.entityType === 'vegetable') ? 160 : 130;
         const margin = 12;
         let left = screenX + 10;
         let top = screenY + 10;
@@ -4026,7 +4211,17 @@
         ctx.restore();
     }
 
+    function drawAllTreeCompatibilityCircles() {
+        for (const tree of treesOnCanvas) {
+            drawCompatibilityCircle(tree, 'rgba(56, 142, 60, 0.09)');
+        }
+    }
+
     function drawCompatibilityHighlights() {
+        if (dragEntityState || rightDragEntityState) {
+            drawAllTreeCompatibilityCircles();
+        }
+
         if (selectedCompatibilityTarget) {
             drawCompatibilityCircle(selectedCompatibilityTarget, 'rgba(255, 193, 7, 0.22)');
         }
@@ -4098,10 +4293,12 @@
                     }
                     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
                 }
+                markWorkspaceSaved();
                 showAlert("Мапа збережена!");
             } else {
                 await updateMap();
-                saveState();
+                saveState(false);
+                markWorkspaceSaved();
                 showAlert("Мапа збережена!");
             }
         } catch (error) {
@@ -4143,7 +4340,8 @@
         hideContextDeletePopup();
         rebuildCompatibilityGrid();
         redrawCanvas();
-        saveState();
+        saveState(false);
+        markWorkspaceSaved();
     }
 
     async function createNewMap() {
@@ -4176,6 +4374,7 @@
             params.set('token', token);
         }
         window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        markWorkspaceSaved();
         showAlert('Створено нову мапу. Збережіть її, щоб вона з’явилася у вашому акаунті.');
     }
 
