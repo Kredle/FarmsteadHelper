@@ -1,6 +1,6 @@
 ﻿import json
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, time as dt_time
 from django.db.models.expressions import RawSQL
 from forum.models import Comment, Topic
 from django.db.models import F
@@ -50,6 +50,23 @@ class DjangoForumRepository(ForumRepository):
 
         return str(value)
 
+    def _format_time(self, value) -> str:
+        """Форматує час у вигляд: 14:35."""
+        if value is None:
+            return ""
+
+        if isinstance(value, datetime):
+            value = value.time()
+
+        if isinstance(value, dt_time):
+            return value.strftime("%H:%M")
+
+        value_str = str(value)
+        parts = value_str.split(':')
+        if len(parts) >= 2:
+            return f"{parts[0].zfill(2)}:{parts[1].zfill(2)}"
+        return value_str
+
     def _getTopic(self):
         """Повертає 'Stream' (QuerySet) для тем з безпечними JSON полями."""
         return Topic.objects.defer("Likes_list", "Dislikes_list").annotate(
@@ -86,7 +103,7 @@ class DjangoForumRepository(ForumRepository):
                     "Likes": t.Likes,
                     "Dislikes": t.Dislikes,
                     "Date": self._format_ukrainian_date(t.Date),
-                    "Time": t.Time,
+                    "Time": self._format_time(t.Time),
                     "Author": str(t.Author),
                     "Comments": t.Comments,
                     "Likes_list": self._get_clean_json_list(t, 'l_raw'),
@@ -107,7 +124,7 @@ class DjangoForumRepository(ForumRepository):
                     "Dislikes": c.Dislikes,
                     "Comments": c.Comments,
                     "Date": self._format_ukrainian_date(c.Date),
-                    "Time": c.Time,
+                    "Time": self._format_time(c.Time),
                     "ParentId": c.ParentId,
                     "Likes_list": self._get_clean_json_list(c, 'l_raw'),
                     "Dislikes_list": self._get_clean_json_list(c, 'd_raw'),
@@ -354,7 +371,7 @@ class DjangoForumRepository(ForumRepository):
                 "Author": str(comment.Author),
                 "Content": comment.Content,
                 "Date": self._format_ukrainian_date(comment.Date),
-                "Time": comment.Time,
+                "Time": self._format_time(comment.Time),
                 "ParentId": parent_id,
                 "Comments": 0,
             }
