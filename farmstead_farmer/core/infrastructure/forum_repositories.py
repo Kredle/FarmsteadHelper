@@ -1,5 +1,6 @@
 ﻿import json
 from typing import List, Optional
+from datetime import date, datetime
 from django.db.models.expressions import RawSQL
 from forum.models import Comment, Topic
 from django.db.models import F
@@ -19,7 +20,36 @@ class CommentNotFoundError(DomainError):
 
 
 class DjangoForumRepository(ForumRepository):
+    UKRAINIAN_MONTHS_GENITIVE = {
+        1: "січня",
+        2: "лютого",
+        3: "березня",
+        4: "квітня",
+        5: "травня",
+        6: "червня",
+        7: "липня",
+        8: "серпня",
+        9: "вересня",
+        10: "жовтня",
+        11: "листопада",
+        12: "грудня",
+    }
+
     # --------------------------- Допоміжні методи ---------------------------------
+    def _format_ukrainian_date(self, value) -> str:
+        """Форматує дату у вигляд: 01 травня 2026 р."""
+        if value is None:
+            return ""
+
+        if isinstance(value, datetime):
+            value = value.date()
+
+        if isinstance(value, date):
+            month_name = self.UKRAINIAN_MONTHS_GENITIVE.get(value.month, "")
+            return f"{value.day:02d} {month_name} {value.year} р.".strip()
+
+        return str(value)
+
     def _getTopic(self):
         """Повертає 'Stream' (QuerySet) для тем з безпечними JSON полями."""
         return Topic.objects.defer("Likes_list", "Dislikes_list").annotate(
@@ -55,7 +85,7 @@ class DjangoForumRepository(ForumRepository):
                     "Category": t.Category,
                     "Likes": t.Likes,
                     "Dislikes": t.Dislikes,
-                    "Date": t.Date,
+                    "Date": self._format_ukrainian_date(t.Date),
                     "Time": t.Time,
                     "Author": str(t.Author),
                     "Comments": t.Comments,
@@ -76,7 +106,7 @@ class DjangoForumRepository(ForumRepository):
                     "Likes": c.Likes,
                     "Dislikes": c.Dislikes,
                     "Comments": c.Comments,
-                    "Date": c.Date,
+                    "Date": self._format_ukrainian_date(c.Date),
                     "Time": c.Time,
                     "ParentId": c.ParentId,
                     "Likes_list": self._get_clean_json_list(c, 'l_raw'),
@@ -323,7 +353,7 @@ class DjangoForumRepository(ForumRepository):
                 "id": comment.idComments,
                 "Author": str(comment.Author),
                 "Content": comment.Content,
-                "Date": comment.Date,
+                "Date": self._format_ukrainian_date(comment.Date),
                 "Time": comment.Time,
                 "ParentId": parent_id,
                 "Comments": 0,

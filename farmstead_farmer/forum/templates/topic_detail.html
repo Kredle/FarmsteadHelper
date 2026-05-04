@@ -684,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const replyToText = buildReplyToHtml(comment.ParentId, parentAuthorName);
 
             commentDiv.innerHTML = `
-                <p class="comment-meta"><span class="toggle-replies-btn" style="display: none;">▶</span><span class="comment-meta-text">Автор: ${authorLink} | Дата: ${comment.Date} | Час: ${comment.Time}</span></p>
+                <p class="comment-meta"><span class="toggle-replies-btn" style="display: none;">▶</span><span class="comment-meta-text">Автор: ${authorLink} | Дата: ${comment.Date}</span></p>
                 <p class="comment-content">${comment.Content}</p>
                 ${replyToText}
                 <div  class="topic_buttons" style="display: flex;">
@@ -844,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const metaText = commentDiv.querySelector('.comment-meta-text');
             if (metaText) {
-                metaText.innerHTML = `Автор: ${getAuthorHtml(comment.Author)} | Дата: ${comment.Date} | Час: ${comment.Time}`;
+                metaText.innerHTML = `Автор: ${getAuthorHtml(comment.Author)} | Дата: ${comment.Date}`;
             }
 
             const content = commentDiv.querySelector('.comment-content');
