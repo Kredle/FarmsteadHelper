@@ -4162,7 +4162,6 @@
         if (isImageDrawable(loadedBackgroundImage)) {
             ctx.drawImage(loadedBackgroundImage, 0, 0, canvas.width, canvas.height);
         }
-        drawGridOverlay();
         drawAllFigures();
         drawAllBrushStrokes();
         drawCurrentFigure();
@@ -4171,6 +4170,7 @@
         drawAllTrees();
         drawAllVegetables();
         drawCompatibilityHighlights();
+        drawGridOverlay();
         drawPointAlignmentGuides();
         restoreCanvasTransform();
     }
