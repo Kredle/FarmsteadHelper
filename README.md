@@ -1,178 +1,72 @@
 # FarmsteadHelper
 
-**FarmsteadHelper** is a web platform designed for landowners, gardeners and nature enthusiasts. It combines a wiki-like catalog of different sorts of trees, vegetables, flowers and animals, a discussion forum, an interactive yard planner, and a yearly calendar to help users organize their homesteading life.
+**FarmsteadHelper** is a web platform designed for landowners, gardeners, and nature enthusiasts. It combines a wiki-like catalog of different sorts of trees, vegetables, flowers, and animals, a discussion forum, an interactive yard planner, and a yearly calendar to help users organize their homesteading life.
 
 ---
 ## Authors:
 
 - **Kredle (Oleh Paliukh)**: <a href="https://www.linkedin.com/in/oleh-paliukh-8838472b5/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a> 
 - **GreyTheCat (Nazarii Fedorchak)**: <a href="https://www.linkedin.com/in/nazariy-fedorchak-845692334/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a>
-- **Andrii Kravchuk**: <a href="https://www.linkedin.com/in/andrii-kravchuk-15a251360/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a>
-- **Iris (Iryna Turkevutch)**: Does not have any contact links yet
+
 ---
 
 ## Tech Stack
 
-- **Backend**: Django (Python)
-- **Frontend**: React (JavaScript) + Django Templates
-- **Database**: MySQL
+- **Backend**: Django (Python), Django REST Framework
+- **Frontend**: JavaScript, HTML5, CSS3 + Django Templates
+- **Database**: PostgreSQL
+- **Payments**: Stripe API
 - **Deployment**: WSGI/ASGI
 - **API Testing**: Postman
 - **Other Tools**: reCAPTCHA, IPinfo
 
 ---
 
-## Layered Architecture (3 Layers)
+## 4-Layered Domain-Driven Design (DDD) Architecture
 
-The project now includes a layered core architecture to separate responsibilities and reduce cross-app coupling:
+The project implements a strict 4-layered architecture based on DDD principles to separate business logic from technical implementation, ensuring high maintainability and stability:
 
-- **Domain Layer** (`farmstead_farmer/core/domain`):
-  - Pure business entities (`FavoriteItem`, `FavoriteViewItem`)
-  - Domain exceptions
-  - Repository interfaces
+- **Presentation Layer** (`api/views.py`, `forum/views.py`, etc.):
+  - Handles incoming HTTP requests, initial data validation, and throttling.
+  - Delegates all business operations to the Application layer.
 - **Application Layer** (`farmstead_farmer/core/application`):
-  - Use cases for profile visibility and favorites
-  - Business orchestration without framework dependencies
+  - Contains Use Cases (e.g., `ProfileUseCase`, `CatalogUseCase`) that orchestrate business workflows without being tied to the database or framework specifics.
+- **Domain Layer** (`farmstead_farmer/core/domain`):
+  - The core of the system. Contains pure business entities, domain exceptions, and abstract repository interfaces. Completely isolated from external dependencies.
 - **Infrastructure Layer** (`farmstead_farmer/core/infrastructure`):
-  - Django ORM and Token repository adapters
-
-The API presentation layer (`farmstead_farmer/api/views.py`) now delegates key business operations to application use cases.
-
----
-
-## React Presentation Layer
-
-A dedicated Django app now serves a React (JS) presentation shell:
-
-- Route: `/app/`
-- App: `farmstead_farmer/presentation`
-- Template: `presentation/index.html`
-- Static assets: `presentation/static/presentation/*`
-
-This enables progressive migration from legacy templates to React while keeping Django as the backend/API and server-side integration point.
+  - Implements repository interfaces using Django ORM (`DjangoUserRepository`, `DjangoCatalogRepository`).
+  - Handles external integrations (PostgreSQL, Stripe webhooks, email SMTP).
 
 ---
 
 ## Project Structure
 
-```markdown
+```text
 farmstead_farmer/
 ├── animals/                                 # Animals branch for catalog
-│ ├── templates/                             # Templates
-|  └── animals/
-|    ├── animal_detail.html                  # Details of a certain type of animal
-|    ├── animal_sorts_list.html              # List of different kinds of certain animal
-|    └── animal_list.html                    # List of different types pof animals (parent Animals)
-|  ├── models.py                             # Models of data
-|  ├── urls.py                               # Urls of APIs
-|  └── views.py                              # APIs
-├── api/                                     # Authentication and profiles
-│ ├── static/                                # Photos for site and JS, CSS code 
-│   ├── api/                                 # Styles for pages and JS code for registration and login pages
-│   ├── main_page/                           # Photos for site
-│   └── profile/                             # Styles for profiles
-│ ├── templates/
-│   ├── api/
-│     ├── confirm-register.html              # Page for confirming registration by entering OTP
-│     ├── login.html                         # Login form
-│     ├── mainpage.html                      # Main page
-│     ├── new_password.html                  # Form for entering new password
-│     ├── register.html                      # Registration form
-│     └── reset_password.html                # Form for requesting a password reset
-│   └── profiles/                            # Profile pages
-│     ├── edit_profile.html                  # Setting of profile
-│     └── view_profile.html                  # Profile preview
-│ ├── templatetags/                          # Template Tags for custom filters and tags used in Django templates
-│   └── my_filters.py                        # Custom filter for obtaining objects that match category
-│ ├── models.py                              # Models of user and OTP
-│ ├── forms.py                               # Form for resetting the password
-│ ├── middleware.py                          # APIWhitelistMiddleware that allows only ALLOWED_PATHS to prevent Ddos attacs
-│ ├── serializers.py                         # Regestrations and login serializers
-│ ├── urls.py                                # Setting urls of APIs
-│ └── views.py                               # Profiles and Authentication APIs with trottle_classes to limit rates
+├── api/                                     # Authentication, profiles, and core API views
+│ ├── middleware.py                          # Rate limiting and API Whitelisting
+│ ├── serializers.py                         # DRF serializers for I/O validation
+│ └── views.py                               # Presentation layer endpoints
+├── core/                                    # DDD Architecture Core
+│ ├── application/                           # Use Cases (Business orchestration)
+│ ├── domain/                                # Entities and Interfaces
+│ └── infrastructure/                        # ORM Repositories and external services
 ├── calendar_/                               # Calendar section
-│ ├── templates/
-│   └── calendar.html                        # Calendar page
-│ ├── models.py                              # Models of dates intervals
-│ ├── urls.py                                # Setting urls of APIs
-│ └── views.py                               # Getting all sorts of category and getting date intervals for sort APIs
-├── catalog/                                 # Catalog section (Covers main catalog page)
-│ ├── templates/
-│   └── catalog/
-│     └── catalog.html                      # Catalog page
-│ ├── models.py                             # Tree, Animals, Vegetables, Flowers models + vertions for search bar
-│ ├── urls.py                               # Setting urls of APIs
-│ └── views.py                              # Search, Generating random sorts and filtrating sorts APIs
-├── farmstead_farmer/                       # Setting of web application
-│ ├── middleware.py                         # Processing responses and connect them to their error pages
-│ ├── urls.py                               # Connecting urls from all apps
-│ ├── settings.py                           # Config of web application
-│ └── wsgi.py                               # WSGI config
-├── feedback/                               # Feedback form 
-│ ├── templates/
-│   └── feedback/
-│     └── feedback_form.html                # Feedback form with reCAPTCHA
-│ ├── forms.py                              # Feedback form
-│ ├── urls.py                               # Setting url for sending feedback API
-│ └── views.py                              # Sending feedback API (Using trottle_class to limit rates and reCAPTCHA verification)
-├── forum/                                  # Forum section
-| ├── static/                               # Styles and photos for forum pages
-│ ├── templates/
-│   ├── create_discussion.html              # Create discussin page
-│   ├── edit_topic.html                     # Edit topic page
-│   ├── forumpage.html                      # Main forum page
-│   └── topic_detail.html                   # Topic detailed page, where users can communicate with each other
-│ ├── forms.py                              # Discussion Form
-│ ├── models.py                             # Topic, Comment, User Models
-│ ├── urls.py                               # Setting urls of APIs
-│ └── views.py                              # Forum APIs
-├── interactive_map/                        # Interactive map sections
-│ ├── templates/ 
-│   ├── map_canvas.html                     # Page, where users can plot their own land by using a variety of tools
-│   └── map_overview.html                   # Page, designed to introduce users to interactive map functionality
-│ ├── models.py                             # Map model 
-│ ├── urls.py                               # Setting urls of APIs
-│ └── views.py                              # Saving, Updating, Checking if user has map and getting map APIs
-├── main_page/                              # Main page of site
-│ ├── urls.py                               # Setting main page view url 
-│ └── views.py                              # Main page view
-├── media/                                  # Folder for keeping users' avatars
-├── plants/                                 # Plants branch for catalog
-│ ├── templates/
-|  └── plants/
-|    ├── plant_detail.html                  # Page that shows details of certain sort of flower
-|    └── plant_list.html                    # Page that shows all sorts of flowers
-|  ├── models.py                            # Flower model
-|  ├── urls.py                              # Setting urls of APIs
-|  ├── views.py                             # Pages views
-├── templates/                              # Templates of error pages
-│ ├── 400.html                              # Page for 400 response
-│ ├── 403.html                              # Page for 403 response
-│ ├── 404.html                              # Page for 404 response
-│ └── 500.html                              # Page for 500 response
-├── trees/                                  # Trees branch for catalog
-│ ├── templates/
-|  └── trees/ 
-|    ├── sort_detail.html                   # Details of certain sort of tree
-|    ├── sorts_list.html                    # List of sorts of parent tree
-|    └── trees_main_list.html               # List of different types of trees (parents trees)
-|  ├── models.py                            # Models of Tree, Sort, Fertilizer, Planting, etc.
-|  ├── urls.py                              # Setting urls of views
-|  ├── views.py                             # Tree views
-├── vegetables/                             # Vegetables branch for catalog
-│ ├── templates/
-|  └── vegetables/
-|    ├── sort_detail.html                   # Details of certain sort of vegetable
-|    ├── sort_list.html                     # List of sorts of parent vegetable
-|    └── vegetable_list.html                # List of different types of vegetables (parents vegetables)
-|  ├── models.py                            # Models of Vegetable, SortVeg, FertilizerVeg, DiseasesVeg.
-|  ├── urls.py                              # Setting urls of views
-|  ├── views.py                             # Views of vegetables branch
-├── asgi.py                                 # ASGI Config
-├── wsgi,oy                                 # WSGI Config
-├── manage.py                               # Django's command-line utility
-└── requirements.txt                        # Dependencies
+├── catalog/                                 # Catalog section (Search and filtering)
+├── farmstead_farmer/                        # Global web application settings
+├── feedback/                                # Feedback form with reCAPTCHA
+├── forum/                                   # Social interaction and discussions
+├── interactive_map/                         # Canvas-based yard planner
+├── main_page/                               # Landing page
+├── plants/                                  # Flowers branch for catalog
+├── trees/                                   # Trees branch for catalog
+├── vegetables/                              # Vegetables branch for catalog
+├── manage.py                                # Django's command-line utility
+└── requirements.txt                         # Dependencies
 ```
+---
+
 ### Database Structure
 Database contains 26 tables, where most important are:
 
@@ -204,95 +98,85 @@ Database contains 26 tables, where most important are:
 
   ![image](https://github.com/user-attachments/assets/1e4e0c15-1891-4fac-a69f-71bbd87914da)
 
-
+---
 ---
 
 ## Core Features
 
-### Catalog
-A wiki-style reference system for different types of farm-related items:
+### Catalog (Knowledge Base)
+A structured, wiki-style reference system for different types of farm-related items:
 
-- Categories: Animals, Trees, Flowers, Vegetables
-- Each entry includes images, descriptions, tips, and more
-- Users can bookmark varieties ("Add to Favorites") for quick access in their profile
-- "Can be intresting for you" section, where users can randomize sorts of different categories
-- Includes filter functionality in "Can be intresting for you" section, where users can choose what categories they want to see
+- Categories: Animals, Trees, Flowers, Vegetables.
+- Each entry includes images, descriptions, tips, and **deep agricultural data** (soil types, optimal temperature ranges, and biological compatibility).
+- Multi-criteria smart search that ignores typos and case sensitivity.
+- Users can bookmark varieties ("Add to Favorites") for quick access in their profile.
+- "Can be interesting for you" section, where users can randomize sorts of different categories.
+- Includes filter functionality in the recommendation section, allowing users to choose specific categories.
 
 ---
 
 ### Forum
-A place for users to share experience and ask questions:
+A place for users to share experience and ask questions, backed by a strict role model:
 
-- Discussions organized by category (Trees, Vegetables, Flowers, Animals)
-- Users can create threads, reply to topics, and reply to replies
-- Favorite discussions can be saved to user profiles
-- Users can report topics and comments if they break the rules of the platform (Report will be sent to moderators)
-- Moderators can delete topics and comments
-- Users can edit their comments and topics
-- Sorting discussions by likes count
-- Users can filter discussions by keywords, categories or both
-- If users' comments get deleted, replies to that comments change "Відповідь на коментар **username**" to "Відповідь на коментар Коментар видалено"
-- If user deletes his account, then topic author changes to "Користувача видалено"
-- If user changes his name, it automaticaly changes in forum
+- Discussions organized by category (Trees, Vegetables, Flowers, Animals).
+- **Role-based Access**: Guests (read-only), Farmers (create/edit own content), and Moderators.
+- **Secure Moderation**: To prevent abuse, administrator privileges are protected by 2FA. Moderators must request and enter an OTP from their email to temporarily unlock content-deletion capabilities.
+- Users can report topics and comments if they break the rules of the platform (asynchronous reports sent to moderators).
+- Users can edit their comments and topics.
+- Sorting discussions by likes count and filtering by keywords, categories, or both.
+- If a user's comment gets deleted, replies to that comment automatically change from "Відповідь на коментар **username**" to "Відповідь на коментар Коментар видалено".
+- If a user deletes their account, the topic author changes to "Користувача видалено".
+- Username changes are automatically propagated throughout the forum.
 
 ---
 
 ### Interactive Map
-An intuitive homestead planner:
+An intuitive, scientifically grounded homestead planner:
 
 - Users can design their yard by:
-  - Drawing areas (soil, grass, water)
-  - Making rectangular-shaped areas with dot tool
-  - Adding trees, vegetables, flowers, and structures
-  - Undo (CTRL+Z) and redo (CTRL+SHIFT+Z) buttons 
-- Save the layout to their profile and edit later
-- If other user visits user's saved map, map sets into preview mode
-- Map visibility can be made public or private
+  - Drawing areas (soil, grass, water).
+  - Making rectangular-shaped areas with the dot tool.
+  - Adding trees, vegetables, flowers, and structures.
+  - Using Undo (CTRL+Z) and Redo (CTRL+SHIFT+Z) buttons.
+- **Advanced Automated Validation**: The system automatically checks plant placement against soil types, temperature constraints, and biological compatibility (allelopathy matrix) to prevent agronomic mistakes.
+- **Premium Subscription**: Integrated with Stripe API. Premium users unlock unlimited elements and advanced compatibility reports.
+- Save the layout to the profile and edit it later.
+- Map visibility can be toggled between public and private. If another user visits a private map, it remains hidden, while public maps open in preview mode.
 
 ---
 
 ### Calendar
 A visual farming planner:
 
-- Displays a 12-month view
-- Tasks/events shown as colored stripes per date
-- Users can filter by crop type, season, or activity
-- Includes search functionality
+- Displays a 12-month view.
+- Tasks/events are shown as colored stripes per date.
+- Users can filter by crop type, season, or activity.
+- Includes search functionality.
 
 ---
 
-### User Profile
+### User Profile & Editing
 Every user has a personal dashboard:
 
-- Displays profile picture, name, bio, registration date, last seen
-- Lists favorite varieties and favorite discussions
-- Link to their saved interactive map
+- Displays profile picture, name, bio (max 150 characters), registration date, and last seen status.
+- Lists favorite varieties and favorite discussions.
+- Link to their saved interactive map.
+- Users can edit their firstname, lastname, profile photo, and bio.
+- Change username (once every 7 days).
+- Change password or set a new email address.
+- Manage privacy settings for Favorites and the Interactive map.
+- **Secure Account Deletion**: Protected by behavioral analysis (reCAPTCHA) and requires email OTP confirmation.
 
 ---
-
-### Profile Editing
-
-Users can:
-- Edit firstname and lastname, profile photo, and bio (max 150 characters)
-- Change username (once every 7 days)
-- Change password
-- View current email
-- Set a new email address
-- Delete their account
-- Manage privacy settings for:
-  - Favorites
-  - Interactive map
-
----
-
 
 ### Security
 
-To protect the platform from cyberattacks were added next things:
-- Login and registration verifications by Django ORM (Saves from SQL injections)
-- Integration with reCAPTCHA when deleting account, sending feedback and authenticating (Checking on FrontEnd and BackEnd)
-- Added rate limiting:
-  - By creating trottle classes and using trottle_class decorator
+To protect the platform from cyberattacks and data scraping, the following measures were implemented:
+
+- Login and registration validations are strictly handled by Django ORM and PostgreSQL constraints, preventing SQL injections and XSS attacks.
+- Integration with reCAPTCHA v3 when deleting an account, sending feedback, and authenticating (verified on both Frontend and Backend).
+- **Cryptographic Webhooks**: Payment confirmations via Stripe are verified using cryptographic signatures before updating subscription records in the database.
+- Added comprehensive rate limiting using DRF throttle classes:
     ```python
     class SendOTPThrottle(UserRateThrottle):
         rate = '10/minute'
@@ -306,58 +190,60 @@ To protect the platform from cyberattacks were added next things:
     class MainAPiThrottle(UserRateThrottle):
         rate = '30/minute'
     
-    class DataScraptingTrottle(UserRateThrottle):
+    class DataScrapingThrottle(UserRateThrottle):
         rate = '40/minute'
     
-    class CatalogTrottle(UserRateThrottle):
+    class CatalogThrottle(UserRateThrottle):
         rate = '40/minute'
 
-    class GetSortsAndDetailsTrottle(UserRateThrottle):
+    class GetSortsAndDetailsThrottle(UserRateThrottle):
         rate = '30/minute'
 
-    class ForumTrottling(UserRateThrottle):
+    class ForumThrottling(UserRateThrottle):
         rate = '100/minute'
     ```
-  - By adding DEFAULT_TROTTLE_CLASSES to settings.py
+  - Applied globally in `settings.py`:
     ```python
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.UserRateThrottle',
         'rest_framework.throttling.AnonRateThrottle',
     ],
-      'DEFAULT_THROTTLE_RATES': {
+    'DEFAULT_THROTTLE_RATES': {
         'user': '5000/day',
         'anon': '100/hour',
     }
     ```
-- Added ALLOWED_PATHS for api.middleware.APIWhitelistMiddleware, so that DDOS attacks that are sending fake requests wouldn't work
-- Blocked access to users with russian or belarusian IP by using IPinfo in api.middleware.GeoBlockMiddleware
+- Added `ALLOWED_PATHS` via `api.middleware.APIWhitelistMiddleware`, ensuring DDoS attacks sending fake automated requests are dropped early.
+- Blocked access to users with Russian or Belarusian IP addresses using IPinfo in `api.middleware.GeoBlockMiddleware`.
 
-#### All database data is secured by Django ORM
-
+#### All database data is secured by PostgreSQL and Django ORM constraints.
 
 ---
+
 ## API Documentation
-- api/register
-  - Creates new user by using RegisterSerializer
-  - Takes data from register form
-  - Checks if password matches repeat_password
-  - Creating token for certain user and returns 201 response
-  - Is used only after verifying email at comfirm-email.html
-  - Trottle class: BasicThrottle
-- api/login/
-  - Authenticates user into platform by using LoginSerializer
-  - Takes data from login form
-  - Checks if user with data exists in database
-  - As output gives auth token and 200 response if success
-  - Trottle class: BasicThrottle
-- api/send-otp/
-  - Sends html context page to users email
-  - Takes user email in body
-  - Caches OTP for 10 minutes as "otp_{email}"
-  - Used for verifying email when registrating
-  - Trottle class: SendOTPTrottle
-- 
----
+*(Note: Following the DDD architecture, the Presentation layer delegates business logic to the Application layer)*
+
+- **`api/register/`**
+  - Creates a new user using `RegisterSerializer`.
+  - Validates form data and checks password matches.
+  - Creates an auth token for the user and returns a 201 response.
+  - Can only be completed after verifying the email via OTP.
+  - Throttle class: `BasicThrottle`.
+- **`api/login/`**
+  - Authenticates user into the platform using `LoginSerializer`.
+  - Checks if user exists in the PostgreSQL database.
+  - Returns the auth token and a 200 response upon success.
+  - Throttle class: `BasicThrottle`.
+- **`api/send-otp/`**
+  - Sends an HTML context page/code to the user's email.
+  - Takes user email in the body.
+  - Caches OTP for 10 minutes (TTL) as `otp_{email}`.
+  - Used for verifying email during registration, account deletion, or moderator privilege escalation.
+  - Throttle class: `SendOTPThrottle`.
+- **`api/stripe/webhook/`**
+  - Listens for asynchronous payment events from Stripe.
+  - Cryptographically verifies the signature using the Stripe webhook secret.
+  - Updates the user's `is_premium` status via the Application layer.
 
 ## Installation
 
