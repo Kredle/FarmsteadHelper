@@ -7,6 +7,7 @@
 
 - **Kredle (Oleh Paliukh)**: <a href="https://www.linkedin.com/in/oleh-paliukh-8838472b5/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a> 
 - **GreyTheCat (Nazarii Fedorchak)**: <a href="https://www.linkedin.com/in/nazariy-fedorchak-845692334/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a>
+- **AndriiyKr (Andrii Kravchuk)**: <a href="https://www.linkedin.com/in/andrii-kravchuk-15a251360"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRZy25qVnXim0IHxSZ9q0eQiW3E-NHXxDjuQ&s" alt="LinkedIn" width="30" height="30"></a>
 
 ---
 
